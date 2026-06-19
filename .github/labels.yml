@@ -1,0 +1,70 @@
+# Repository label taxonomy for aws-mcp-gateway.
+# Colors are GitHub label hex values without the leading '#'.
+# Apply these definitions to GitHub repository labels before triaging issues.
+
+- name: type:feat
+  color: "1D76DB"
+  description: New user-visible or tool-visible functionality.
+- name: type:chore
+  color: "0052CC"
+  description: Project setup, maintenance or non-user-facing work.
+- name: type:docs
+  color: "0366D6"
+  description: Documentation changes.
+- name: type:test
+  color: "2188FF"
+  description: Test coverage or test infrastructure.
+- name: type:security
+  color: "0A66C2"
+  description: Security control, hardening or sensitive data protection.
+- name: type:infra
+  color: "0052CC"
+  description: CI/CD, deployment or platform configuration.
+- name: type:refactor
+  color: "54AEF5"
+  description: Code restructuring without behavior changes.
+
+- name: area:mcp
+  color: "8250DF"
+  description: MCP protocol, tools, handlers and connector behavior.
+- name: area:aws
+  color: "6F42C1"
+  description: AWS API integrations and AWS-specific logic.
+- name: area:cloudflare
+  color: "A371F7"
+  description: Cloudflare Workers, KV, Wrangler or Cloudflare deployment.
+- name: area:auth
+  color: "8957E5"
+  description: Authentication and authorization.
+- name: area:cache
+  color: "8A63D2"
+  description: Caching and TTL behavior.
+- name: area:docs
+  color: "6E40C9"
+  description: Project documentation and repository metadata documentation.
+- name: area:ci
+  color: "9A67EA"
+  description: GitHub Actions and automated checks.
+- name: area:security
+  color: "7B61FF"
+  description: Security boundaries, safety limits and redaction.
+
+- name: priority:p0
+  color: "B60205"
+  description: Required for MVP correctness or safety.
+- name: priority:p1
+  color: "D93F0B"
+  description: Required for a complete MVP, but can follow the core path.
+- name: priority:p2
+  color: "FBCA04"
+  description: Future or hardening work.
+
+- name: phase:mvp
+  color: "0E8A16"
+  description: Read-only MVP scope.
+- name: phase:hardening
+  color: "2EA44F"
+  description: Security, reliability and operational hardening.
+- name: phase:future
+  color: "7BC96F"
+  description: Post-MVP expansion, including future management mode.
