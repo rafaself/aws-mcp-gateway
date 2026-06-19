@@ -39,11 +39,27 @@ The policy grants only the read/list/describe/get actions required by the gatewa
 
 > **⚠️ Security warning**
 >
-> Never commit access keys to Git. The `.env.example` file documents which variables are required, but real secrets must only be stored in Cloudflare Secrets or your secrets manager.
+> Never commit access keys to Git. The `.env.example` file documents which variables are required, but real secrets must only be stored in Cloudflare Secrets (deployed) or `.dev.vars` (local development).
 
-## Step 4: Store credentials in Cloudflare
+## Step 4: Store credentials
 
-Configure the gateway Worker with the credentials using Wrangler:
+Credentials must be provided to the Worker at runtime. The method differs for local development and deployment.
+
+### Local development
+
+Create a non-committed `.dev.vars` file in the project root:
+
+```text
+AWS_ACCESS_KEY_ID="AKIA..."
+AWS_SECRET_ACCESS_KEY="..."
+MCP_AUTH_TOKEN="..."
+```
+
+This file is already listed in `.gitignore` so it will not be committed. Wrangler automatically reads `.dev.vars` when running `wrangler dev`.
+
+### Deployed Workers
+
+Use Wrangler secrets for deployed environments:
 
 ```bash
 wrangler secret put AWS_ACCESS_KEY_ID
@@ -60,10 +76,20 @@ These commands upload the values to Cloudflare's secure secrets store. The value
 
 ## Verification
 
-Deploy or run the Worker locally with these secrets configured:
+### Local
+
+Ensure `.dev.vars` exists with the three required variables, then start the dev server:
 
 ```bash
 wrangler dev
+```
+
+### Deployed
+
+After configuring secrets with `wrangler secret put`, deploy the Worker:
+
+```bash
+wrangler deploy
 ```
 
 Then verify the MCP endpoint responds with a valid tool list:
