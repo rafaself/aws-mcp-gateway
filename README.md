@@ -133,42 +133,9 @@ wrangler secret put MCP_AUTH_TOKEN
 
 ## AWS IAM policy
 
-The initial IAM policy should be scoped to read-only APIs required by the first tools.
+The gateway requires a least-privilege IAM policy scoped to read-only actions. The canonical policy file is maintained at [`infra/aws/iam-readonly-policy.json`](infra/aws/iam-readonly-policy.json).
 
-Example actions:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "CostRead",
-      "Effect": "Allow",
-      "Action": [
-        "ce:GetCostAndUsage",
-        "ce:GetCostForecast",
-        "budgets:ViewBudget"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "InfraObservabilityRead",
-      "Effect": "Allow",
-      "Action": [
-        "ec2:DescribeInstances",
-        "ec2:DescribeInstanceStatus",
-        "cloudwatch:DescribeAlarms",
-        "cloudwatch:GetMetricData",
-        "logs:DescribeLogGroups",
-        "logs:DescribeLogStreams",
-        "logs:FilterLogEvents",
-        "tag:GetResources"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-```
+See [`docs/aws-iam-setup.md`](docs/aws-iam-setup.md) for a complete walkthrough covering IAM user creation, policy attachment, access key generation, and credential storage in Cloudflare.
 
 This template is intentionally narrow. Do not use `AdministratorAccess` or broad AWS-managed policies for the gateway.
 
