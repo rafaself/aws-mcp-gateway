@@ -1,6 +1,14 @@
+import { createMcpHandler } from "agents/mcp";
+import { createServer } from "./mcp/server.js";
+
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: unknown, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname === "/mcp") {
+      const server = createServer();
+      return createMcpHandler(server)(request, env, ctx);
+    }
 
     if (request.method === "GET" && url.pathname === "/health") {
       return Response.json({ ok: true, service: "aws-mcp-gateway" });
