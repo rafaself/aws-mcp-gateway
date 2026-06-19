@@ -1,0 +1,28 @@
+# Repository milestone taxonomy for aws-mcp-gateway.
+# These definitions document the intended GitHub milestones and their scope.
+
+- title: MVP - Read-only AWS MCP Gateway
+  description: Build the initial read-only MCP gateway for AWS cost, inventory and observability data.
+  scope:
+    - Cloudflare Workers TypeScript scaffold.
+    - Stateless authenticated MCP endpoint.
+    - Read-only AWS request signing and IAM policy template.
+    - Cost Explorer, EC2, CloudWatch alarms and CloudWatch Logs tools.
+    - Basic cache, tests, CI and documentation needed for a usable MVP.
+
+- title: Hardening - Security, reliability and cost controls
+  description: Improve security, reliability, observability, validation and operational safety after the MVP path is established.
+  scope:
+    - Input limits and bounded AWS calls.
+    - Error normalization and redaction.
+    - Audit logging.
+    - Additional tests and deployment verification.
+    - Cost-control refinements.
+
+- title: Future - AWS management mode
+  description: Track post-MVP design and implementation work for any future write-capable AWS management mode.
+  scope:
+    - Separate security model from read-only MVP.
+    - Separate IAM permissions.
+    - Explicit confirmation requirements.
+    - No write-capable tools in the initial MVP.
