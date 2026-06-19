@@ -93,26 +93,37 @@ Management tools may be added later, but they must use a separate security model
 
 ## Environment variables and secrets
 
-Use `.env.example` for documentation only. Real values must be configured with Cloudflare secrets.
+Use `.env.example` for documentation only. Real values must be configured with Wrangler.
 
-Required secrets:
+### Required secrets (configure with `wrangler secret put`)
 
 ```text
 AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
-AWS_REGION
 MCP_AUTH_TOKEN
 ```
 
-Recommended variables:
+### Required configuration (configure in `wrangler.jsonc` `[vars]`)
+
+```jsonc
+{
+  "vars": {
+    "AWS_REGION": "us-east-1",
+    "AWS_ALLOWED_REGIONS": "us-east-1,sa-east-1"
+  }
+}
+```
+
+These are operational configuration, not credentials. They are safe to commit and review.
+
+### Optional variables
 
 ```text
-AWS_ALLOWED_REGIONS=sa-east-1,us-east-1
 APP_ENV=production
 MCP_NAME=aws-mcp-gateway
 ```
 
-Configure secrets with Wrangler:
+### Configure secrets with Wrangler
 
 ```bash
 wrangler secret put AWS_ACCESS_KEY_ID
