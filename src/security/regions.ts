@@ -14,6 +14,17 @@ export function validateAllowedRegions(allowedRegions: string[]): void {
   }
 }
 
+export function validateRegion(region: string, allowedRegions: string[]): void {
+  validateAllowedRegions(allowedRegions);
+
+  if (!allowedRegions.includes(region)) {
+    throw new ValidationError(
+      "region_not_allowed",
+      `Region "${region}" is not in the allowed regions list.`,
+    );
+  }
+}
+
 export function resolveRegions(
   requestedRegions: string[] | undefined,
   allowedRegions: string[],

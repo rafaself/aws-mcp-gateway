@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   parseRegions,
   validateAllowedRegions,
+  validateRegion,
   resolveRegions,
 } from "./regions.js";
 import { ValidationError } from "./errors.js";
@@ -102,6 +103,40 @@ describe("resolveRegions", () => {
       resolveRegions(["ap-northeast-1"], allowed);
     } catch (e) {
       expect((e as ValidationError).message).toContain("ap-northeast-1");
+    }
+  });
+});
+
+describe("validateRegion", () => {
+  it("does not throw for a valid region", () => {
+    expect(() => validateRegion("us-east-1", ["us-east-1", "eu-west-1"])).not.toThrow();
+  });
+
+  it("throws ValidationError for a region not in the allowlist", () => {
+    expect(() => validateRegion("us-west-2", ["us-east-1", "sa-east-1"])).toThrow(ValidationError);
+  });
+
+  it("throws with region_not_allowed code", () => {
+    try {
+      validateRegion("eu-central-1", ["us-east-1"]);
+    } catch (e) {
+      expect(e).toMatchObject({ code: "region_not_allowed" });
+    }
+  });
+
+  it("includes the rejected region name in the message", () => {
+    try {
+      validateRegion("ap-southeast-1", ["us-east-1"]);
+    } catch (e) {
+      expect((e as ValidationError).message).toContain("ap-southeast-1");
+    }
+  });
+
+  it("throws empty_allowed_regions when allowlist is empty", () => {
+    try {
+      validateRegion("us-east-1", []);
+    } catch (e) {
+      expect(e).toMatchObject({ code: "empty_allowed_regions" });
     }
   });
 });
