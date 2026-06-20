@@ -85,6 +85,15 @@ describe("cacheGet", () => {
 
     expect(kv.get).toHaveBeenCalledWith("ce:abc123", "json");
   });
+
+  it("returns null when kv.get throws", async () => {
+    const kv = createMockKv();
+    kv.get.mockRejectedValue(new Error("KV unavailable"));
+
+    const result = await cacheGet(kv as never, "some-key");
+
+    expect(result).toBeNull();
+  });
 });
 
 describe("cacheSet", () => {
@@ -133,5 +142,14 @@ describe("cacheSet", () => {
       expect.any(String),
       { expirationTtl: 300 },
     );
+  });
+
+  it("does not throw when kv.put throws", async () => {
+    const kv = createMockKv();
+    kv.put.mockRejectedValue(new Error("KV unavailable"));
+
+    await expect(
+      cacheSet(kv as never, "key", { data: 1 }),
+    ).resolves.toBeUndefined();
   });
 });
