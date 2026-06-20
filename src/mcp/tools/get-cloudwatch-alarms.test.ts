@@ -180,13 +180,13 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     const result = await tool.handler({}) as Record<string, unknown>;
 
     expect(result.structuredContent).toEqual({
-      regions: [],
+      regions: ["us-east-1"],
       count: 0,
       alarms: [],
     });
 
     const content = (result.content as Array<{ type: string; text: string }>)[0];
-    expect(content.text).toContain("Found 0 alarm(s) across 0 region(s).");
+    expect(content.text).toContain("Found 0 alarm(s) across 1 region(s).");
   });
 
   it("filters by regions when provided", async () => {

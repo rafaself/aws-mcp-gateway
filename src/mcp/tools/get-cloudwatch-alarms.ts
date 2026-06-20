@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GatewayContext } from "../context.js";
 import { listAlarms } from "../../aws/cloudwatch.js";
 import { VALID_ALARM_STATES } from "../../aws/cloudwatch-types.js";
+import { resolveRegions } from "../../security/regions.js";
 import { safeMcpHandler } from "./response.js";
 
 export function registerGetCloudwatchAlarmsTool(server: McpServer, ctx: GatewayContext): void {
@@ -22,16 +23,16 @@ export function registerGetCloudwatchAlarmsTool(server: McpServer, ctx: GatewayC
       }),
     },
     safeMcpHandler(async (args) => {
+      const queriedRegions = resolveRegions(args.regions, ctx.allowedRegions);
+
       const alarms = await listAlarms(
         {
-          regions: args.regions,
+          regions: queriedRegions,
           stateFilter: args.states,
         },
         ctx.allowedRegions,
         ctx.credentials,
       );
-
-      const resultRegions = [...new Set(alarms.map((a) => a.region))].sort();
       const count = alarms.length;
 
       const alarmEntries = alarms.map((a) => ({
@@ -59,7 +60,7 @@ export function registerGetCloudwatchAlarmsTool(server: McpServer, ctx: GatewayC
       }
 
       const text =
-        `Found ${count} alarm(s) across ${resultRegions.length} region(s).\n\n` +
+        `Found ${count} alarm(s) across ${queriedRegions.length} region(s).\n\n` +
         sections.join("\n");
 
       return {
@@ -70,7 +71,7 @@ export function registerGetCloudwatchAlarmsTool(server: McpServer, ctx: GatewayC
           },
         ],
         structuredContent: {
-          regions: resultRegions,
+          regions: queriedRegions,
           count,
           alarms: alarmEntries,
         },
