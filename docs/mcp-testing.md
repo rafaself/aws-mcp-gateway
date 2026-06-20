@@ -4,10 +4,53 @@ This guide describes how to verify that the deployed MCP gateway is working corr
 
 ## Authentication model
 
-The MCP endpoint requires a bearer token for every request. The token is configured as the `MCP_AUTH_TOKEN` Cloudflare secret at deploy time (see [deployment guide](deployment.md)).
+The gateway supports two authentication modes (see [deployment.md](deployment.md)):
+
+| Mode | Use case |
+|------|----------|
+| `legacy-bearer` (default) | Local `pnpm dev` and curl smoke tests |
+| `oauth` | Production ChatGPT connector |
 
 - **Health check** (`GET /health`) — no authentication required.
-- **MCP endpoint** (`POST /mcp`) — requires `Authorization: Bearer <token>` header. Requests without a valid token receive a 401 response.
+- **OAuth metadata** (`GET /.well-known/oauth-protected-resource`) — public in `oauth` mode only.
+- **MCP endpoint** (`POST /mcp`) — always requires authentication. `No auth` is not acceptable for AWS account data.
+
+For ChatGPT OAuth setup, see [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
+
+## Legacy local flow (`AUTH_MODE=legacy-bearer`)
+
+Set in `.dev.vars`:
+
+```text
+AUTH_MODE=legacy-bearer
+MCP_AUTH_TOKEN=<local-token>
+```
+
+Curl uses `Authorization: Bearer <MCP_AUTH_TOKEN>`.
+
+## OAuth deployed flow (`AUTH_MODE=oauth`)
+
+### Verify metadata
+
+```bash
+curl https://<worker-host>/.well-known/oauth-protected-resource
+```
+
+Expected: `200` with `resource`, `authorization_servers`, and `scopes_supported`.
+
+### Verify unauthenticated challenge
+
+```bash
+curl -i -X POST https://<worker-host>/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+Expected: HTTP `401` with `WWW-Authenticate` containing `resource_metadata`.
+
+### Verify tools through ChatGPT
+
+Complete OAuth in the ChatGPT connector UI and verify `tools/list` and `get_gateway_status`. Do not copy OAuth access tokens into docs or terminal commands.
 
 ## Endpoint
 

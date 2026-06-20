@@ -37,8 +37,13 @@ The gateway is a **read-only**, public-facing MCP endpoint for explicit AWS tool
 **Out of scope for this document:**
 
 - Full deployment instructions — see [docs/deployment.md](docs/deployment.md).
-- OAuth, multi-user auth, or write-operation policy — see [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md).
+- Write-operation policy — see [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md).
 - Automated vulnerability scanning — not required for the MVP.
+
+**OAuth (implemented):**
+
+- ChatGPT connector OAuth is documented in [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md).
+- Contract: [docs/specs/oauth-chatgpt-connector.md](docs/specs/oauth-chatgpt-connector.md).
 
 ---
 
@@ -172,12 +177,15 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 
 - [ ] All sections above relevant to this release are checked.
 - [ ] Secrets are configured in the target Cloudflare environment (`wrangler secret put`).
+- [ ] `AUTH_MODE` is set appropriately: `oauth` for ChatGPT production, `legacy-bearer` for local/single-token deployments.
+- [ ] In `oauth` mode: OAuth vars are set and `MCP_AUTH_TOKEN` is **not** required; `GET /.well-known/oauth-protected-resource` returns expected metadata.
+- [ ] In `legacy-bearer` mode: `MCP_AUTH_TOKEN` secret is configured.
 - [ ] `AWS_ALLOWED_REGIONS` reflects only regions this deployment should serve.
 - [ ] IAM policy attached to the gateway principal matches [`infra/aws/iam-readonly-policy.json`](infra/aws/iam-readonly-policy.json) (or a narrower custom variant).
 - [ ] `pnpm run typecheck`, `pnpm test`, and `pnpm run test:integrity` pass on the commit being deployed.
 - [ ] `GET /health` returns `{ "ok": true, "service": "aws-mcp-gateway" }` without authentication.
-- [ ] With valid runtime configuration, `POST /mcp` without a bearer token returns HTTP 401.
-- [ ] `POST /mcp` with a valid bearer token completes the MCP handshake (see [docs/mcp-testing.md](docs/mcp-testing.md)).
+- [ ] With valid runtime configuration, `POST /mcp` without authentication returns HTTP 401 (with `WWW-Authenticate` in `oauth` mode).
+- [ ] Authenticated MCP access works (legacy bearer token or ChatGPT OAuth flow — see [docs/mcp-testing.md](docs/mcp-testing.md)).
 - [ ] A smoke test confirms at least one AWS-backed tool returns normalized output in an allowed region.
 
 ---
@@ -187,8 +195,9 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 The following post-MVP capabilities require a separate issue, spec, and security review before implementation:
 
 - Write or management AWS operations (start/stop instances, modify alarms, etc.).
-- OAuth or multi-user authorization replacing the single shared bearer token.
 - Broader read-only inventory tools (RDS, Lambda, budgets) — allowed only as explicit new tools with IAM and contract updates.
+
+OAuth for ChatGPT is **implemented** — see [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md). Legacy bearer mode remains available for local development.
 
 The following patterns remain permanently forbidden and must not be routed through the post-MVP process:
 

@@ -42,16 +42,45 @@ The Worker requires a mix of Cloudflare-managed secrets and non-secret configura
 
 These values are sensitive and must be stored in Cloudflare's encrypted secrets store. They are never written to `wrangler.jsonc` or committed to Git.
 
+**Always required:**
+
 ```bash
 wrangler secret put AWS_ACCESS_KEY_ID
-# Paste the IAM user's access key ID when prompted.
-
 wrangler secret put AWS_SECRET_ACCESS_KEY
-# Paste the IAM user's secret access key when prompted.
-
-wrangler secret put MCP_AUTH_TOKEN
-# Set a strong random bearer token. MCP clients (e.g. ChatGPT) will use this to authenticate.
 ```
+
+**Legacy bearer mode only** (`AUTH_MODE=legacy-bearer` or absent):
+
+```bash
+wrangler secret put MCP_AUTH_TOKEN
+# Strong random bearer token for local dev or non-ChatGPT clients.
+```
+
+**ChatGPT OAuth production mode** (`AUTH_MODE=oauth`): `MCP_AUTH_TOKEN` is **not** required. See [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
+
+### Auth modes
+
+| Mode | Use case | `MCP_AUTH_TOKEN` | OAuth vars |
+|------|----------|------------------|------------|
+| `legacy-bearer` (default) | Local `pnpm dev`, curl testing | Required (secret) | Not used |
+| `oauth` | ChatGPT connector production | Not required | Required in `[vars]` |
+
+OAuth vars (non-secret, safe in `wrangler.jsonc` or dashboard):
+
+```jsonc
+{
+  "vars": {
+    "AUTH_MODE": "oauth",
+    "MCP_RESOURCE_URL": "https://<worker-host>",
+    "OAUTH_ISSUER": "https://<auth-provider-domain>/",
+    "OAUTH_AUDIENCE": "https://<worker-host>",
+    "OAUTH_JWKS_URI": "https://<auth-provider-domain>/.well-known/jwks.json",
+    "OAUTH_REQUIRED_SCOPES": "aws:read"
+  }
+}
+```
+
+Keep committed `wrangler.jsonc` production-neutral if you prefer — document OAuth placeholders here and set values in the Cloudflare dashboard per environment.
 
 ### Required configuration (configure in `wrangler.jsonc` `[vars]`)
 
@@ -171,7 +200,17 @@ Expected response:
 
 ### 2. Unauthenticated MCP request
 
-The `/mcp` endpoint must reject requests without a valid bearer token:
+The `/mcp` endpoint must reject requests without valid authentication.
+
+**OAuth mode** (`AUTH_MODE=oauth`): expect `401` with a `WWW-Authenticate` header containing `resource_metadata`:
+
+```bash
+curl -i -X POST https://<worker-host>/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+**Legacy bearer mode**: expect `401` without `WWW-Authenticate`:
 
 ```bash
 curl -X POST https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp \
@@ -179,7 +218,7 @@ curl -X POST https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-Expected response (401):
+Expected response body (401):
 
 ```json
 {
@@ -202,7 +241,7 @@ curl -X POST https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp \
 
 ### 3. Authenticated MCP connection
 
-With a valid bearer token, the MCP endpoint should respond with the list of available tools:
+**Legacy bearer mode** — with a valid `MCP_AUTH_TOKEN`:
 
 ```bash
 curl -X POST https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp \
@@ -212,6 +251,8 @@ curl -X POST https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp \
 ```
 
 A successful response includes a `result` object with a `tools` array containing all registered MCP tools.
+
+**OAuth mode** — complete authentication through the ChatGPT connector UI. Do not copy OAuth access tokens into shell history. See [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
 
 ### 4. Tool smoke tests
 
@@ -232,7 +273,9 @@ To redeploy after a configuration change (e.g. updated secrets or vars), run `pn
 
 ## Security documentation contract
 
-- Sensitive runtime values (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `MCP_AUTH_TOKEN`) are configured via `wrangler secret put` outside Git.
+- Sensitive runtime values (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) are configured via `wrangler secret put` outside Git.
+- `MCP_AUTH_TOKEN` is required only in `legacy-bearer` mode.
+- OAuth production deployments use `AUTH_MODE=oauth` without `MCP_AUTH_TOKEN`.
 - `AWS_ALLOWED_REGIONS` is operational configuration, not a credential, and belongs in `wrangler.jsonc` `[vars]`.
 - The MVP is read-only. IAM permissions are explicitly scoped and do not include write or management actions.
 - Local-only env files (`.dev.vars`) and generated platform state (`.wrangler/`) must not be committed.
