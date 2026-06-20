@@ -2,7 +2,11 @@ import { AwsClient } from "aws4fetch";
 import { AwsRequestError } from "./errors.js";
 import { resolveRegions } from "../security/regions.js";
 import { parseEc2Response } from "./ec2-xml.js";
+import { buildCacheKey } from "../cache/keys.js";
+import { cacheGet, cacheSet } from "../cache/kv.js";
+import { EC2_CACHE_TTL_SECONDS } from "../security/limits.js";
 import type { AwsCredentials } from "./types.js";
+import type { KVNamespace } from "@cloudflare/workers-types";
 import {
   Ec2Error,
   VALID_INSTANCE_STATES,
@@ -154,12 +158,24 @@ export async function listInstances(
   options: Ec2ListInstancesOptions,
   allowedRegions: string[],
   credentials: AwsCredentials,
+  cache?: KVNamespace,
 ): Promise<Ec2Instance[]> {
   if (options.stateFilter && options.stateFilter.length > 0) {
     validateStateFilters(options.stateFilter);
   }
 
   const regions = resolveRegions(options.regions, allowedRegions);
+  const sortedRegions = [...regions].sort();
+  const sortedStateFilter = options.stateFilter?.slice().sort() ?? [];
+
+  if (cache) {
+    const cacheKey = await buildCacheKey("list_ec2_instances", {
+      regions: sortedRegions,
+      stateFilter: sortedStateFilter,
+    });
+    const cached = await cacheGet<Ec2Instance[]>(cache, cacheKey);
+    if (cached) return cached;
+  }
 
   const params = buildDescribeInstancesParams(options.stateFilter ?? []);
 
@@ -214,6 +230,14 @@ export async function listInstances(
     if (regionCmp !== 0) return regionCmp;
     return a.instanceId.localeCompare(b.instanceId);
   });
+
+  if (cache) {
+    const cacheKey = await buildCacheKey("list_ec2_instances", {
+      regions: sortedRegions,
+      stateFilter: sortedStateFilter,
+    });
+    await cacheSet(cache, cacheKey, allInstances, EC2_CACHE_TTL_SECONDS);
+  }
 
   return allInstances;
 }

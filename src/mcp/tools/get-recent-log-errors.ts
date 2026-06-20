@@ -58,6 +58,7 @@ export function registerGetRecentLogErrorsTool(server: McpServer, ctx: GatewayCo
         },
         args.region,
         ctx.credentials,
+        ctx.cache,
       );
 
       const count = events.length;
