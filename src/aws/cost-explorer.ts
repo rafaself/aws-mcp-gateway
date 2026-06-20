@@ -2,14 +2,19 @@ import { awsRequest } from "./client.js";
 import type { AwsCredentials } from "./types.js";
 import type {
   CostExplorerOptions,
+  CostMetric,
   CostSummary,
   CostByServiceResult,
+  CostGranularity,
 } from "./cost-types.js";
 
-const DEFAULT_METRIC = "UnblendedCost";
+const DEFAULT_METRIC: CostMetric = "UnblendedCost";
 const DEFAULT_REGION = "us-east-1";
 const MAX_DATE_RANGE_DAYS = 90;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const SUPPORTED_GRANULARITIES = new Set<CostGranularity>(["DAILY", "MONTHLY"]);
+const SUPPORTED_METRICS = new Set<CostMetric>(["UnblendedCost", "AmortizedCost"]);
 
 export class CostExplorerError extends Error {
   public readonly code: string;
@@ -82,6 +87,24 @@ function validateCostDates(startDate: string, endDate: string): void {
   }
 }
 
+function validateGranularity(granularity: string): void {
+  if (!SUPPORTED_GRANULARITIES.has(granularity as CostGranularity)) {
+    throw new CostExplorerError(
+      "unsupported_granularity",
+      "Unsupported Cost Explorer granularity.",
+    );
+  }
+}
+
+function validateMetric(metric: string): void {
+  if (!SUPPORTED_METRICS.has(metric as CostMetric)) {
+    throw new CostExplorerError(
+      "unsupported_metric",
+      "Unsupported Cost Explorer metric.",
+    );
+  }
+}
+
 function buildRequest(
   startDate: string,
   endDate: string,
@@ -121,7 +144,7 @@ function getMetric(
 export async function getCostSummary(
   options: CostExplorerOptions,
   credentials: AwsCredentials,
-  region?: string,
+  signingRegion = DEFAULT_REGION,
 ): Promise<CostSummary> {
   const {
     startDate,
@@ -131,15 +154,15 @@ export async function getCostSummary(
   } = options;
 
   validateCostDates(startDate, endDate);
-
-  const resolvedRegion = region ?? DEFAULT_REGION;
+  validateGranularity(granularity);
+  validateMetric(metric);
 
   const body = buildRequest(startDate, endDate, granularity, metric);
 
   const response = await awsRequest<CeResponse>(
     {
       service: "ce",
-      region: resolvedRegion,
+      region: signingRegion,
       method: "POST",
       path: "/",
       headers: {
@@ -173,7 +196,7 @@ export async function getCostSummary(
 export async function getCostByService(
   options: CostExplorerOptions,
   credentials: AwsCredentials,
-  region?: string,
+  signingRegion = DEFAULT_REGION,
 ): Promise<CostByServiceResult> {
   const {
     startDate,
@@ -183,8 +206,8 @@ export async function getCostByService(
   } = options;
 
   validateCostDates(startDate, endDate);
-
-  const resolvedRegion = region ?? DEFAULT_REGION;
+  validateGranularity(granularity);
+  validateMetric(metric);
 
   const body = buildRequest(startDate, endDate, granularity, metric, [
     { Type: "DIMENSION", Key: "SERVICE" },
@@ -193,7 +216,7 @@ export async function getCostByService(
   const response = await awsRequest<CeResponse>(
     {
       service: "ce",
-      region: resolvedRegion,
+      region: signingRegion,
       method: "POST",
       path: "/",
       headers: {

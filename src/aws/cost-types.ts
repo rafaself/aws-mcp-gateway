@@ -1,8 +1,11 @@
+export type CostGranularity = "DAILY" | "MONTHLY";
+export type CostMetric = "UnblendedCost" | "AmortizedCost";
+
 export interface CostExplorerOptions {
   startDate: string;
   endDate: string;
-  granularity?: "DAILY" | "MONTHLY";
-  metric?: string;
+  granularity?: CostGranularity;
+  metric?: CostMetric;
 }
 
 export interface CostSummary {

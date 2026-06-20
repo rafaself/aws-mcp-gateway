@@ -148,6 +148,42 @@ describe("getCostSummary", () => {
     expect(result.total).toBe(50);
   });
 
+  it("rejects unsupported metrics before AWS call", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
+    );
+
+    const err = await getCostSummary(
+      {
+        startDate: "2025-01-01",
+        endDate: "2025-02-01",
+        metric: "BlendedCost" as never,
+      },
+      credentials,
+    ).catch((e) => e);
+
+    expect(err).toMatchObject({ code: "unsupported_metric" });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects unsupported granularity before AWS call", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
+    );
+
+    const err = await getCostSummary(
+      {
+        startDate: "2025-01-01",
+        endDate: "2025-02-01",
+        granularity: "HOURLY" as never,
+      },
+      credentials,
+    ).catch((e) => e);
+
+    expect(err).toMatchObject({ code: "unsupported_granularity" });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
   it("throws CostExplorerError for invalid date format", async () => {
     await expect(
       getCostSummary(
@@ -199,7 +235,25 @@ describe("getCostSummary", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("uses provided region for the AWS client", async () => {
+  it("uses us-east-1 as the default Cost Explorer signing region", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
+    );
+
+    await getCostSummary(
+      { startDate: "2025-01-01", endDate: "2025-02-01" },
+      credentials,
+    );
+
+    expect(awsClientConstructors[0]).toEqual(
+      expect.objectContaining({
+        service: "ce",
+        region: "us-east-1",
+      }),
+    );
+  });
+
+  it("accepts explicit signing region override", async () => {
     mockFetch.mockResolvedValue(
       ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
     );
@@ -214,24 +268,6 @@ describe("getCostSummary", () => {
       expect.objectContaining({
         service: "ce",
         region: "eu-west-1",
-      }),
-    );
-  });
-
-  it("defaults to us-east-1 region when not provided", async () => {
-    mockFetch.mockResolvedValue(
-      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
-    );
-
-    await getCostSummary(
-      { startDate: "2025-01-01", endDate: "2025-02-01" },
-      credentials,
-    );
-
-    expect(awsClientConstructors[0]).toEqual(
-      expect.objectContaining({
-        service: "ce",
-        region: "us-east-1",
       }),
     );
   });
@@ -312,6 +348,42 @@ describe("getCostByService", () => {
       service: "Amazon S3",
       amount: 50,
     });
+  });
+
+  it("rejects unsupported metrics before AWS call", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayWithGroups("2025-01-01", "2025-02-01", "10.00", [])]),
+    );
+
+    const err = await getCostByService(
+      {
+        startDate: "2025-01-01",
+        endDate: "2025-02-01",
+        metric: "BlendedCost" as never,
+      },
+      credentials,
+    ).catch((e) => e);
+
+    expect(err).toMatchObject({ code: "unsupported_metric" });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects unsupported granularity before AWS call", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayWithGroups("2025-01-01", "2025-02-01", "10.00", [])]),
+    );
+
+    const err = await getCostByService(
+      {
+        startDate: "2025-01-01",
+        endDate: "2025-02-01",
+        granularity: "HOURLY" as never,
+      },
+      credentials,
+    ).catch((e) => e);
+
+    expect(err).toMatchObject({ code: "unsupported_granularity" });
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it("aggregates service costs across multiple time periods", async () => {
