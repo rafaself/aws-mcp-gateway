@@ -68,8 +68,10 @@ export async function filterLogEvents(
   cache?: KVNamespace,
 ): Promise<LogEvent[]> {
   const now = Date.now();
-  const startTime = options.startTime ?? now - LOGS_MAX_HOURS * 60 * 60 * 1000;
-  const endTime = options.endTime ?? now;
+  const cacheBucketMs = LOGS_CACHE_TTL_SECONDS * 1000;
+  const bucketedNow = Math.floor(now / cacheBucketMs) * cacheBucketMs;
+  const endTime = options.endTime ?? bucketedNow;
+  const startTime = options.startTime ?? endTime - LOGS_MAX_HOURS * 60 * 60 * 1000;
   const limit = options.limit ?? LOGS_MAX_EVENTS;
   const filterPattern = options.filterPattern ?? DEFAULT_FILTER_PATTERN;
 

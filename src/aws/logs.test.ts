@@ -506,4 +506,16 @@ describe("filterLogEvents with cache", () => {
     expect(result).toHaveLength(1);
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
+
+  it("reuses cache for default recent log window within the TTL bucket", async () => {
+    vi.setSystemTime(new Date("2026-06-19T12:01:30.000Z"));
+
+    const cache = createMockKv();
+    mockFetch.mockResolvedValue(logsFilterEventsResponse([makeEvent()]));
+
+    await filterLogEvents("/aws/lambda/example", {}, "us-east-1", credentials, cache as never);
+    await filterLogEvents("/aws/lambda/example", {}, "us-east-1", credentials, cache as never);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
 });
