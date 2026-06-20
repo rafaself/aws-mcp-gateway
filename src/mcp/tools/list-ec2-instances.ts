@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GatewayContext } from "../context.js";
 import { listInstances } from "../../aws/ec2.js";
+import { summarizeRegionListInput } from "../../audit/tool-input.js";
 import { safeMcpHandler } from "./response.js";
 
 export function registerListEc2InstancesTool(server: McpServer, ctx: GatewayContext): void {
@@ -33,10 +34,7 @@ export function registerListEc2InstancesTool(server: McpServer, ctx: GatewayCont
       {
         toolName: "list_ec2_instances",
         awsService: "ec2",
-        sanitizeInput: (args) => ({
-          regionCount: args.regions?.length ?? "all",
-          stateFilter: args.states,
-        }),
+        sanitizeInput: (args) => summarizeRegionListInput(args),
       },
       async (args) => {
       const instances = await listInstances(

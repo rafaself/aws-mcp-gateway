@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GatewayContext } from "../context.js";
 import { getCostSummary } from "../../aws/cost-explorer/index.js";
+import { summarizeCostDateRangeInput } from "../../audit/tool-input.js";
 import { safeMcpHandler } from "./response.js";
 
 export function registerCostSummaryTool(server: McpServer, ctx: GatewayContext): void {
@@ -29,10 +30,7 @@ export function registerCostSummaryTool(server: McpServer, ctx: GatewayContext):
         toolName: "get_aws_cost_summary",
         awsService: "ce",
         getRegion: () => ctx.region,
-        sanitizeInput: (args) => ({
-          hasDateRange: true,
-          granularity: args.granularity,
-        }),
+        sanitizeInput: (args) => summarizeCostDateRangeInput(args),
       },
       async (args) => {
       const result = await getCostSummary(

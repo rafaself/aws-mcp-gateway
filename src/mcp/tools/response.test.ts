@@ -164,4 +164,44 @@ describe("safeMcpHandler", () => {
     const event = JSON.parse(log.mock.calls[0][0]);
     expect(event.input).toBeUndefined();
   });
+
+  it("still returns the tool result when audit sanitization throws", async () => {
+    const handler = safeMcpHandler(
+      {
+        toolName: "my_tool",
+        sanitizeInput: () => {
+          throw new Error("audit failed");
+        },
+      },
+      async () => ({
+        content: [{ type: "text" as const, text: "ok" }],
+      }),
+    );
+
+    await expect(handler({})).resolves.toEqual({
+      content: [{ type: "text", text: "ok" }],
+    });
+  });
+
+  it("still returns controlled MCP error when audit emission fails", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => {
+      throw new Error("console failed");
+    });
+
+    const handler = safeMcpHandler(
+      { toolName: "my_tool" },
+      async () => {
+        throw new GatewayError("validation_error", "Invalid input.");
+      },
+    );
+
+    const result = await handler({});
+
+    expect(result).toMatchObject({
+      isError: true,
+      structuredContent: {
+        error: { code: "validation_error", retryable: false },
+      },
+    });
+  });
 });

@@ -5,6 +5,7 @@ import { filterLogEvents } from "../../aws/logs.js";
 import { LogsError } from "../../aws/logs-types.js";
 import { LOGS_MAX_HOURS, LOGS_MAX_EVENTS } from "../../security/limits.js";
 import { validateRegion } from "../../security/regions.js";
+import { summarizeLogErrorsInput } from "../../audit/tool-input.js";
 import { safeMcpHandler } from "./response.js";
 
 export function registerGetRecentLogErrorsTool(server: McpServer, ctx: GatewayContext): void {
@@ -40,11 +41,7 @@ export function registerGetRecentLogErrorsTool(server: McpServer, ctx: GatewayCo
         toolName: "get_recent_log_errors",
         awsService: "logs",
         getRegion: (args) => args.region,
-        sanitizeInput: (args) => ({
-          hasLogGroupName: true,
-          hours: args.hours,
-          limit: args.limit,
-        }),
+        sanitizeInput: (args) => summarizeLogErrorsInput(args),
       },
       async (args) => {
       validateRegion(args.region, ctx.allowedRegions);
