@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getCostSummary, getCostByService, CostExplorerError } from "./cost-explorer.js";
+import { ValidationError } from "../security/errors.js";
 import type { AwsCredentials } from "./types.js";
 
 const { mockFetch, awsClientConstructors } = vi.hoisted(() => {
@@ -184,13 +185,13 @@ describe("getCostSummary", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("throws CostExplorerError for invalid date format", async () => {
+  it("throws ValidationError for invalid date format", async () => {
     await expect(
       getCostSummary(
         { startDate: "01-01-2025", endDate: "2025-02-01" },
         credentials,
       ),
-    ).rejects.toThrow(CostExplorerError);
+    ).rejects.toThrow(ValidationError);
   });
 
   it("rejects invalid calendar dates like 2025-02-30 (Feb 30 does not exist)", async () => {
@@ -199,25 +200,25 @@ describe("getCostSummary", () => {
         { startDate: "2025-02-30", endDate: "2025-03-01" },
         credentials,
       ),
-    ).rejects.toThrow(CostExplorerError);
+    ).rejects.toThrow(ValidationError);
   });
 
-  it("throws CostExplorerError when startDate >= endDate", async () => {
+  it("throws ValidationError when startDate >= endDate", async () => {
     await expect(
       getCostSummary(
         { startDate: "2025-02-01", endDate: "2025-01-01" },
         credentials,
       ),
-    ).rejects.toThrow(CostExplorerError);
+    ).rejects.toThrow(ValidationError);
   });
 
-  it("throws CostExplorerError when date range exceeds 90 days", async () => {
+  it("throws ValidationError when date range exceeds 90 days", async () => {
     await expect(
       getCostSummary(
         { startDate: "2025-01-01", endDate: "2025-05-01" },
         credentials,
       ),
-    ).rejects.toThrow(CostExplorerError);
+    ).rejects.toThrow(ValidationError);
   });
 
   it("does not call AWS when date validation fails", async () => {
@@ -230,7 +231,7 @@ describe("getCostSummary", () => {
         { startDate: "invalid", endDate: "2025-02-01" },
         credentials,
       ),
-    ).rejects.toThrow(CostExplorerError);
+    ).rejects.toThrow(ValidationError);
 
     expect(mockFetch).not.toHaveBeenCalled();
   });
@@ -314,6 +315,34 @@ describe("getCostSummary", () => {
     expect(calledInit.headers["Content-Type"]).toBe(
       "application/x-amz-json-1.1",
     );
+  });
+
+  it("rejects future startDate before AWS call", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayTotal("2030-01-01", "2030-02-01", "10.00")]),
+    );
+
+    const err = await getCostSummary(
+      { startDate: "2030-01-01", endDate: "2030-02-01" },
+      credentials,
+    ).catch((e) => e);
+
+    expect(err).toMatchObject({ code: "future_date" });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects future endDate before AWS call", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayTotal("2025-01-01", "2030-02-01", "10.00")]),
+    );
+
+    const err = await getCostSummary(
+      { startDate: "2025-01-01", endDate: "2030-02-01" },
+      credentials,
+    ).catch((e) => e);
+
+    expect(err).toMatchObject({ code: "future_date" });
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });
 
@@ -457,7 +486,7 @@ describe("getCostByService", () => {
     expect(result.services).toEqual([]);
   });
 
-  it("throws CostExplorerError for invalid dates before API call", async () => {
+  it("throws ValidationError for invalid dates before API call", async () => {
     mockFetch.mockResolvedValue(
       ceResponse([makeDayWithGroups("2025-01-01", "2025-02-01", "10.00", [])]),
     );
@@ -467,7 +496,7 @@ describe("getCostByService", () => {
         { startDate: "invalid", endDate: "2025-02-01" },
         credentials,
       ),
-    ).rejects.toThrow(CostExplorerError);
+    ).rejects.toThrow(ValidationError);
 
     expect(mockFetch).not.toHaveBeenCalled();
   });

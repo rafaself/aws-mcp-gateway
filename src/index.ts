@@ -3,6 +3,7 @@ import { createServer } from "./mcp/server.js";
 import type { GatewayContext } from "./mcp/tools.js";
 import { authenticateRequest } from "./auth.js";
 import { validateEnv, envErrorResponse } from "./env.js";
+import { parseRegions } from "./security/regions.js";
 
 function buildGatewayContext(env: unknown): GatewayContext {
   const bindings = env as Record<string, string | undefined>;
@@ -12,10 +13,7 @@ function buildGatewayContext(env: unknown): GatewayContext {
       secretAccessKey: bindings.AWS_SECRET_ACCESS_KEY ?? "",
     },
     region: bindings.AWS_REGION ?? "us-east-1",
-    allowedRegions: (bindings.AWS_ALLOWED_REGIONS ?? "us-east-1")
-      .split(",")
-      .map((r) => r.trim())
-      .filter(Boolean),
+    allowedRegions: parseRegions(bindings.AWS_ALLOWED_REGIONS ?? "us-east-1"),
   };
 }
 

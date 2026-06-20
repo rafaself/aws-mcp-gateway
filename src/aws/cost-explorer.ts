@@ -7,22 +7,37 @@ import type {
   CostByServiceResult,
   CostGranularity,
 } from "./cost-types.js";
+import { ValidationError } from "../security/errors.js";
+import { validateCostDates } from "../security/validation.js";
 
 const DEFAULT_METRIC: CostMetric = "UnblendedCost";
 const DEFAULT_REGION = "us-east-1";
-const MAX_DATE_RANGE_DAYS = 90;
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 const SUPPORTED_GRANULARITIES = new Set<CostGranularity>(["DAILY", "MONTHLY"]);
 const SUPPORTED_METRICS = new Set<CostMetric>(["UnblendedCost", "AmortizedCost"]);
 
-export class CostExplorerError extends Error {
-  public readonly code: string;
-
+export class CostExplorerError extends ValidationError {
   constructor(code: string, message: string) {
-    super(message);
+    super(code, message);
     this.name = "CostExplorerError";
-    this.code = code;
+  }
+}
+
+function validateGranularity(granularity: string): void {
+  if (!SUPPORTED_GRANULARITIES.has(granularity as CostGranularity)) {
+    throw new CostExplorerError(
+      "unsupported_granularity",
+      "Unsupported Cost Explorer granularity.",
+    );
+  }
+}
+
+function validateMetric(metric: string): void {
+  if (!SUPPORTED_METRICS.has(metric as CostMetric)) {
+    throw new CostExplorerError(
+      "unsupported_metric",
+      "Unsupported Cost Explorer metric.",
+    );
   }
 }
 
@@ -44,65 +59,6 @@ interface CeResultByTime {
 
 interface CeResponse {
   ResultsByTime?: CeResultByTime[];
-}
-
-function parseIsoDate(value: string): Date {
-  if (!DATE_REGEX.test(value)) {
-    throw new CostExplorerError(
-      "invalid_date_format",
-      "Dates must be in YYYY-MM-DD format.",
-    );
-  }
-
-  const date = new Date(`${value}T00:00:00Z`);
-
-  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
-    throw new CostExplorerError(
-      "invalid_date",
-      "Dates must be valid calendar dates.",
-    );
-  }
-
-  return date;
-}
-
-function validateCostDates(startDate: string, endDate: string): void {
-  const start = parseIsoDate(startDate);
-  const end = parseIsoDate(endDate);
-
-  if (start >= end) {
-    throw new CostExplorerError(
-      "invalid_date_range",
-      "startDate must be before endDate.",
-    );
-  }
-
-  const diffMs = end.getTime() - start.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  if (diffDays > MAX_DATE_RANGE_DAYS) {
-    throw new CostExplorerError(
-      "date_range_exceeded",
-      "Date range must not exceed 90 days.",
-    );
-  }
-}
-
-function validateGranularity(granularity: string): void {
-  if (!SUPPORTED_GRANULARITIES.has(granularity as CostGranularity)) {
-    throw new CostExplorerError(
-      "unsupported_granularity",
-      "Unsupported Cost Explorer granularity.",
-    );
-  }
-}
-
-function validateMetric(metric: string): void {
-  if (!SUPPORTED_METRICS.has(metric as CostMetric)) {
-    throw new CostExplorerError(
-      "unsupported_metric",
-      "Unsupported Cost Explorer metric.",
-    );
-  }
 }
 
 function buildRequest(

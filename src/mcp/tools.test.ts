@@ -270,4 +270,20 @@ describe("registerCostTools", () => {
 
     expect(mockFetch).not.toHaveBeenCalled();
   });
+
+  it("does not call AWS when future date is used", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayTotal("2030-01-01", "2030-02-01", "10.00")]),
+    );
+
+    const mock = makeMockServerWithCapture();
+    registerCostTools(mock.server, testContext);
+    await mock.capturedHandler!({
+      startDate: "2030-01-01",
+      endDate: "2030-02-01",
+      granularity: "MONTHLY",
+    });
+
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 });
