@@ -78,6 +78,10 @@ get_cloudwatch_alarms
 get_recent_log_errors
 ```
 
+See [docs/mcp-tools.md](docs/mcp-tools.md) for the full input and output contract
+for each tool, including validation limits, cache behavior, error codes, and
+structured content shapes.
+
 Future read-only tools:
 
 ```text
