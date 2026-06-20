@@ -84,10 +84,8 @@ The canonical read-only policy template is [`infra/aws/iam-readonly-policy.json`
 
 ## MCP authentication checklist
 
-- [ ] `/mcp` rejects requests with a missing `Authorization` header before creating an MCP server instance.
-- [ ] `/mcp` rejects requests whose `Authorization` header is not `Bearer <token>`.
-- [ ] `/mcp` rejects requests whose bearer token does not match `MCP_AUTH_TOKEN`.
-- [ ] Successful authentication returns `null` from `authenticateRequest`; failures return HTTP 401 with the normalized error contract (`code: unauthorized`).
+- [ ] With valid runtime configuration, `/mcp` rejects missing or invalid authentication with HTTP 401 before creating an MCP server instance.
+- [ ] Unauthorized failures return the normalized error contract (`code: unauthorized`).
 - [ ] `/health` responds without authentication and returns only `{ ok, service }` — no credentials, tokens, region config, cache state, or AWS metadata.
 - [ ] Configuration errors on `/mcp` do not expose missing binding names to unauthenticated callers.
 
@@ -178,7 +176,7 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 - [ ] IAM policy attached to the gateway principal matches [`infra/aws/iam-readonly-policy.json`](infra/aws/iam-readonly-policy.json) (or a narrower custom variant).
 - [ ] `pnpm run typecheck`, `pnpm test`, and `pnpm run test:integrity` pass on the commit being deployed.
 - [ ] `GET /health` returns `{ "ok": true, "service": "aws-mcp-gateway" }` without authentication.
-- [ ] `POST /mcp` without a bearer token returns HTTP 401.
+- [ ] With valid runtime configuration, `POST /mcp` without a bearer token returns HTTP 401.
 - [ ] `POST /mcp` with a valid bearer token completes the MCP handshake (see [docs/mcp-testing.md](docs/mcp-testing.md)).
 - [ ] A smoke test confirms at least one AWS-backed tool returns normalized output in an allowed region.
 
@@ -186,12 +184,16 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 
 ## Post-MVP boundary reminder
 
-The following are **not** part of the current MVP guarantee. They require a separate issue, spec, and security review before implementation:
+The following post-MVP capabilities require a separate issue, spec, and security review before implementation:
 
 - Write or management AWS operations (start/stop instances, modify alarms, etc.).
 - OAuth or multi-user authorization replacing the single shared bearer token.
-- Generic AWS CLI execution or arbitrary AWS API proxying — permanently forbidden.
 - Broader read-only inventory tools (RDS, Lambda, budgets) — allowed only as explicit new tools with IAM and contract updates.
+
+The following patterns remain permanently forbidden and must not be routed through the post-MVP process:
+
+- Generic AWS CLI execution.
+- Arbitrary AWS API proxying.
 
 See [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md) for acceptance expectations before any post-MVP work begins.
 
