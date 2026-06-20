@@ -5,6 +5,7 @@ import { registerCostSummaryTool } from "./cost-summary.js";
 import { registerCostByServiceTool } from "./cost-by-service.js";
 import { registerListEc2InstancesTool } from "./list-ec2-instances.js";
 import { registerGetCloudwatchAlarmsTool } from "./get-cloudwatch-alarms.js";
+import { registerGetRecentLogErrorsTool } from "./get-recent-log-errors.js";
 
 export function registerTools(server: McpServer, ctx: GatewayContext): void {
   registerStatusTool(server);
@@ -12,4 +13,5 @@ export function registerTools(server: McpServer, ctx: GatewayContext): void {
   registerCostByServiceTool(server, ctx);
   registerListEc2InstancesTool(server, ctx);
   registerGetCloudwatchAlarmsTool(server, ctx);
+  registerGetRecentLogErrorsTool(server, ctx);
 }

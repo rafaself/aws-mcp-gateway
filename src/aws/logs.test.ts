@@ -338,4 +338,66 @@ describe("filterLogEvents", () => {
 
     expect(result).toHaveLength(50);
   });
+
+  it("uses custom limit when provided", async () => {
+    const manyEvents = Array.from({ length: 10 }, (_, i) =>
+      makeEvent({ logStreamName: `stream-${i}`, message: `Event ${i}` }),
+    );
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(logsFilterEventsResponse(manyEvents)),
+    );
+
+    const result = await filterLogEvents(
+      "/aws/lambda/example",
+      { limit: 3 },
+      "us-east-1",
+      credentials,
+    );
+
+    expect(result).toHaveLength(3);
+  });
+
+  it("sends custom limit in request body", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(logsFilterEventsResponse([])),
+    );
+
+    await filterLogEvents(
+      "/aws/lambda/example",
+      { limit: 10 },
+      "us-east-1",
+      credentials,
+    );
+
+    const body = JSON.parse(
+      (mockFetch.mock.calls[0][1] as { body?: string }).body ?? "{}",
+    );
+    expect(body.limit).toBe(10);
+  });
+
+  it("rejects limit below 1", async () => {
+    await expect(
+      filterLogEvents(
+        "/aws/lambda/example",
+        { limit: 0 },
+        "us-east-1",
+        credentials,
+      ),
+    ).rejects.toThrow(LogsError);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects limit above 50", async () => {
+    await expect(
+      filterLogEvents(
+        "/aws/lambda/example",
+        { limit: 51 },
+        "us-east-1",
+        credentials,
+      ),
+    ).rejects.toThrow(LogsError);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 });

@@ -9,6 +9,7 @@ function validateLogOptions(
   logGroupName: string,
   startTime: number,
   endTime: number,
+  limit: number,
 ): void {
   if (!logGroupName || logGroupName.trim().length === 0) {
     throw new LogsError("missing_log_group", "logGroupName is required.");
@@ -24,6 +25,17 @@ function validateLogOptions(
     throw new LogsError(
       "time_range_exceeded",
       `Time range must not exceed ${LOGS_MAX_HOURS} hours.`,
+    );
+  }
+
+  if (limit < 1) {
+    throw new LogsError("invalid_limit", "limit must be at least 1.");
+  }
+
+  if (limit > LOGS_MAX_EVENTS) {
+    throw new LogsError(
+      "limit_exceeded",
+      `limit must not exceed ${LOGS_MAX_EVENTS}.`,
     );
   }
 }
@@ -46,6 +58,7 @@ export async function filterLogEvents(
     filterPattern?: string;
     startTime?: number;
     endTime?: number;
+    limit?: number;
   },
   region: string,
   credentials: AwsCredentials,
@@ -53,15 +66,16 @@ export async function filterLogEvents(
   const now = Date.now();
   const startTime = options.startTime ?? now - LOGS_MAX_HOURS * 60 * 60 * 1000;
   const endTime = options.endTime ?? now;
+  const limit = options.limit ?? LOGS_MAX_EVENTS;
 
-  validateLogOptions(logGroupName, startTime, endTime);
+  validateLogOptions(logGroupName, startTime, endTime, limit);
 
   const body: Record<string, unknown> = {
     logGroupName,
     filterPattern: options.filterPattern ?? DEFAULT_FILTER_PATTERN,
     startTime,
     endTime,
-    limit: LOGS_MAX_EVENTS,
+    limit,
   };
 
   const response = await awsRequest<FilterLogEventsResponse>(
@@ -81,7 +95,7 @@ export async function filterLogEvents(
 
   const rawEvents = response.events ?? [];
 
-  return rawEvents.slice(0, LOGS_MAX_EVENTS).map((raw) => ({
+  return rawEvents.slice(0, limit).map((raw) => ({
     logGroupName,
     logStreamName: raw.logStreamName ?? "",
     timestamp: normalizeTimestamp(raw.timestamp),
