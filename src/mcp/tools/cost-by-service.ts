@@ -4,12 +4,14 @@ import type { GatewayContext } from "../../config/context.js";
 import { getCostByService } from "../../aws/cost-explorer/index.js";
 import { summarizeCostDateRangeInput } from "../audit/tool-input.js";
 import { safeMcpHandler } from "./response.js";
+import { costByServiceOutputSchema, readOnlyAwsToolDescriptor } from "./descriptor.js";
 
 export function registerCostByServiceTool(server: McpServer, ctx: GatewayContext): void {
   server.registerTool(
     "get_aws_cost_by_service",
-    {
+    readOnlyAwsToolDescriptor({
       description: "Returns AWS costs broken down by service for a given time period via Cost Explorer.",
+      outputSchema: costByServiceOutputSchema,
       inputSchema: z.object({
         startDate: z
           .string()
@@ -31,7 +33,7 @@ export function registerCostByServiceTool(server: McpServer, ctx: GatewayContext
           .default(10)
           .describe("Maximum number of services to return (max 25)."),
       }),
-    },
+    }),
     safeMcpHandler(
       {
         toolName: "get_aws_cost_by_service",

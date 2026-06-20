@@ -4,12 +4,14 @@ import type { GatewayContext } from "../../config/context.js";
 import { listInstances, VALID_INSTANCE_STATES, type Ec2InstanceState } from "../../aws/ec2/index.js";
 import { summarizeRegionListInput } from "../audit/tool-input.js";
 import { safeMcpHandler } from "./response.js";
+import { listEc2InstancesOutputSchema, readOnlyAwsToolDescriptor } from "./descriptor.js";
 
 export function registerListEc2InstancesTool(server: McpServer, ctx: GatewayContext): void {
   server.registerTool(
     "list_ec2_instances",
-    {
+    readOnlyAwsToolDescriptor({
       description: "Lists EC2 instances across regions with optional state and region filtering.",
+      outputSchema: listEc2InstancesOutputSchema,
       inputSchema: z.object({
         regions: z
           .array(z.string())
@@ -22,7 +24,7 @@ export function registerListEc2InstancesTool(server: McpServer, ctx: GatewayCont
           .optional()
           .describe("Filter by instance states."),
       }),
-    },
+    }),
     safeMcpHandler(
       {
         toolName: "list_ec2_instances",

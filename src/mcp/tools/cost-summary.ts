@@ -4,12 +4,14 @@ import type { GatewayContext } from "../../config/context.js";
 import { getCostSummary } from "../../aws/cost-explorer/index.js";
 import { summarizeCostDateRangeInput } from "../audit/tool-input.js";
 import { safeMcpHandler } from "./response.js";
+import { costSummaryOutputSchema, readOnlyAwsToolDescriptor } from "./descriptor.js";
 
 export function registerCostSummaryTool(server: McpServer, ctx: GatewayContext): void {
   server.registerTool(
     "get_aws_cost_summary",
-    {
+    readOnlyAwsToolDescriptor({
       description: "Returns the total AWS cost for a given time period via Cost Explorer.",
+      outputSchema: costSummaryOutputSchema,
       inputSchema: z.object({
         startDate: z
           .string()
@@ -24,7 +26,7 @@ export function registerCostSummaryTool(server: McpServer, ctx: GatewayContext):
           .default("MONTHLY")
           .describe("Time granularity for the cost data."),
       }),
-    },
+    }),
     safeMcpHandler(
       {
         toolName: "get_aws_cost_summary",
