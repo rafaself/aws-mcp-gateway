@@ -20,7 +20,7 @@ export default {
 
       if (authResponse) return authResponse;
 
-      const gatewayCtx = buildGatewayContext(env);
+      const gatewayCtx = buildGatewayContext(envResult.config);
       const server = createServer(gatewayCtx);
       return createMcpHandler(server)(request, env, ctx);
     }
