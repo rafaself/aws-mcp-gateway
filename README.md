@@ -261,6 +261,37 @@ Never commit:
 7. Add CI, tests and security documentation.
 8. Design future management mode without changing the MVP read-only security boundary.
 
+## Testing
+
+Unit tests run via Vitest and are **offline by default**.
+
+```bash
+pnpm test
+```
+
+A global fetch guard in `src/test/setup.ts` replaces `globalThis.fetch` with a function that throws on any unmocked network request. This ensures tests are deterministic and never depend on external services.
+
+### Mocking external calls
+
+Use `vi.mock()` to stub modules that make HTTP requests. AWS client tests mock `aws4fetch` at the module level:
+
+```typescript
+vi.mock("aws4fetch", () => ({
+  AwsClient: class {
+    fetch = mockFetch;
+    // ...
+  },
+}));
+```
+
+Shared test fixtures (`ceResponse`, `makeDayTotal`, `makeDayWithGroups`) are available in `src/test/fixtures.ts`.
+
+### Rules
+
+- Every unit test must pass without a network connection.
+- Do not remove or bypass the fetch guard in unit tests.
+- Integration tests (if added) must live in a separate directory with their own Vitest configuration.
+
 ## Commit convention
 
 Use conventional commits:

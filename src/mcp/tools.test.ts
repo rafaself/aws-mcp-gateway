@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerDiagnosticTools, registerCostTools, type GatewayContext } from "./tools.js";
+import { ceResponse, makeDayTotal, makeDayWithGroups } from "../test/fixtures.js";
 
 const { mockFetch } = vi.hoisted(() => {
   return { mockFetch: vi.fn() };
@@ -72,26 +73,6 @@ function makeMockServerWithCapture(): {
     get capturedConfig() { return config; },
     get capturedHandler() { return handler; },
     getTool(name: string) { return tools.find((t) => t.name === name); },
-  };
-}
-
-function ceResponse(resultsByTime: Array<Record<string, unknown>>) {
-  return new Response(JSON.stringify({ ResultsByTime: resultsByTime }), {
-    status: 200,
-    headers: { "content-type": "application/x-amz-json-1.1" },
-  });
-}
-
-function makeDayTotal(
-  start: string,
-  end: string,
-  amount: string,
-  unit = "USD",
-  metric = "UnblendedCost",
-) {
-  return {
-    TimePeriod: { Start: start, End: end },
-    Total: { [metric]: { Amount: amount, Unit: unit } },
   };
 }
 
@@ -318,24 +299,6 @@ describe("registerCostTools", () => {
 });
 
 describe("registerCostTools - get_aws_cost_by_service", () => {
-  function makeDayWithGroups(
-    start: string,
-    end: string,
-    totalAmount: string,
-    groups: Array<{ key: string; amount: string }>,
-    unit = "USD",
-    metric = "UnblendedCost",
-  ) {
-    return {
-      TimePeriod: { Start: start, End: end },
-      Total: { [metric]: { Amount: totalAmount, Unit: unit } },
-      Groups: groups.map((g) => ({
-        Keys: [g.key],
-        Metrics: { [metric]: { Amount: g.amount, Unit: unit } },
-      })),
-    };
-  }
-
   it("registers get_aws_cost_by_service tool", () => {
     const mock = makeMockServerWithCapture();
 
