@@ -29,7 +29,16 @@ export function registerListEc2InstancesTool(server: McpServer, ctx: GatewayCont
           .describe("Filter by instance states."),
       }),
     },
-    safeMcpHandler(async (args) => {
+    safeMcpHandler(
+      {
+        toolName: "list_ec2_instances",
+        awsService: "ec2",
+        sanitizeInput: (args) => ({
+          regionCount: args.regions?.length ?? "all",
+          stateFilter: args.states,
+        }),
+      },
+      async (args) => {
       const instances = await listInstances(
         {
           regions: args.regions,

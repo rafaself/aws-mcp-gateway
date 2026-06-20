@@ -22,7 +22,16 @@ export function registerGetCloudwatchAlarmsTool(server: McpServer, ctx: GatewayC
           .describe("Filter by alarm states."),
       }),
     },
-    safeMcpHandler(async (args) => {
+    safeMcpHandler(
+      {
+        toolName: "get_cloudwatch_alarms",
+        awsService: "monitoring",
+        sanitizeInput: (args) => ({
+          regionCount: args.regions?.length ?? "all",
+          stateFilter: args.states,
+        }),
+      },
+      async (args) => {
       const queriedRegions = resolveRegions(args.regions, ctx.allowedRegions);
 
       const alarms = await listAlarms(

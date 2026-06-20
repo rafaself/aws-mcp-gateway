@@ -24,7 +24,17 @@ export function registerCostSummaryTool(server: McpServer, ctx: GatewayContext):
           .describe("Time granularity for the cost data."),
       }),
     },
-    safeMcpHandler(async (args) => {
+    safeMcpHandler(
+      {
+        toolName: "get_aws_cost_summary",
+        awsService: "ce",
+        getRegion: () => ctx.region,
+        sanitizeInput: (args) => ({
+          hasDateRange: true,
+          granularity: args.granularity,
+        }),
+      },
+      async (args) => {
       const result = await getCostSummary(
         {
           startDate: args.startDate,
