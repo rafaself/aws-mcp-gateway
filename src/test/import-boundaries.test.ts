@@ -6,6 +6,9 @@ const sourceModules = import.meta.glob("../**/*.ts", {
   eager: true,
 }) as Record<string, string>;
 
+const MCP_IMPORT = /from ['"].*(?:\/mcp\/|\.\.\/mcp(?:\/|['"]|$))/;
+const AWS_IMPORT = /from ['"].*(?:\/aws\/|\.\.\/aws(?:\/|['"]|$))/;
+
 function productionSourcePaths(): string[] {
   return Object.keys(sourceModules)
     .map((path) => path.replace(/^\.\.\//, ""))
@@ -24,7 +27,7 @@ describe("import boundaries", () => {
   it("aws modules do not import mcp modules", () => {
     const violations = sourceFiles
       .filter((file) => file.startsWith("aws/"))
-      .filter((file) => importsFrom(sourceModules[`../${file}`], /from ['"].*\/mcp\//));
+      .filter((file) => importsFrom(sourceModules[`../${file}`], MCP_IMPORT));
 
     expect(violations).toEqual([]);
   });
@@ -32,7 +35,7 @@ describe("import boundaries", () => {
   it("security modules do not import mcp modules", () => {
     const violations = sourceFiles
       .filter((file) => file.startsWith("security/"))
-      .filter((file) => importsFrom(sourceModules[`../${file}`], /from ['"].*\/mcp\//));
+      .filter((file) => importsFrom(sourceModules[`../${file}`], MCP_IMPORT));
 
     expect(violations).toEqual([]);
   });
@@ -40,7 +43,7 @@ describe("import boundaries", () => {
   it("cache modules do not import aws client modules", () => {
     const violations = sourceFiles
       .filter((file) => file.startsWith("cache/"))
-      .filter((file) => importsFrom(sourceModules[`../${file}`], /from ['"].*\/aws\//));
+      .filter((file) => importsFrom(sourceModules[`../${file}`], AWS_IMPORT));
 
     expect(violations).toEqual([]);
   });
@@ -48,7 +51,7 @@ describe("import boundaries", () => {
   it("config modules do not import mcp modules", () => {
     const violations = sourceFiles
       .filter((file) => file.startsWith("config/"))
-      .filter((file) => importsFrom(sourceModules[`../${file}`], /from ['"].*\/mcp\//));
+      .filter((file) => importsFrom(sourceModules[`../${file}`], MCP_IMPORT));
 
     expect(violations).toEqual([]);
   });

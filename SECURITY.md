@@ -131,7 +131,7 @@ Caching is optional via the `AWS_MCP_CACHE` KV binding. See [README.md](README.m
 
 ## Audit and logging checklist
 
-Audit events are emitted from `src/audit/log.ts` and tool handlers via `safeMcpHandler`.
+Audit events are emitted from `src/mcp/audit/log.ts` and tool handlers via `safeMcpHandler`.
 
 - [ ] Successful and failed tool calls emit structured JSON audit events with tool name, outcome, and duration.
 - [ ] Audit `input` fields use sanitized summaries (for example, region counts, date-range flags) — not full raw tool arguments when sensitive.
