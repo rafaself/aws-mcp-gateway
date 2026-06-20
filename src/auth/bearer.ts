@@ -1,4 +1,4 @@
-import { GatewayError, errorResponse } from "./errors.js";
+import { GatewayError, errorResponse } from "../errors/public-error.js";
 
 function unauthorizedResponse(): Response {
   return errorResponse(

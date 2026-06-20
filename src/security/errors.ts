@@ -1,4 +1,4 @@
-import { GatewayError } from "../errors.js";
+import { GatewayError } from "../errors/public-error.js";
 
 export class ValidationError extends GatewayError {
   constructor(code: string, message: string) {

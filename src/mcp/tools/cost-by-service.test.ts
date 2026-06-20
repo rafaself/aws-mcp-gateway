@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerDiagnosticTools, registerCostTools, type GatewayContext } from "./tools.js";
-import { ceResponse, makeDayTotal, makeDayWithGroups } from "../test/fixtures.js";
+import type { GatewayContext } from "../context.js";
+import { registerCostByServiceTool } from "./cost-by-service.js";
+import { ceResponse, makeDayTotal, makeDayWithGroups } from "../../test/fixtures.js";
 
 const { mockFetch } = vi.hoisted(() => {
   return { mockFetch: vi.fn() };
@@ -41,7 +42,7 @@ interface CapturedTool {
   handler: (args: Record<string, unknown>) => Promise<unknown>;
 }
 
-function makeMockServerWithCapture(): {
+function makeMockServer(): {
   server: McpServer;
   readonly capturedName: string | undefined;
   readonly capturedConfig: unknown;
@@ -80,239 +81,17 @@ beforeEach(() => {
   mockFetch.mockReset();
 });
 
-describe("registerDiagnosticTools", () => {
-  it("registers get_gateway_status tool with handler returning static read-only gateway status", async () => {
-    let capturedName: string | undefined;
-    let capturedHandler: ((args: Record<string, unknown>) => Promise<unknown>) | undefined;
-
-    const mockServer = {
-      registerTool: (
-        name: string,
-        _config: unknown,
-        handler: (args: Record<string, unknown>) => Promise<unknown>,
-      ) => {
-        capturedName = name;
-        capturedHandler = handler;
-        return {} as ReturnType<McpServer["registerTool"]>;
-      },
-    } as McpServer;
-
-    registerDiagnosticTools(mockServer);
-
-    expect(capturedName).toBe("get_gateway_status");
-    expect(capturedHandler).toBeDefined();
-
-    const result = await capturedHandler!({}) as { content: Array<{ type: string; text: string }> };
-
-    expect(result).toEqual({
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify({
-            service: "aws-mcp-gateway",
-            status: "ok",
-            mode: "read-only",
-          }),
-        },
-      ],
-    });
-  });
-});
-
-describe("registerCostTools", () => {
-  it("registers get_aws_cost_summary tool", () => {
-    const mock = makeMockServerWithCapture();
-
-    registerCostTools(mock.server, testContext);
-
-    const tool = mock.getTool("get_aws_cost_summary");
-    expect(tool).toBeDefined();
-    expect(tool!.name).toBe("get_aws_cost_summary");
-  });
-
-  it("includes description about AWS cost", () => {
-    const mock = makeMockServerWithCapture();
-
-    registerCostTools(mock.server, testContext);
-
-    const tool = mock.getTool("get_aws_cost_summary")!;
-    const cfg = tool.config as { description?: string };
-    expect(cfg.description).toContain("AWS cost");
-  });
-
-  it("returns content and structuredContent on success", async () => {
-    mockFetch.mockResolvedValue(
-      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "42.50")]),
-    );
-
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
-
-    const tool = mock.getTool("get_aws_cost_summary")!;
-    const result = await tool.handler({
-      startDate: "2025-01-01",
-      endDate: "2025-02-01",
-      granularity: "MONTHLY",
-    }) as Record<string, unknown>;
-
-    expect(result).toHaveProperty("content");
-    expect(result).toHaveProperty("structuredContent");
-
-    const content = (result.content as Array<{ type: string; text: string }>)[0];
-    expect(content.text).toBe("AWS cost from 2025-01-01 to 2025-02-01 is 42.5 USD.");
-
-    expect(result.structuredContent).toEqual({
-      period: { startDate: "2025-01-01", endDate: "2025-02-01" },
-      granularity: "MONTHLY",
-      total: 42.5,
-      currency: "USD",
-    });
-  });
-
-  it("passes granularity from args to structuredContent", async () => {
-    mockFetch.mockResolvedValue(
-      ceResponse([makeDayTotal("2025-01-01", "2025-01-02", "10.00")]),
-    );
-
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
-    const tool = mock.getTool("get_aws_cost_summary")!;
-    const result = await tool.handler({
-      startDate: "2025-01-01",
-      endDate: "2025-01-02",
-      granularity: "DAILY",
-    }) as Record<string, unknown>;
-
-    expect((result.structuredContent as Record<string, unknown>).granularity).toBe("DAILY");
-  });
-
-  it("returns isError true with structuredContent.error when date format is invalid", async () => {
-    mockFetch.mockResolvedValue(
-      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
-    );
-
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
-    const tool = mock.getTool("get_aws_cost_summary")!;
-    const result = await tool.handler({
-      startDate: "01-01-2025",
-      endDate: "2025-02-01",
-      granularity: "MONTHLY",
-    }) as Record<string, unknown>;
-
-    expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
-      error: { code: "invalid_date_format", retryable: false },
-    });
-  });
-
-  it("returns isError true with structuredContent.error when date range exceeds 90 days", async () => {
-    mockFetch.mockResolvedValue(
-      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
-    );
-
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
-    const tool = mock.getTool("get_aws_cost_summary")!;
-    const result = await tool.handler({
-      startDate: "2025-01-01",
-      endDate: "2025-05-01",
-      granularity: "MONTHLY",
-    }) as Record<string, unknown>;
-
-    expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
-      error: { code: "date_range_exceeded", retryable: false },
-    });
-  });
-
-  it("returns isError true with structuredContent.error when startDate is after endDate", async () => {
-    mockFetch.mockResolvedValue(
-      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
-    );
-
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
-    const tool = mock.getTool("get_aws_cost_summary")!;
-    const result = await tool.handler({
-      startDate: "2025-02-01",
-      endDate: "2025-01-01",
-      granularity: "MONTHLY",
-    }) as Record<string, unknown>;
-
-    expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
-      error: { code: "invalid_date_range", retryable: false },
-    });
-  });
-
-  it("calls AWS via getCostSummary passed credentials", async () => {
-    mockFetch.mockResolvedValue(
-      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "100.00")]),
-    );
-
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
-    const tool = mock.getTool("get_aws_cost_summary")!;
-    await tool.handler({
-      startDate: "2025-01-01",
-      endDate: "2025-02-01",
-      granularity: "DAILY",
-    });
-
-    expect(mockFetch).toHaveBeenCalled();
-  });
-
-  it("does not call AWS when date format is invalid", async () => {
-    mockFetch.mockResolvedValue(
-      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
-    );
-
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
-    const tool = mock.getTool("get_aws_cost_summary")!;
-    await tool.handler({
-      startDate: "invalid",
-      endDate: "2025-02-01",
-      granularity: "MONTHLY",
-    });
-
-    expect(mockFetch).not.toHaveBeenCalled();
-  });
-
-  it("does not call AWS when future date is used", async () => {
-    mockFetch.mockResolvedValue(
-      ceResponse([makeDayTotal("2030-01-01", "2030-02-01", "10.00")]),
-    );
-
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
-    const tool = mock.getTool("get_aws_cost_summary")!;
-    await tool.handler({
-      startDate: "2030-01-01",
-      endDate: "2030-02-01",
-      granularity: "MONTHLY",
-    });
-
-    expect(mockFetch).not.toHaveBeenCalled();
-  });
-});
-
-describe("registerCostTools - get_aws_cost_by_service", () => {
+describe("registerCostByServiceTool", () => {
   it("registers get_aws_cost_by_service tool", () => {
-    const mock = makeMockServerWithCapture();
-
-    registerCostTools(mock.server, testContext);
-
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
     expect(mock.capturedName).toBe("get_aws_cost_by_service");
     expect(mock.capturedHandler).toBeDefined();
   });
 
   it("includes description about cost broken down by service", () => {
-    const mock = makeMockServerWithCapture();
-
-    registerCostTools(mock.server, testContext);
-
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
     const cfg = mock.capturedConfig as { description?: string };
     expect(cfg.description).toContain("broken down by service");
   });
@@ -327,8 +106,8 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
       ]),
     );
 
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
 
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
@@ -366,8 +145,8 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
       ]),
     );
 
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-01-02",
@@ -386,8 +165,8 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
       ]),
     );
 
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",
@@ -409,8 +188,8 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
       ]),
     );
 
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",
@@ -434,8 +213,8 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
       ]),
     );
 
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",
@@ -458,8 +237,8 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
       ]),
     );
 
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",
@@ -476,8 +255,8 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
       ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
     );
 
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
     const result = await mock.capturedHandler!({
       startDate: "01-01-2025",
       endDate: "2025-02-01",
@@ -495,8 +274,8 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
       ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
     );
 
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-05-01",
@@ -514,8 +293,8 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
       ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
     );
 
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
     const result = await mock.capturedHandler!({
       startDate: "2025-02-01",
       endDate: "2025-01-01",
@@ -533,8 +312,8 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
       ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
     );
 
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
     await mock.capturedHandler!({
       startDate: "invalid",
       endDate: "2025-02-01",
@@ -553,8 +332,8 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
       ]),
     );
 
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, testContext);
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, testContext);
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",
@@ -586,8 +365,8 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
       cache: mockKv,
     };
 
-    const mock = makeMockServerWithCapture();
-    registerCostTools(mock.server, ctxWithCache);
+    const mock = makeMockServer();
+    registerCostByServiceTool(mock.server, ctxWithCache);
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",

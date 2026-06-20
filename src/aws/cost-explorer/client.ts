@@ -1,104 +1,21 @@
-import { awsRequest } from "./client.js";
-import type { AwsCredentials } from "./types.js";
+import { awsRequest } from "../client.js";
+import type { AwsCredentials } from "../types.js";
 import type {
   CostExplorerOptions,
   CostMetric,
   CostSummary,
   CostByServiceResult,
-  CostGranularity,
-} from "./cost-types.js";
-import { ValidationError } from "../security/errors.js";
-import { validateCostDates } from "../security/validation.js";
-import { buildCacheKey } from "../cache/keys.js";
-import { cacheGet, cacheSet } from "../cache/kv.js";
+  CeResponse,
+} from "./types.js";
+import { validateCostDates } from "../../security/dates.js";
+import { buildCacheKey } from "../../cache/keys.js";
+import { cacheGet, cacheSet } from "../../cache/kv.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
+import { validateGranularity, validateMetric, buildRequest } from "./requests.js";
+import { parseAmount, getMetric } from "./parse.js";
 
 const DEFAULT_METRIC: CostMetric = "UnblendedCost";
 const DEFAULT_REGION = "us-east-1";
-
-const SUPPORTED_GRANULARITIES = new Set<CostGranularity>(["DAILY", "MONTHLY"]);
-const SUPPORTED_METRICS = new Set<CostMetric>(["UnblendedCost", "AmortizedCost"]);
-
-export class CostExplorerError extends ValidationError {
-  constructor(code: string, message: string) {
-    super(code, message);
-    this.name = "CostExplorerError";
-  }
-}
-
-function validateGranularity(granularity: string): void {
-  if (!SUPPORTED_GRANULARITIES.has(granularity as CostGranularity)) {
-    throw new CostExplorerError(
-      "unsupported_granularity",
-      "Unsupported Cost Explorer granularity.",
-    );
-  }
-}
-
-function validateMetric(metric: string): void {
-  if (!SUPPORTED_METRICS.has(metric as CostMetric)) {
-    throw new CostExplorerError(
-      "unsupported_metric",
-      "Unsupported Cost Explorer metric.",
-    );
-  }
-}
-
-interface CeAmount {
-  Amount?: string;
-  Unit?: string;
-}
-
-interface CeGroup {
-  Keys?: string[];
-  Metrics?: Record<string, CeAmount>;
-}
-
-interface CeResultByTime {
-  TimePeriod?: { Start?: string; End?: string };
-  Total?: Record<string, CeAmount>;
-  Groups?: CeGroup[];
-}
-
-interface CeResponse {
-  ResultsByTime?: CeResultByTime[];
-}
-
-function buildRequest(
-  startDate: string,
-  endDate: string,
-  granularity: string,
-  metric: string,
-  groupBy?: Array<{ Type: string; Key: string }>,
-): Record<string, unknown> {
-  const body: Record<string, unknown> = {
-    TimePeriod: { Start: startDate, End: endDate },
-    Granularity: granularity,
-    Metrics: [metric],
-  };
-
-  if (groupBy && groupBy.length > 0) {
-    body.GroupBy = groupBy;
-  }
-
-  return body;
-}
-
-function parseAmount(
-  amount: CeAmount | undefined,
-  fallbackCurrency: string,
-): { value: number; currency: string } {
-  const value = amount?.Amount ? parseFloat(amount.Amount) : 0;
-  const currency = amount?.Unit ?? fallbackCurrency;
-  return { value, currency };
-}
-
-function getMetric(
-  totals: Record<string, CeAmount> | undefined,
-  metric: string,
-): CeAmount | undefined {
-  return totals?.[metric];
-}
 
 export async function getCostSummary(
   options: CostExplorerOptions,
