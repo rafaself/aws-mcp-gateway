@@ -6,7 +6,7 @@ export const SUPPORTED_METRICS = new Set<CostMetric>(["UnblendedCost", "Amortize
 export function validateGranularity(granularity: string): void {
   if (!SUPPORTED_GRANULARITIES.has(granularity as CostGranularity)) {
     throw new CostExplorerError(
-      "unsupported_granularity",
+      "validation_error",
       "Unsupported Cost Explorer granularity.",
     );
   }
@@ -15,7 +15,7 @@ export function validateGranularity(granularity: string): void {
 export function validateMetric(metric: string): void {
   if (!SUPPORTED_METRICS.has(metric as CostMetric)) {
     throw new CostExplorerError(
-      "unsupported_metric",
+      "validation_error",
       "Unsupported Cost Explorer metric.",
     );
   }

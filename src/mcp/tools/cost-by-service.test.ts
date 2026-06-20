@@ -265,7 +265,7 @@ describe("registerCostByServiceTool", () => {
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toEqual({
-      error: { code: "invalid_date_format", retryable: false },
+      error: { code: "validation_error", retryable: false },
     });
   });
 
@@ -284,7 +284,7 @@ describe("registerCostByServiceTool", () => {
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toEqual({
-      error: { code: "date_range_exceeded", retryable: false },
+      error: { code: "validation_error", retryable: false },
     });
   });
 
@@ -303,7 +303,7 @@ describe("registerCostByServiceTool", () => {
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toEqual({
-      error: { code: "invalid_date_range", retryable: false },
+      error: { code: "validation_error", retryable: false },
     });
   });
 

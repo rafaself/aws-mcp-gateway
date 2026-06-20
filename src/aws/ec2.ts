@@ -22,7 +22,7 @@ const EC2_REQUEST_TIMEOUT_MS = 30_000;
 function validateStateFilter(state: string): void {
   if (!(VALID_INSTANCE_STATES as readonly string[]).includes(state)) {
     throw new Ec2Error(
-      "invalid_state_filter",
+      "validation_error",
       `Invalid EC2 instance state "${state}". Valid states: ${VALID_INSTANCE_STATES.join(", ")}`,
     );
   }

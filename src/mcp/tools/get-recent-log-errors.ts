@@ -39,7 +39,7 @@ export function registerGetRecentLogErrorsTool(server: McpServer, ctx: GatewayCo
       validateRegion(args.region, ctx.allowedRegions);
 
       if (!args.logGroupName || args.logGroupName.trim().length === 0) {
-        throw new LogsError("missing_log_group", "logGroupName is required.");
+        throw new LogsError("validation_error", "logGroupName is required.");
       }
 
       const now = Date.now();

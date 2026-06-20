@@ -15,29 +15,29 @@ function validateLogOptions(
   limit: number,
 ): void {
   if (!logGroupName || logGroupName.trim().length === 0) {
-    throw new LogsError("missing_log_group", "logGroupName is required.");
+    throw new LogsError("validation_error", "logGroupName is required.");
   }
 
   if (startTime >= endTime) {
-    throw new LogsError("invalid_time_range", "startTime must be before endTime.");
+    throw new LogsError("validation_error", "startTime must be before endTime.");
   }
 
   const diffMs = endTime - startTime;
   const maxMs = LOGS_MAX_HOURS * 60 * 60 * 1000;
   if (diffMs > maxMs) {
     throw new LogsError(
-      "time_range_exceeded",
+      "validation_error",
       `Time range must not exceed ${LOGS_MAX_HOURS} hours.`,
     );
   }
 
   if (limit < 1) {
-    throw new LogsError("invalid_limit", "limit must be at least 1.");
+    throw new LogsError("validation_error", "limit must be at least 1.");
   }
 
   if (limit > LOGS_MAX_EVENTS) {
     throw new LogsError(
-      "limit_exceeded",
+      "validation_error",
       `limit must not exceed ${LOGS_MAX_EVENTS}.`,
     );
   }

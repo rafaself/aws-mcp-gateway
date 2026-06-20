@@ -1,4 +1,5 @@
 import { ValidationError } from "../security/errors.js";
+import type { GatewayErrorCode } from "../errors/public-error.js";
 
 export type AlarmState = "ALARM" | "INSUFFICIENT_DATA" | "OK";
 
@@ -36,7 +37,7 @@ export interface DescribeAlarmsResponse {
 }
 
 export class CloudWatchError extends ValidationError {
-  constructor(code: string, message: string) {
+  constructor(code: GatewayErrorCode, message: string) {
     super(code, message);
     this.name = "CloudWatchError";
   }

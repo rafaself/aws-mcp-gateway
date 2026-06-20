@@ -28,7 +28,7 @@ function validateStateFilters(states: string[]): void {
   for (const state of states) {
     if (!valid.includes(state)) {
       throw new CloudWatchError(
-        "invalid_state_filter",
+        "validation_error",
         `Invalid alarm state "${state}". Valid states: ${VALID_ALARM_STATES.join(", ")}`,
       );
     }

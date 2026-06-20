@@ -232,7 +232,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toEqual({
-      error: { code: "invalid_state_filter", retryable: false },
+      error: { code: "validation_error", retryable: false },
     });
   });
 
@@ -248,7 +248,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toEqual({
-      error: { code: "region_not_allowed", retryable: false },
+      error: { code: "validation_error", retryable: false },
     });
   });
 

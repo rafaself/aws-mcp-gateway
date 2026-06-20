@@ -6,7 +6,7 @@ const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 export function parseIsoDate(value: string): Date {
   if (!DATE_REGEX.test(value)) {
     throw new ValidationError(
-      "invalid_date_format",
+      "validation_error",
       "Dates must be in YYYY-MM-DD format.",
     );
   }
@@ -15,7 +15,7 @@ export function parseIsoDate(value: string): Date {
 
   if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
     throw new ValidationError(
-      "invalid_date",
+      "validation_error",
       "Dates must be valid calendar dates.",
     );
   }
@@ -33,7 +33,7 @@ export function validateCostDates(
 
   if (start >= end) {
     throw new ValidationError(
-      "invalid_date_range",
+      "validation_error",
       "startDate must be before endDate.",
     );
   }
@@ -41,13 +41,13 @@ export function validateCostDates(
   const now = new Date();
   if (start > now) {
     throw new ValidationError(
-      "future_date",
+      "validation_error",
       "startDate cannot be in the future.",
     );
   }
   if (end > now) {
     throw new ValidationError(
-      "future_date",
+      "validation_error",
       "endDate cannot be in the future.",
     );
   }
@@ -56,7 +56,7 @@ export function validateCostDates(
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
   if (diffDays > maxDays) {
     throw new ValidationError(
-      "date_range_exceeded",
+      "validation_error",
       `Date range must not exceed ${maxDays} days.`,
     );
   }

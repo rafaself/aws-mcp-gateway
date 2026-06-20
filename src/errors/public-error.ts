@@ -7,16 +7,16 @@ export type GatewayErrorCode =
   | "internal_error";
 
 export interface GatewayErrorPayload {
-  code: GatewayErrorCode | string;
+  code: GatewayErrorCode;
   message: string;
   retryable: boolean;
 }
 
 export class GatewayError extends Error {
-  public readonly code: GatewayErrorCode | string;
+  public readonly code: GatewayErrorCode;
   public readonly retryable: boolean;
 
-  constructor(code: GatewayErrorCode | string, message: string, retryable = false) {
+  constructor(code: GatewayErrorCode, message: string, retryable = false) {
     super(message);
     this.name = "GatewayError";
     this.code = code;

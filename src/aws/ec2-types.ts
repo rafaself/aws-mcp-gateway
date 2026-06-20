@@ -1,4 +1,5 @@
 import { ValidationError } from "../security/errors.js";
+import type { GatewayErrorCode } from "../errors/public-error.js";
 
 export type Ec2InstanceState =
   | "pending"
@@ -64,7 +65,7 @@ export interface Ec2RawInstance {
 }
 
 export class Ec2Error extends ValidationError {
-  constructor(code: string, message: string) {
+  constructor(code: GatewayErrorCode, message: string) {
     super(code, message);
     this.name = "Ec2Error";
   }

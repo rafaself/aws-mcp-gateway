@@ -1,4 +1,4 @@
-import { GatewayError } from "../errors/public-error.js";
+import { GatewayError, type GatewayErrorCode } from "../errors/public-error.js";
 
 export class AwsRequestError extends GatewayError {
   public readonly statusCode: number;
@@ -7,7 +7,7 @@ export class AwsRequestError extends GatewayError {
 
   constructor(opts: {
     message?: string;
-    code?: string;
+    code?: GatewayErrorCode;
     retryable?: boolean;
     statusCode?: number;
     service?: string;
