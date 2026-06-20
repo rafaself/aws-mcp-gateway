@@ -285,7 +285,15 @@ describe("registerCostSummaryTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBeUndefined();
-    expect(result.structuredContent).toHaveProperty("total");
+    expect(result.structuredContent).toEqual({
+      period: { startDate: "2025-01-01", endDate: "2025-04-01" },
+      granularity: "MONTHLY",
+      total: 50,
+      currency: "USD",
+    });
+
+    const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+    expect(text).toContain("AWS cost from 2025-01-01 to 2025-04-01 is 50 USD");
   });
 
   it("rejects date range exceeding 90-day maximum", async () => {
