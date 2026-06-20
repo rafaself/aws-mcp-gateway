@@ -603,4 +603,35 @@ describe("registerCostTools - get_aws_cost_by_service", () => {
     expect(resultStr).not.toContain("TimePeriod");
     expect(resultStr).not.toContain("UnblendedCost");
   });
+
+  it("works with cache binding present (no error)", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([
+        makeDayWithGroups("2025-01-01", "2025-02-01", "100.00", [
+          { key: "Amazon S3", amount: "100.00" },
+        ]),
+      ]),
+    );
+
+    const mockKv = {
+      get: vi.fn(async () => null),
+      put: vi.fn(),
+    } as never;
+
+    const ctxWithCache: GatewayContext = {
+      ...testContext,
+      cache: mockKv,
+    };
+
+    const mock = makeMockServerWithCapture();
+    registerCostTools(mock.server, ctxWithCache);
+    const result = await mock.capturedHandler!({
+      startDate: "2025-01-01",
+      endDate: "2025-02-01",
+      granularity: "MONTHLY",
+    }) as Record<string, unknown>;
+
+    expect(result).toHaveProperty("structuredContent");
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
 });

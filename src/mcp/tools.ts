@@ -3,11 +3,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AwsCredentials } from "../aws/types.js";
 import { getCostSummary, getCostByService } from "../aws/cost-explorer.js";
 import { GatewayError, mcpErrorResult } from "../errors.js";
+import type { KVNamespace } from "@cloudflare/workers-types";
 
 export interface GatewayContext {
   credentials: AwsCredentials;
   region: string;
   allowedRegions: string[];
+  cache?: KVNamespace;
 }
 
 export function registerDiagnosticTools(server: McpServer): void {
@@ -60,6 +62,8 @@ export function registerCostTools(server: McpServer, ctx: GatewayContext): void 
             granularity: args.granularity,
           },
           ctx.credentials,
+          ctx.region,
+          ctx.cache,
         );
 
         return {
@@ -123,6 +127,8 @@ export function registerCostTools(server: McpServer, ctx: GatewayContext): void 
             granularity: args.granularity,
           },
           ctx.credentials,
+          ctx.region,
+          ctx.cache,
         );
 
         const services = result.services.slice(0, args.limit);

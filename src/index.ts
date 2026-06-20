@@ -5,16 +5,20 @@ import { authenticateRequest } from "./auth.js";
 import { validateEnv, envErrorResponse } from "./env.js";
 import { parseRegions } from "./security/regions.js";
 import { GatewayError, errorResponse } from "./errors.js";
+import type { KVNamespace } from "@cloudflare/workers-types";
 
 function buildGatewayContext(env: unknown): GatewayContext {
-  const bindings = env as Record<string, string | undefined>;
+  const bindings = env as Record<string, unknown>;
   return {
     credentials: {
-      accessKeyId: bindings.AWS_ACCESS_KEY_ID ?? "",
-      secretAccessKey: bindings.AWS_SECRET_ACCESS_KEY ?? "",
+      accessKeyId: (bindings.AWS_ACCESS_KEY_ID as string) ?? "",
+      secretAccessKey: (bindings.AWS_SECRET_ACCESS_KEY as string) ?? "",
     },
-    region: bindings.AWS_REGION ?? "us-east-1",
-    allowedRegions: parseRegions(bindings.AWS_ALLOWED_REGIONS ?? "us-east-1"),
+    region: (bindings.AWS_REGION as string) ?? "us-east-1",
+    allowedRegions: parseRegions(
+      (bindings.AWS_ALLOWED_REGIONS as string) ?? "us-east-1",
+    ),
+    cache: bindings.AWS_MCP_CACHE as KVNamespace | undefined,
   };
 }
 

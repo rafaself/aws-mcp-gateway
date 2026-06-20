@@ -6,5 +6,11 @@
   "vars": {
     "AWS_REGION": "us-east-1",
     "AWS_ALLOWED_REGIONS": "us-east-1,sa-east-1"
-  }
+  },
+  "kv_namespaces": [
+    {
+      "binding": "AWS_MCP_CACHE",
+      "id": "PLACEHOLDER_ID"
+    }
+  ]
 }
