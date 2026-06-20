@@ -160,9 +160,9 @@ Tool-level limits should reject overly broad requests before calling AWS.
 Expected commands after scaffolding:
 
 ```bash
-npm install
-npm run typecheck
-npm run test
+pnpm install
+pnpm run typecheck
+pnpm test
 wrangler dev
 ```
 

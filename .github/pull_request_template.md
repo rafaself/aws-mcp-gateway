@@ -12,7 +12,7 @@
 
 ## Checks
 
-- [ ] `npm run typecheck`
+- [ ] `pnpm run typecheck`
 - [ ] Tests added or updated when behavior changed.
 - [ ] No secrets or local-only files committed.
 - [ ] Documentation updated when setup or behavior changed.

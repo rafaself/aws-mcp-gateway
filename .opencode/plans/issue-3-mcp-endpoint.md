@@ -16,7 +16,7 @@ Add a remote MCP endpoint at `/mcp` using the MCP SDK + Cloudflare Agents helper
 
 ### Dependencies
 ```
-npm install @modelcontextprotocol/sdk agents zod
+pnpm add @modelcontextprotocol/sdk agents zod
 ```
 
 ### src/mcp/tools.ts
@@ -38,6 +38,6 @@ npm install @modelcontextprotocol/sdk agents zod
 - Keep 404 fallback
 
 ## Verification
-- `npm run typecheck` passes
+- `pnpm run typecheck` passes
 - `wrangler dev` and MCP Inspector discover the server
 - `get_gateway_status` returns static status

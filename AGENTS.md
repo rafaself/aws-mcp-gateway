@@ -11,7 +11,7 @@
 ## Development
 
 - Use npm.
-- Run `npm run typecheck` before finishing code changes.
+- Run `pnpm run typecheck` before finishing code changes.
 - Add or update tests when changing validation, formatting, security checks, or AWS client behavior.
 - Update documentation when setup, configuration, security posture, or public behavior changes.
 - Prefer TDD when practical: write a focused failing test before implementation, then implement the smallest safe change and refactor after it passes.
