@@ -47,7 +47,7 @@ The Worker acts as a policy and translation layer. ChatGPT calls strongly typed 
 
 ## Security model
 
-The MVP must remain read-only.
+The MVP must remain read-only. Post-MVP expansion (write operations, OAuth, broader inventory) is governed by [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md).
 
 Required controls:
 
@@ -93,7 +93,7 @@ list_lambda_functions
 get_service_inventory
 ```
 
-Management tools may be added later, but they must use a separate security model, separate IAM permissions and explicit confirmation requirements.
+Management tools may be added later; see [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md) for required security boundaries.
 
 ## Environment variables and secrets
 
@@ -282,7 +282,7 @@ Never commit:
 5. Implement read-only cost and observability tools.
 6. Add KV caching.
 7. Add CI, tests and security documentation.
-8. Design future management mode without changing the MVP read-only security boundary.
+8. Design future management mode without changing the MVP read-only security boundary — see [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md).
 
 ## Testing
 
