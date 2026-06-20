@@ -35,7 +35,18 @@ export function registerGetRecentLogErrorsTool(server: McpServer, ctx: GatewayCo
           .describe("Maximum number of events to return (1–50, default 20)."),
       }),
     },
-    safeMcpHandler(async (args) => {
+    safeMcpHandler(
+      {
+        toolName: "get_recent_log_errors",
+        awsService: "logs",
+        getRegion: (args) => args.region,
+        sanitizeInput: (args) => ({
+          hasLogGroupName: true,
+          hours: args.hours,
+          limit: args.limit,
+        }),
+      },
+      async (args) => {
       validateRegion(args.region, ctx.allowedRegions);
 
       if (!args.logGroupName || args.logGroupName.trim().length === 0) {

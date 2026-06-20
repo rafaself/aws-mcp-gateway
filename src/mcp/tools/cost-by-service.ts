@@ -31,7 +31,18 @@ export function registerCostByServiceTool(server: McpServer, ctx: GatewayContext
           .describe("Maximum number of services to return (max 25)."),
       }),
     },
-    safeMcpHandler(async (args) => {
+    safeMcpHandler(
+      {
+        toolName: "get_aws_cost_by_service",
+        awsService: "ce",
+        getRegion: () => ctx.region,
+        sanitizeInput: (args) => ({
+          hasDateRange: true,
+          granularity: args.granularity,
+          limit: args.limit,
+        }),
+      },
+      async (args) => {
       const result = await getCostByService(
         {
           startDate: args.startDate,
