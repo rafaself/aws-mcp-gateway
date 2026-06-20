@@ -225,6 +225,34 @@ describe("registerCostSummaryTool", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  it("works with cache binding present (no error)", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "100.00")]),
+    );
+
+    const mockKv = {
+      get: vi.fn(async () => null),
+      put: vi.fn(),
+    } as never;
+
+    const ctxWithCache: GatewayContext = {
+      ...testContext,
+      cache: mockKv,
+    };
+
+    const mock = makeMockServer();
+    registerCostSummaryTool(mock.server, ctxWithCache);
+    const tool = mock.getTool("get_aws_cost_summary")!;
+    const result = await tool.handler({
+      startDate: "2025-01-01",
+      endDate: "2025-02-01",
+      granularity: "MONTHLY",
+    }) as Record<string, unknown>;
+
+    expect(result).toHaveProperty("structuredContent");
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
   it("does not call AWS when future date is used", async () => {
     mockFetch.mockResolvedValue(
       ceResponse([makeDayTotal("2030-01-01", "2030-02-01", "10.00")]),
