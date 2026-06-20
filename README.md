@@ -49,6 +49,8 @@ The Worker acts as a policy and translation layer. ChatGPT calls strongly typed 
 
 The MVP must remain read-only. Post-MVP expansion (write operations, OAuth, broader inventory) is governed by [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md).
 
+For a verifiable pre-deployment and pre-merge checklist, see [SECURITY.md](SECURITY.md).
+
 Required controls:
 
 - MCP endpoint must require authentication.
