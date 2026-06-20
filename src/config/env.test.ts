@@ -103,6 +103,66 @@ describe("validateEnv", () => {
     expect(result.valid).toBe(true);
     expect(result.config.AWS_MCP_CACHE).toBe(cache);
   });
+
+  it("rejects non-string values for required bindings", () => {
+    const env = {
+      AWS_ACCESS_KEY_ID: 123,
+      AWS_SECRET_ACCESS_KEY: true,
+      AWS_REGION: null,
+      AWS_ALLOWED_REGIONS: "us-east-1",
+      MCP_AUTH_TOKEN: ["not-a-string"],
+    };
+
+    const result = validateEnv(env);
+
+    expect(result.valid).toBe(false);
+    expect(result.config).toBeNull();
+    expect(result.errors).toContain("AWS_ACCESS_KEY_ID");
+    expect(result.errors).toContain("AWS_SECRET_ACCESS_KEY");
+    expect(result.errors).toContain("AWS_REGION");
+    expect(result.errors).toContain("MCP_AUTH_TOKEN");
+    expect(result.errors).not.toContain("AWS_ALLOWED_REGIONS");
+  });
+
+  it("rejects whitespace-only values for required bindings", () => {
+    const env = {
+      AWS_ACCESS_KEY_ID: "   ",
+      AWS_SECRET_ACCESS_KEY: "\t\n",
+      AWS_REGION: "",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+      MCP_AUTH_TOKEN: " ",
+    };
+
+    const result = validateEnv(env);
+
+    expect(result.valid).toBe(false);
+    expect(result.config).toBeNull();
+    expect(result.errors).toContain("AWS_ACCESS_KEY_ID");
+    expect(result.errors).toContain("AWS_SECRET_ACCESS_KEY");
+    expect(result.errors).toContain("AWS_REGION");
+    expect(result.errors).toContain("MCP_AUTH_TOKEN");
+    expect(result.errors).not.toContain("AWS_ALLOWED_REGIONS");
+  });
+
+  it("trims whitespace from valid binding values", () => {
+    const env = {
+      AWS_ACCESS_KEY_ID: "  AKIA-test  ",
+      AWS_SECRET_ACCESS_KEY: "\nsecret\n",
+      AWS_REGION: " eu-west-1\t",
+      AWS_ALLOWED_REGIONS: "  eu-west-1,us-east-1  ",
+      MCP_AUTH_TOKEN: " bearer-token ",
+    };
+
+    const result = validateEnv(env) as EnvValidationSuccess;
+    const config = result.config;
+
+    expect(result.valid).toBe(true);
+    expect(config.AWS_ACCESS_KEY_ID).toBe("AKIA-test");
+    expect(config.AWS_SECRET_ACCESS_KEY).toBe("secret");
+    expect(config.AWS_REGION).toBe("eu-west-1");
+    expect(config.AWS_ALLOWED_REGIONS).toBe("eu-west-1,us-east-1");
+    expect(config.MCP_AUTH_TOKEN).toBe("bearer-token");
+  });
 });
 
 describe("envErrorResponse", () => {
