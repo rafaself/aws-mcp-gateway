@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GatewayContext } from "../context.js";
+import type { GatewayContext } from "../../config/context.js";
 import { registerStatusTool } from "./status.js";
 import { registerCostSummaryTool } from "./cost-summary.js";
 import { registerCostByServiceTool } from "./cost-by-service.js";

@@ -1,10 +1,10 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GatewayContext } from "../context.js";
-import { listAlarms } from "../../aws/cloudwatch.js";
-import { VALID_ALARM_STATES } from "../../aws/cloudwatch-types.js";
+import type { GatewayContext } from "../../config/context.js";
+import { listAlarms } from "../../aws/cloudwatch/index.js";
+import { VALID_ALARM_STATES } from "../../aws/cloudwatch/index.js";
 import { resolveRegions } from "../../security/regions.js";
-import { summarizeRegionListInput } from "../../audit/tool-input.js";
+import { summarizeRegionListInput } from "../audit/tool-input.js";
 import { safeMcpHandler } from "./response.js";
 
 export function registerGetCloudwatchAlarmsTool(server: McpServer, ctx: GatewayContext): void {

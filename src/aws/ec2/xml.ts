@@ -1,5 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
-import type { Ec2DescribeInstancesResponse } from "./ec2-types.js";
+import type { Ec2DescribeInstancesResponse } from "./types.js";
 
 const parser = new XMLParser({
   ignoreAttributes: true,

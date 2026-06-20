@@ -1,6 +1,6 @@
 import { GatewayError, mcpErrorResult } from "../../errors/public-error.js";
-import type { ToolAuditMeta } from "../../audit/log.js";
-import { buildAuditPayload, safeEmitAuditEvent } from "../../audit/log.js";
+import type { ToolAuditMeta } from "../audit/log.js";
+import { buildAuditPayload, safeEmitAuditEvent } from "../audit/log.js";
 
 type McpSuccessResult = {
   content: Array<{ type: "text"; text: string }>;

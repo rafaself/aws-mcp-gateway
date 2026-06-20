@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GatewayContext } from "../context.js";
+import type { GatewayContext } from "../../config/context.js";
 import { getCostByService } from "../../aws/cost-explorer/index.js";
-import { summarizeCostDateRangeInput } from "../../audit/tool-input.js";
+import { summarizeCostDateRangeInput } from "../audit/tool-input.js";
 import { safeMcpHandler } from "./response.js";
 
 export function registerCostByServiceTool(server: McpServer, ctx: GatewayContext): void {

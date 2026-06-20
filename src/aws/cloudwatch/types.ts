@@ -1,5 +1,5 @@
-import { ValidationError } from "../security/errors.js";
-import type { GatewayErrorCode } from "../errors/public-error.js";
+import { ValidationError } from "../../security/errors.js";
+import type { GatewayErrorCode } from "../../errors/public-error.js";
 
 export type AlarmState = "ALARM" | "INSUFFICIENT_DATA" | "OK";
 

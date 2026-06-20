@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { filterLogEvents } from "./logs.js";
-import { LogsError } from "./logs-types.js";
-import { buildCacheKey } from "../cache/keys.js";
-import { logsFilterEventsResponse } from "../test/fixtures.js";
-import type { AwsCredentials } from "./types.js";
+import { filterLogEvents } from "./client.js";
+import { LogsError } from "./types.js";
+import { buildCacheKey } from "../../cache/keys.js";
+import { logsFilterEventsResponse } from "../../test/fixtures.js";
+import type { AwsCredentials } from "../types.js";
 
 const { mockFetch, awsClientConstructors } = vi.hoisted(() => {
   const mockFetch = vi.fn();
