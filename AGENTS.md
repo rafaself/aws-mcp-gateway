@@ -72,6 +72,29 @@ Rules:
 - Add or update tests when changing validation, parsing, formatting, error handling, security checks, or AWS client behavior.
 - Prefer colocated tests alongside their source module.
 
+## Source of truth
+
+- `AGENTS.md` defines permanent repository rules and conventions.
+- GitHub issues define task-specific behavior and acceptance criteria.
+- Tests verify behavior but do not replace the issue or spec.
+- When a test and the issue disagree, the issue wins — update the test, not the issue.
+
+## Test integrity
+
+- A passing test suite is **required but not sufficient**.
+- Tests must prove the intended behavior from the issue or spec, not just pass.
+- Security, validation, redaction, authentication, region allowlist, and read-only behavior tests are **contract tests** — they define the safety boundary.
+- Do not weaken assertions, delete tests, add focused tests, skip failing tests, over-mock behavior, or change expected behavior without a matching issue or spec change.
+- When modifying tests, explain whether the change adds coverage, updates intentional behavior, or only refactors test structure.
+- `pnpm run test:integrity` checks for focused and unjustified skipped tests — do not bypass it.
+
+## Forbidden shortcuts
+
+- Do not mark tests with `test.only`, `describe.only`, or `it.only`.
+- Do not skip tests with `test.skip`, `describe.skip`, or `it.skip` without an explicit `intentional-skip:` justification on the same line.
+- Do not delete or weaken contract tests to make unrelated changes pass.
+- Do not add `.only` to debug during development and leave it in the commit.
+
 ## Documentation expectations
 
 - Update README and docs when setup, configuration, deployment, security posture, or public MCP behavior changes.

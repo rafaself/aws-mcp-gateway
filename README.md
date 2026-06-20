@@ -286,6 +286,15 @@ vi.mock("aws4fetch", () => ({
 
 Shared test fixtures (`ceResponse`, `makeDayTotal`, `makeDayWithGroups`) are available in `src/test/fixtures.ts`.
 
+### Test integrity
+
+A passing test suite is required but not sufficient — tests must prove the intended behavior from the issue or spec, not just pass.
+
+- Do not weaken assertions, delete tests, add focused tests (`.only`), or skip failing tests to make the suite pass.
+- Skipped tests must include an explicit `intentional-skip:` justification on the same line.
+- Security, validation, redaction, authentication, region allowlist, and read-only behavior tests are **contract tests** defining the safety boundary.
+- Run `pnpm run test:integrity` to check for focused or unjustified skipped tests.
+
 ### Rules
 
 - Every unit test must pass without a network connection.
