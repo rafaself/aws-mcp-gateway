@@ -111,7 +111,7 @@ describe("emitAuditEvent", () => {
     });
 
     it("includes error fields for failure event", () => {
-      vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.spyOn(console, "log").mockImplementation(() => {});
 
       emitAuditEvent({
         event: "mcp_tool_call",
@@ -124,8 +124,8 @@ describe("emitAuditEvent", () => {
         input: { hasLogGroupName: true, hours: 24, limit: 50 },
       });
 
-      const error = vi.mocked(console.error);
-      const event = parseAuditLine(error);
+      const log = vi.mocked(console.log);
+      const event = parseAuditLine(log);
       expect(event).toEqual({
         event: "mcp_tool_call",
         tool: "get_recent_log_errors",
