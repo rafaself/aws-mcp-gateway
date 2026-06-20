@@ -7,7 +7,10 @@ function unauthorizedResponse(): Response {
   );
 }
 
-export function authenticateRequest(request: Request, env: unknown): Response | null {
+export function authenticateLegacyBearerRequest(
+  request: Request,
+  env: unknown,
+): Response | null {
   const authHeader = request.headers.get("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -23,3 +26,6 @@ export function authenticateRequest(request: Request, env: unknown): Response | 
 
   return null;
 }
+
+/** @deprecated Use authenticateLegacyBearerRequest or authenticateRequest from auth/index */
+export const authenticateRequest = authenticateLegacyBearerRequest;
