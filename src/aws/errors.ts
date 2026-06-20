@@ -1,12 +1,6 @@
-export interface AwsErrorPayload {
-  code: string;
-  message: string;
-  retryable: boolean;
-}
+import { GatewayError } from "../errors.js";
 
-export class AwsRequestError extends Error {
-  public readonly code: string;
-  public readonly retryable: boolean;
+export class AwsRequestError extends GatewayError {
   public readonly statusCode: number;
   public readonly service?: string;
   public readonly region?: string;
@@ -19,20 +13,14 @@ export class AwsRequestError extends Error {
     service?: string;
     region?: string;
   }) {
-    super(opts.message ?? "AWS request failed.");
+    super(
+      opts.code ?? "aws_request_failed",
+      opts.message ?? "AWS request failed.",
+      opts.retryable ?? false,
+    );
     this.name = "AwsRequestError";
-    this.code = opts.code ?? "aws_request_failed";
-    this.retryable = opts.retryable ?? false;
     this.statusCode = opts.statusCode ?? 0;
     this.service = opts.service;
     this.region = opts.region;
-  }
-
-  toJSON(): AwsErrorPayload {
-    return {
-      code: this.code,
-      message: this.message,
-      retryable: this.retryable,
-    };
   }
 }

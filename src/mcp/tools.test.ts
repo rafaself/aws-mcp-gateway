@@ -191,7 +191,7 @@ describe("registerCostTools", () => {
     expect((result.structuredContent as Record<string, unknown>).granularity).toBe("DAILY");
   });
 
-  it("returns isError true when date format is invalid", async () => {
+  it("returns isError true with structuredContent.error when date format is invalid", async () => {
     mockFetch.mockResolvedValue(
       ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
     );
@@ -205,9 +205,12 @@ describe("registerCostTools", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      error: { code: "invalid_date_format", retryable: false },
+    });
   });
 
-  it("returns isError true when date range exceeds 90 days", async () => {
+  it("returns isError true with structuredContent.error when date range exceeds 90 days", async () => {
     mockFetch.mockResolvedValue(
       ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
     );
@@ -221,9 +224,12 @@ describe("registerCostTools", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      error: { code: "date_range_exceeded", retryable: false },
+    });
   });
 
-  it("returns isError true when startDate is after endDate", async () => {
+  it("returns isError true with structuredContent.error when startDate is after endDate", async () => {
     mockFetch.mockResolvedValue(
       ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
     );
@@ -237,6 +243,9 @@ describe("registerCostTools", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      error: { code: "invalid_date_range", retryable: false },
+    });
   });
 
   it("calls AWS via getCostSummary passed credentials", async () => {

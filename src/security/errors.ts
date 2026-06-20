@@ -1,9 +1,8 @@
-export class ValidationError extends Error {
-  public readonly code: string;
+import { GatewayError } from "../errors.js";
 
+export class ValidationError extends GatewayError {
   constructor(code: string, message: string) {
-    super(message);
+    super(code, message, false);
     this.name = "ValidationError";
-    this.code = code;
   }
 }

@@ -48,29 +48,24 @@ export function validateEnv(env: unknown): EnvValidationResult {
   return { valid: errors.length === 0, errors };
 }
 
+import { GatewayError, errorResponse } from "./errors.js";
+
 export function envErrorResponse(
   result: EnvValidationResult,
   isAuthenticated: boolean,
 ): Response {
   if (isAuthenticated) {
-    return Response.json(
-      {
-        error: {
-          code: "configuration_error",
-          message: `Gateway configuration is incomplete. Invalid settings: ${result.errors.join(", ")}`,
-        },
-      },
-      { status: 503 },
+    return errorResponse(
+      new GatewayError(
+        "configuration_error",
+        `Gateway configuration is incomplete. Invalid settings: ${result.errors.join(", ")}`,
+      ),
+      503,
     );
   }
 
-  return Response.json(
-    {
-      error: {
-        code: "configuration_error",
-        message: "Gateway configuration is incomplete.",
-      },
-    },
-    { status: 503 },
+  return errorResponse(
+    new GatewayError("configuration_error", "Gateway configuration is incomplete."),
+    503,
   );
 }

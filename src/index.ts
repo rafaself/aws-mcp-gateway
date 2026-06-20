@@ -4,6 +4,7 @@ import type { GatewayContext } from "./mcp/tools.js";
 import { authenticateRequest } from "./auth.js";
 import { validateEnv, envErrorResponse } from "./env.js";
 import { parseRegions } from "./security/regions.js";
+import { GatewayError, errorResponse } from "./errors.js";
 
 function buildGatewayContext(env: unknown): GatewayContext {
   const bindings = env as Record<string, string | undefined>;
@@ -41,6 +42,6 @@ export default {
       return Response.json({ ok: true, service: "aws-mcp-gateway" });
     }
 
-    return Response.json({ error: "Not Found" }, { status: 404 });
+    return errorResponse(new GatewayError("not_found", "Not Found"), 404);
   },
 } satisfies ExportedHandler;
