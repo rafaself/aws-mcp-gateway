@@ -305,4 +305,18 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     expect(alarmIdx).toBeLessThan(insufficientIdx);
     expect(insufficientIdx).toBeLessThan(okIdx);
   });
+
+  it("returns normalized error when all regions fail", async () => {
+    mockFetch.mockRejectedValue(new Error("CloudWatch down"));
+
+    const mock = makeMockServer();
+    registerGetCloudwatchAlarmsTool(mock.server, singleRegionContext);
+    const tool = mock.getTool("get_cloudwatch_alarms")!;
+    const result = await tool.handler({}) as Record<string, unknown>;
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      error: { code: "aws_request_failed", retryable: false },
+    });
+  });
 });

@@ -272,4 +272,124 @@ describe("registerGetRecentLogErrorsTool", () => {
 
     expect(mockFetch).not.toHaveBeenCalled();
   });
+
+  it("accepts hours of 24 (maximum)", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(logsFilterEventsResponse([])),
+    );
+
+    const mock = makeMockServer();
+    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    const tool = mock.getTool("get_recent_log_errors")!;
+    const result = await tool.handler({
+      region: "us-east-1",
+      logGroupName: "/aws/lambda/example",
+      hours: 24,
+    }) as Record<string, unknown>;
+
+    expect(result.isError).toBeUndefined();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects hours exceeding maximum of 24", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(logsFilterEventsResponse([])),
+    );
+
+    const mock = makeMockServer();
+    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    const tool = mock.getTool("get_recent_log_errors")!;
+    const result = await tool.handler({
+      region: "us-east-1",
+      logGroupName: "/aws/lambda/example",
+      hours: 25,
+    }) as Record<string, unknown>;
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      error: { code: "validation_error", retryable: false },
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects hours below 1", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(logsFilterEventsResponse([])),
+    );
+
+    const mock = makeMockServer();
+    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    const tool = mock.getTool("get_recent_log_errors")!;
+    const result = await tool.handler({
+      region: "us-east-1",
+      logGroupName: "/aws/lambda/example",
+      hours: 0,
+    }) as Record<string, unknown>;
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      error: { code: "validation_error", retryable: false },
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("accepts limit of 50 (maximum)", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(logsFilterEventsResponse([])),
+    );
+
+    const mock = makeMockServer();
+    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    const tool = mock.getTool("get_recent_log_errors")!;
+    const result = await tool.handler({
+      region: "us-east-1",
+      logGroupName: "/aws/lambda/example",
+      limit: 50,
+    }) as Record<string, unknown>;
+
+    expect(result.isError).toBeUndefined();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects limit exceeding maximum of 50", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(logsFilterEventsResponse([])),
+    );
+
+    const mock = makeMockServer();
+    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    const tool = mock.getTool("get_recent_log_errors")!;
+    const result = await tool.handler({
+      region: "us-east-1",
+      logGroupName: "/aws/lambda/example",
+      limit: 51,
+    }) as Record<string, unknown>;
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      error: { code: "validation_error", retryable: false },
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects limit below 1", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(logsFilterEventsResponse([])),
+    );
+
+    const mock = makeMockServer();
+    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    const tool = mock.getTool("get_recent_log_errors")!;
+    const result = await tool.handler({
+      region: "us-east-1",
+      logGroupName: "/aws/lambda/example",
+      limit: 0,
+    }) as Record<string, unknown>;
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      error: { code: "validation_error", retryable: false },
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 });
