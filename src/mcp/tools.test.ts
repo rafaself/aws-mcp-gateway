@@ -3,7 +3,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerDiagnosticTools } from "./tools.js";
 
 describe("registerDiagnosticTools", () => {
-  it("get_gateway_status returns static read-only gateway status", async () => {
+  it("registers get_gateway_status tool with handler returning static read-only gateway status", async () => {
+    let capturedName: string | undefined;
     let capturedHandler: ((args: Record<string, unknown>) => Promise<unknown>) | undefined;
 
     const mockServer = {
@@ -12,6 +13,7 @@ describe("registerDiagnosticTools", () => {
         _config: unknown,
         handler: (args: Record<string, unknown>) => Promise<unknown>,
       ) => {
+        capturedName = name;
         capturedHandler = handler;
         return {} as ReturnType<McpServer["registerTool"]>;
       },
@@ -19,6 +21,7 @@ describe("registerDiagnosticTools", () => {
 
     registerDiagnosticTools(mockServer);
 
+    expect(capturedName).toBe("get_gateway_status");
     expect(capturedHandler).toBeDefined();
 
     const result = await capturedHandler!({}) as { content: Array<{ type: string; text: string }> };
