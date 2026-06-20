@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { listAlarms } from "./cloudwatch.js";
-import { CloudWatchError } from "./cloudwatch-types.js";
-import { ValidationError } from "../security/errors.js";
-import { buildCacheKey } from "../cache/keys.js";
-import { cwAlarmsResponse } from "../test/fixtures.js";
-import type { AwsCredentials } from "./types.js";
+import { listAlarms } from "./client.js";
+import { CloudWatchError } from "./types.js";
+import { ValidationError } from "../../security/errors.js";
+import { buildCacheKey } from "../../cache/keys.js";
+import { cwAlarmsResponse } from "../../test/fixtures.js";
+import type { AwsCredentials } from "../types.js";
 
 const { mockFetch, awsClientConstructors } = vi.hoisted(() => {
   const mockFetch = vi.fn();

@@ -1,6 +1,14 @@
-import type { GatewayContext } from "../mcp/context.js";
+import type { AwsCredentials } from "../aws/types.js";
+import type { KVNamespace } from "@cloudflare/workers-types";
 import { parseRegions } from "../security/regions.js";
 import type { ValidatedGatewayConfig } from "./env.js";
+
+export interface GatewayContext {
+  credentials: AwsCredentials;
+  region: string;
+  allowedRegions: string[];
+  cache?: KVNamespace;
+}
 
 export function buildGatewayContext(config: ValidatedGatewayConfig): GatewayContext {
   return {

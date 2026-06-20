@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GatewayContext } from "../context.js";
+import type { GatewayContext } from "../../config/context.js";
 import { registerListEc2InstancesTool } from "./list-ec2-instances.js";
 import {
   ec2XmlResponse,

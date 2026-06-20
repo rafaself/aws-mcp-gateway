@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { listInstances } from "./ec2.js";
-import { Ec2Error } from "./ec2-types.js";
-import { ValidationError } from "../security/errors.js";
-import { buildCacheKey } from "../cache/keys.js";
+import { listInstances } from "./client.js";
+import { Ec2Error } from "./types.js";
+import { ValidationError } from "../../security/errors.js";
+import { buildCacheKey } from "../../cache/keys.js";
 import {
   ec2XmlResponse,
   describeInstancesXml,
   instanceXml,
-} from "../test/fixtures.js";
-import type { AwsCredentials } from "./types.js";
+} from "../../test/fixtures.js";
+import type { AwsCredentials } from "../types.js";
 
 const { mockFetch, awsClientConstructors } = vi.hoisted(() => {
   const mockFetch = vi.fn();

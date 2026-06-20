@@ -40,10 +40,15 @@ Source layout:
 ```text
 src/auth/       bearer auth
 src/aws/        AWS request client and service-specific clients
+src/aws/cost-explorer/
+src/aws/ec2/
+src/aws/cloudwatch/
+src/aws/logs/
 src/cache/      cache helpers
 src/config/     env validation and gateway context
 src/errors/     error classes and handling
 src/mcp/        MCP server and tool registration
+src/mcp/audit/  MCP tool audit logging
 src/security/   limits, dates, region validation, redaction helpers
 src/test/       shared test setup and fixtures
 ```
@@ -53,7 +58,7 @@ Rules:
 - Avoid flat folders as the project grows.
 - Avoid generic `utils.ts` files for domain logic.
 - AWS modules must not import MCP modules.
-- MCP modules may import AWS clients, security, and config helpers.
+- MCP modules may import AWS clients, security, config context types, and config helpers.
 
 ## Security boundaries
 

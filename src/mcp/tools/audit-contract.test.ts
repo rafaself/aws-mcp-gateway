@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GatewayContext } from "../context.js";
+import type { GatewayContext } from "../../config/context.js";
 import { GatewayError } from "../../errors/public-error.js";
 import { registerStatusTool } from "./status.js";
 import { registerCostSummaryTool } from "./cost-summary.js";
@@ -28,17 +28,29 @@ vi.mock("../../aws/cost-explorer/index.js", () => ({
   getCostByService: getCostByServiceMock,
 }));
 
-vi.mock("../../aws/ec2.js", () => ({
-  listInstances: listInstancesMock,
-}));
+vi.mock("../../aws/ec2/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../aws/ec2/index.js")>();
+  return {
+    ...actual,
+    listInstances: listInstancesMock,
+  };
+});
 
-vi.mock("../../aws/cloudwatch.js", () => ({
-  listAlarms: listAlarmsMock,
-}));
+vi.mock("../../aws/cloudwatch/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../aws/cloudwatch/index.js")>();
+  return {
+    ...actual,
+    listAlarms: listAlarmsMock,
+  };
+});
 
-vi.mock("../../aws/logs.js", () => ({
-  filterLogEvents: filterLogEventsMock,
-}));
+vi.mock("../../aws/logs/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../aws/logs/index.js")>();
+  return {
+    ...actual,
+    filterLogEvents: filterLogEventsMock,
+  };
+});
 
 type AuditEvent = {
   event: "mcp_tool_call";

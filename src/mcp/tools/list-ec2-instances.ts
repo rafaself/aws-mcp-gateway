@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GatewayContext } from "../context.js";
-import { listInstances } from "../../aws/ec2.js";
-import { summarizeRegionListInput } from "../../audit/tool-input.js";
+import type { GatewayContext } from "../../config/context.js";
+import { listInstances, VALID_INSTANCE_STATES, type Ec2InstanceState } from "../../aws/ec2/index.js";
+import { summarizeRegionListInput } from "../audit/tool-input.js";
 import { safeMcpHandler } from "./response.js";
 
 export function registerListEc2InstancesTool(server: McpServer, ctx: GatewayContext): void {
@@ -17,14 +17,7 @@ export function registerListEc2InstancesTool(server: McpServer, ctx: GatewayCont
           .describe("AWS regions to query (defaults to all allowed regions)."),
         states: z
           .array(
-            z.enum([
-              "pending",
-              "running",
-              "stopping",
-              "stopped",
-              "shutting-down",
-              "terminated",
-            ]),
+            z.enum([...VALID_INSTANCE_STATES] as [Ec2InstanceState, ...Ec2InstanceState[]]),
           )
           .optional()
           .describe("Filter by instance states."),

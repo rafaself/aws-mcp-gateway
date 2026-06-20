@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GatewayContext } from "./context.js";
+import type { GatewayContext } from "../config/context.js";
 import { registerTools } from "./tools/index.js";
 
 export function createServer(ctx: GatewayContext): McpServer {

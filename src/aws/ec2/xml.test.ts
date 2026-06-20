@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseEc2Response } from "./ec2-xml.js";
-import { describeInstancesXml, instanceXml } from "../test/fixtures.js";
+import { parseEc2Response } from "./xml.js";
+import { describeInstancesXml, instanceXml } from "../../test/fixtures.js";
 
 describe("parseEc2Response", () => {
   it("parses a realistic DescribeInstances XML response", () => {
