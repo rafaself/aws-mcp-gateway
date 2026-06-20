@@ -166,6 +166,10 @@ pnpm test
 pnpm dev
 ```
 
+### Pull requests
+
+PRs are expected to pass `pnpm run typecheck` and `pnpm test` before merge. The CI workflow runs these checks automatically on every pull request and push to `main`.
+
 ## Deployment
 
 Expected deployment flow:
