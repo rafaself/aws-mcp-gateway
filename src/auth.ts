@@ -1,12 +1,9 @@
+import { GatewayError, errorResponse } from "./errors.js";
+
 function unauthorizedResponse(): Response {
-  return Response.json(
-    {
-      error: {
-        code: "unauthorized",
-        message: "Authentication is required.",
-      },
-    },
-    { status: 401 },
+  return errorResponse(
+    new GatewayError("unauthorized", "Authentication is required."),
+    401,
   );
 }
 

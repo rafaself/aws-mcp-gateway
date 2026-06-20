@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AwsCredentials } from "../aws/types.js";
-import { getCostSummary, CostExplorerError } from "../aws/cost-explorer.js";
-import { ValidationError } from "../security/errors.js";
+import { getCostSummary } from "../aws/cost-explorer.js";
+import { GatewayError, mcpErrorResult } from "../errors.js";
 
 export interface GatewayContext {
   credentials: AwsCredentials;
@@ -77,14 +77,13 @@ export function registerCostTools(server: McpServer, ctx: GatewayContext): void 
           },
         };
       } catch (error) {
-        if (error instanceof CostExplorerError || error instanceof ValidationError) {
-          return {
-            content: [{ type: "text" as const, text: error.message }],
-            isError: true,
-          };
+        if (error instanceof GatewayError) {
+          return mcpErrorResult(error);
         }
 
-        throw error;
+        return mcpErrorResult(
+          new GatewayError("internal_error", "An unexpected error occurred."),
+        );
       }
     },
   );
