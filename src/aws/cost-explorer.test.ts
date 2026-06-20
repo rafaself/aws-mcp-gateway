@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getCostSummary, getCostByService, CostExplorerError } from "./cost-explorer.js";
 import { ValidationError } from "../security/errors.js";
 import type { AwsCredentials } from "./types.js";
+import type { KVNamespace } from "@cloudflare/workers-types";
+import { buildCacheKey } from "../cache/keys.js";
 
 const { mockFetch, awsClientConstructors } = vi.hoisted(() => {
   const mockFetch = vi.fn();
@@ -529,5 +531,193 @@ describe("getCostByService", () => {
     const errStr = JSON.stringify(err);
     expect(errStr).not.toContain("AKIA");
     expect(errStr).not.toContain("test-secret");
+  });
+});
+
+function createMockKv(): { store: Map<string, string>; get: ReturnType<typeof vi.fn>; put: ReturnType<typeof vi.fn> } {
+  const store = new Map<string, string>();
+
+  const get = vi.fn(async (key: string, _type?: string) => {
+    const raw = store.get(key);
+    if (raw === undefined) return null;
+    return JSON.parse(raw);
+  });
+
+  const put = vi.fn(
+    async (key: string, value: string, _options?: { expirationTtl?: number }) => {
+      store.set(key, value);
+    },
+  );
+
+  return { store, get, put };
+}
+
+describe("getCostSummary with cache", () => {
+  it("returns cached result without calling AWS on cache hit", async () => {
+    const cache = createMockKv();
+    const cachedResult = {
+      period: { startDate: "2025-01-01", endDate: "2025-02-01" },
+      currency: "USD",
+      total: 100,
+    };
+    const key = await buildCacheKey("get_aws_cost_summary", {
+      startDate: "2025-01-01",
+      endDate: "2025-02-01",
+      granularity: "MONTHLY",
+      metric: "UnblendedCost",
+    });
+    cache.store.set(key, JSON.stringify(cachedResult));
+
+    const result = await getCostSummary(
+      { startDate: "2025-01-01", endDate: "2025-02-01", granularity: "MONTHLY" },
+      credentials,
+      "us-east-1",
+      cache as unknown as KVNamespace,
+    );
+
+    expect(result).toEqual(cachedResult);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("calls AWS and stores result on cache miss", async () => {
+    const cache = createMockKv();
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "42.50")]),
+    );
+
+    const result = await getCostSummary(
+      { startDate: "2025-01-01", endDate: "2025-02-01", granularity: "MONTHLY" },
+      credentials,
+      "us-east-1",
+      cache as unknown as KVNamespace,
+    );
+
+    expect(result).toEqual({
+      period: { startDate: "2025-01-01", endDate: "2025-02-01" },
+      currency: "USD",
+      total: 42.5,
+    });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(cache.put).toHaveBeenCalled();
+  });
+
+  it("does not cache when AWS call fails", async () => {
+    const cache = createMockKv();
+    mockFetch.mockRejectedValue(new Error("Network failure"));
+
+    await expect(
+      getCostSummary(
+        { startDate: "2025-01-01", endDate: "2025-02-01" },
+        credentials,
+        "us-east-1",
+        cache as unknown as KVNamespace,
+      ),
+    ).rejects.toThrow();
+
+    expect(cache.put).not.toHaveBeenCalled();
+  });
+
+  it("works when cache binding is absent", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
+    );
+
+    const result = await getCostSummary(
+      { startDate: "2025-01-01", endDate: "2025-02-01" },
+      credentials,
+    );
+
+    expect(result.total).toBe(10);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("getCostByService with cache", () => {
+  it("returns cached result without calling AWS on cache hit", async () => {
+    const cache = createMockKv();
+    const cachedResult = {
+      period: { startDate: "2025-01-01", endDate: "2025-02-01" },
+      currency: "USD",
+      total: 150,
+      services: [
+        { service: "Amazon EC2", amount: 100 },
+        { service: "Amazon S3", amount: 50 },
+      ],
+    };
+    const key = await buildCacheKey("get_aws_cost_by_service", {
+      startDate: "2025-01-01",
+      endDate: "2025-02-01",
+      granularity: "MONTHLY",
+      metric: "UnblendedCost",
+    });
+    cache.store.set(key, JSON.stringify(cachedResult));
+
+    const result = await getCostByService(
+      { startDate: "2025-01-01", endDate: "2025-02-01", granularity: "MONTHLY" },
+      credentials,
+      "us-east-1",
+      cache as unknown as KVNamespace,
+    );
+
+    expect(result).toEqual(cachedResult);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("calls AWS and stores result on cache miss", async () => {
+    const cache = createMockKv();
+    mockFetch.mockResolvedValue(
+      ceResponse([
+        makeDayWithGroups("2025-01-01", "2025-02-01", "150.00", [
+          { key: "Amazon EC2", amount: "100.00" },
+          { key: "Amazon S3", amount: "50.00" },
+        ]),
+      ]),
+    );
+
+    const result = await getCostByService(
+      { startDate: "2025-01-01", endDate: "2025-02-01", granularity: "MONTHLY" },
+      credentials,
+      "us-east-1",
+      cache as unknown as KVNamespace,
+    );
+
+    expect(result.total).toBe(150);
+    expect(result.services).toHaveLength(2);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(cache.put).toHaveBeenCalled();
+  });
+
+  it("does not cache when AWS call fails", async () => {
+    const cache = createMockKv();
+    mockFetch.mockRejectedValue(new Error("Network failure"));
+
+    await expect(
+      getCostByService(
+        { startDate: "2025-01-01", endDate: "2025-02-01" },
+        credentials,
+        "us-east-1",
+        cache as unknown as KVNamespace,
+      ),
+    ).rejects.toThrow();
+
+    expect(cache.put).not.toHaveBeenCalled();
+  });
+
+  it("works when cache binding is absent", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([
+        makeDayWithGroups("2025-01-01", "2025-02-01", "50.00", [
+          { key: "Amazon EC2", amount: "50.00" },
+        ]),
+      ]),
+    );
+
+    const result = await getCostByService(
+      { startDate: "2025-01-01", endDate: "2025-02-01" },
+      credentials,
+    );
+
+    expect(result.total).toBe(50);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });
