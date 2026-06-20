@@ -15,13 +15,16 @@ The gateway today is a minimal Cloudflare Worker MCP gateway with **explicit, re
 - Normalized tool output only — never raw AWS response bodies.
 - Optional KV caching for repeated or costly reads.
 
-**Forbidden in the MVP and permanently forbidden as a pattern:**
+**Forbidden in the MVP:**
+
+- Write or management operations.
+
+**Permanently forbidden patterns:**
 
 - Generic AWS CLI execution (`run_aws_cli` or equivalent).
 - Arbitrary AWS API proxying (`call_any_aws_api` or equivalent).
-- Write or management operations.
 
-Post-MVP work described below does **not** relax these prohibitions unless a reviewed spec explicitly replaces a boundary and the change is approved through the normal review process.
+Post-MVP specs may introduce narrow write or management tools only under the requirements below. They must never introduce generic AWS CLI execution or arbitrary AWS API proxying.
 
 ---
 
