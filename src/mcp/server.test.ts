@@ -50,5 +50,6 @@ describe("createServer", () => {
     expect(toolNames).toContain("get_gateway_status");
     expect(toolNames).toContain("get_aws_cost_summary");
     expect(toolNames).toContain("get_aws_cost_by_service");
+    expect(toolNames).toContain("list_ec2_instances");
   });
 });

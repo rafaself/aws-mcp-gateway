@@ -17,6 +17,9 @@ importers:
       aws4fetch:
         specifier: ^1.0.20
         version: 1.0.20
+      fast-xml-parser:
+        specifier: ^5.9.3
+        version: 5.9.3
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -1251,8 +1254,8 @@ packages:
   fast-xml-builder@1.2.0:
     resolution: {integrity: sha512-00aAWieqff+ZJhsXA4g1g7M8k+7AYoMUUHF+/zFb5U6Uv/P0Vl4QZo84/IcufzYalLuEj9928bXN9PbbFzMF0Q==}
 
-  fast-xml-parser@5.9.2:
-    resolution: {integrity: sha512-DYPkXnVSJHAGAkSBeVYhEo/seIpz2SLr9OQcX7m6lXaX3gvoB+DCKzFdZIEhZGI3I1DUhObBAUOT/v2xfoXz/w==}
+  fast-xml-parser@5.9.3:
+    resolution: {integrity: sha512-brCNCeScma/kqa54J4PIDriSSSLssRkuYaUCpvHJulGc3HGI/xxKUCTDcYkAdqJsyb//ydpbxecjC3hB9+tb/g==}
     hasBin: true
 
   fdir@6.5.0:
@@ -3176,7 +3179,7 @@ snapshots:
       path-expression-matcher: 1.5.0
       xml-naming: 0.1.0
 
-  fast-xml-parser@5.9.2:
+  fast-xml-parser@5.9.3:
     dependencies:
       '@nodable/entities': 2.2.0
       fast-xml-builder: 1.2.0
@@ -3327,7 +3330,7 @@ snapshots:
   just-bash@3.0.1:
     dependencies:
       diff: 8.0.4
-      fast-xml-parser: 5.9.2
+      fast-xml-parser: 5.9.3
       file-type: 21.3.4
       ini: 6.0.0
       minimatch: 10.2.5

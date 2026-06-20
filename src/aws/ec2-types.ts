@@ -5,6 +5,7 @@ export type Ec2InstanceState =
   | "running"
   | "stopping"
   | "stopped"
+  | "shutting-down"
   | "terminated";
 
 export const VALID_INSTANCE_STATES: readonly Ec2InstanceState[] = [
@@ -12,12 +13,13 @@ export const VALID_INSTANCE_STATES: readonly Ec2InstanceState[] = [
   "running",
   "stopping",
   "stopped",
+  "shutting-down",
   "terminated",
 ] as const;
 
 export interface Ec2ListInstancesOptions {
   regions?: string[];
-  stateFilter?: Ec2InstanceState;
+  stateFilter?: Ec2InstanceState[];
 }
 
 export interface Ec2Instance {

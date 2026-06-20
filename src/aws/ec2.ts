@@ -1,6 +1,7 @@
 import { AwsClient } from "aws4fetch";
 import { AwsRequestError } from "./errors.js";
 import { resolveRegions } from "../security/regions.js";
+import { parseEc2Response } from "./ec2-xml.js";
 import type { AwsCredentials } from "./types.js";
 import {
   Ec2Error,
@@ -20,6 +21,12 @@ function validateStateFilter(state: string): void {
       "invalid_state_filter",
       `Invalid EC2 instance state "${state}". Valid states: ${VALID_INSTANCE_STATES.join(", ")}`,
     );
+  }
+}
+
+function validateStateFilters(states: string[]): void {
+  for (const state of states) {
+    validateStateFilter(state);
   }
 }
 
@@ -74,7 +81,7 @@ async function ec2Fetch<T>(
       return {} as T;
     }
 
-    return JSON.parse(text) as T;
+    return parseEc2Response(text) as T;
   } catch (err) {
     if (err instanceof AwsRequestError) {
       throw err;
@@ -129,13 +136,15 @@ function parseInstance(raw: Ec2RawInstance, region: string): Ec2Instance {
 }
 
 function buildDescribeInstancesParams(
-  stateFilter: string | undefined,
+  stateFilters: string[],
 ): Record<string, string> {
   const params: Record<string, string> = {};
 
-  if (stateFilter) {
+  if (stateFilters.length > 0) {
     params["Filter.1.Name"] = "instance-state-name";
-    params["Filter.1.Value.1"] = stateFilter;
+    stateFilters.forEach((state, index) => {
+      params[`Filter.1.Value.${index + 1}`] = state;
+    });
   }
 
   return params;
@@ -146,13 +155,13 @@ export async function listInstances(
   allowedRegions: string[],
   credentials: AwsCredentials,
 ): Promise<Ec2Instance[]> {
-  if (options.stateFilter) {
-    validateStateFilter(options.stateFilter);
+  if (options.stateFilter && options.stateFilter.length > 0) {
+    validateStateFilters(options.stateFilter);
   }
 
   const regions = resolveRegions(options.regions, allowedRegions);
 
-  const params = buildDescribeInstancesParams(options.stateFilter);
+  const params = buildDescribeInstancesParams(options.stateFilter ?? []);
 
   const outcomes = await Promise.allSettled(
     regions.map((region) =>
