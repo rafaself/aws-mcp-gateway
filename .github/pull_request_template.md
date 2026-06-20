@@ -10,9 +10,28 @@
 
 - [ ] Spec added or updated in `docs/specs/`, or not required for this change.
 
-## Checks
+## Quality checklist
 
-- [ ] `pnpm run typecheck`
-- [ ] Tests added or updated when behavior changed.
+- [ ] Issue acceptance criteria are met.
+- [ ] `pnpm run typecheck` passes.
+- [ ] `pnpm test` passes.
+- [ ] `pnpm run test:integrity` passes.
+- [ ] Tests were not weakened only to pass.
+- [ ] No focused test marker (`.only`) was committed.
+- [ ] Skipped tests include an explicit `intentional-skip:` justification.
+- [ ] Security and read-only behavior are preserved.
+- [ ] Unit tests do not require live AWS or Cloudflare access.
+- [ ] Documentation updated when public behavior or setup changed.
 - [ ] No secrets or local-only files committed.
-- [ ] Documentation updated when setup or behavior changed.
+
+## Test changes
+
+<!-- Explain what test changes were made and why:
+  - Added coverage for new behavior.
+  - Updated existing tests to match intentional behavior change.
+  - Refactored test structure without changing assertions.
+  - Other (describe). -->
+
+## Risk review
+
+<!-- How could this change pass tests but still violate the issue, security model, or application goal? -->
