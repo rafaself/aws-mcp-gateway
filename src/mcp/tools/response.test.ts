@@ -51,7 +51,7 @@ describe("safeMcpHandler", () => {
 
   it("emits audit event on success with console.log", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const handler = safeMcpHandler(
       { toolName: "my_tool", awsService: "ce", getRegion: () => "us-east-1" },
