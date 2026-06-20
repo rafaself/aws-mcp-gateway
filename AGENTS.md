@@ -66,7 +66,7 @@ Rules:
 - Enforce region allowlists for regional AWS tools.
 - Enforce date and result-size limits.
 - Return normalized output — never raw provider responses.
-- Never expose credentials, bearer tokens, signed headers, raw stack traces, or raw AWS responses.
+- Never expose or log credentials, bearer tokens, signed headers, raw stack traces, or raw AWS responses.
 - Do not add new production dependencies without a clear reason.
 
 ## Testing expectations
