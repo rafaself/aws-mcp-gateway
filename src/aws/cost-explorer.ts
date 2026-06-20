@@ -41,23 +41,29 @@ interface CeResponse {
   ResultsByTime?: CeResultByTime[];
 }
 
-function validateCostDates(startDate: string, endDate: string): void {
-  if (!DATE_REGEX.test(startDate) || !DATE_REGEX.test(endDate)) {
+function parseIsoDate(value: string): Date {
+  if (!DATE_REGEX.test(value)) {
     throw new CostExplorerError(
       "invalid_date_format",
       "Dates must be in YYYY-MM-DD format.",
     );
   }
 
-  const start = new Date(startDate + "T00:00:00Z");
-  const end = new Date(endDate + "T00:00:00Z");
+  const date = new Date(`${value}T00:00:00Z`);
 
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
     throw new CostExplorerError(
       "invalid_date",
       "Dates must be valid calendar dates.",
     );
   }
+
+  return date;
+}
+
+function validateCostDates(startDate: string, endDate: string): void {
+  const start = parseIsoDate(startDate);
+  const end = parseIsoDate(endDate);
 
   if (start >= end) {
     throw new CostExplorerError(

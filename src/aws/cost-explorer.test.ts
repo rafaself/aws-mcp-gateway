@@ -157,6 +157,15 @@ describe("getCostSummary", () => {
     ).rejects.toThrow(CostExplorerError);
   });
 
+  it("rejects invalid calendar dates like 2025-02-30 (Feb 30 does not exist)", async () => {
+    await expect(
+      getCostSummary(
+        { startDate: "2025-02-30", endDate: "2025-03-01" },
+        credentials,
+      ),
+    ).rejects.toThrow(CostExplorerError);
+  });
+
   it("throws CostExplorerError when startDate >= endDate", async () => {
     await expect(
       getCostSummary(
