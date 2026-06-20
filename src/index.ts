@@ -36,15 +36,15 @@ export default {
     }
 
     if (url.pathname === "/mcp") {
-      const authResponse = authenticateRequest(request, env);
-      const isAuthenticated = authResponse === null;
+      const authResponse = await authenticateRequest(request, env);
+      if (authResponse) {
+        return authResponse;
+      }
 
       const envResult = validateEnv(env);
       if (!envResult.valid) {
-        return envErrorResponse(envResult, isAuthenticated);
+        return envErrorResponse(envResult, true);
       }
-
-      if (authResponse) return authResponse;
 
       const gatewayCtx = buildGatewayContext(envResult.config);
       const server = createServer(gatewayCtx);

@@ -1,4 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
+import { resetJwksCache, setJwksResolverForTesting } from "./auth/oauth/jwks.js";
+import {
+  createTestOAuthFixture,
+  TEST_OAUTH_AUDIENCE,
+  TEST_OAUTH_ISSUER,
+  TEST_OAUTH_JWKS_URI,
+} from "./test/fixtures/oauth-jwks.js";
 
 vi.mock("agents/mcp", () => ({
   createMcpHandler: () => async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
@@ -10,12 +17,12 @@ vi.mock("./mcp/server.js", () => ({
 
 const { default: worker } = await import("./index.js");
 
-const oauthEnv = {
+const oauthEnvBase = {
   AUTH_MODE: "oauth",
-  MCP_RESOURCE_URL: "https://gateway.example.com",
-  OAUTH_ISSUER: "https://auth.example.com/",
-  OAUTH_AUDIENCE: "https://gateway.example.com",
-  OAUTH_JWKS_URI: "https://auth.example.com/.well-known/jwks.json",
+  MCP_RESOURCE_URL: TEST_OAUTH_AUDIENCE,
+  OAUTH_ISSUER: TEST_OAUTH_ISSUER,
+  OAUTH_AUDIENCE: TEST_OAUTH_AUDIENCE,
+  OAUTH_JWKS_URI: TEST_OAUTH_JWKS_URI,
   OAUTH_REQUIRED_SCOPES: "aws:read",
   AWS_ACCESS_KEY_ID: "key",
   AWS_SECRET_ACCESS_KEY: "secret",
@@ -32,19 +39,23 @@ const legacyEnv = {
   MCP_AUTH_TOKEN: "valid-token",
 };
 
+beforeEach(() => {
+  resetJwksCache();
+});
+
 describe("oauth protected-resource metadata route", () => {
   it("returns 200 with expected fields in oauth mode", async () => {
     const response = await worker.fetch(
       new Request("https://gateway.example.com/.well-known/oauth-protected-resource"),
-      oauthEnv,
+      oauthEnvBase,
       {} as ExecutionContext,
     );
 
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body).toEqual({
-      resource: "https://gateway.example.com",
-      authorization_servers: ["https://auth.example.com/"],
+      resource: TEST_OAUTH_AUDIENCE,
+      authorization_servers: [TEST_OAUTH_ISSUER],
       scopes_supported: ["aws:read"],
       resource_documentation: "https://github.com/rafaself/aws-mcp-gateway",
     });
@@ -80,13 +91,16 @@ describe("oauth protected-resource metadata route", () => {
 
 describe("oauth /mcp challenge", () => {
   it("returns 401 with WWW-Authenticate for unauthenticated requests", async () => {
+    const fixture = await createTestOAuthFixture();
+    setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
+
     const response = await worker.fetch(
       new Request("https://gateway.example.com/mcp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
       }),
-      oauthEnv,
+      oauthEnvBase,
       {} as ExecutionContext,
     );
 
@@ -97,6 +111,46 @@ describe("oauth /mcp challenge", () => {
     const body = await response.json() as { error: { code: string; message: string } };
     expect(body.error.code).toBe("unauthorized");
     expect(body.error.message).toBe("Authentication is required.");
+  });
+
+  it("accepts valid OAuth JWT without MCP_AUTH_TOKEN", async () => {
+    const fixture = await createTestOAuthFixture();
+    setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
+    const token = await fixture.signAccessToken();
+
+    const response = await worker.fetch(
+      new Request("https://gateway.example.com/mcp", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+      }),
+      oauthEnvBase,
+      {} as ExecutionContext,
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  it("does not expose AWS config details to unauthenticated callers", async () => {
+    const fixture = await createTestOAuthFixture();
+    setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
+
+    const response = await worker.fetch(
+      new Request("https://gateway.example.com/mcp", { method: "POST" }),
+      {
+        ...oauthEnvBase,
+        AWS_ACCESS_KEY_ID: undefined,
+        AWS_SECRET_ACCESS_KEY: undefined,
+      },
+      {} as ExecutionContext,
+    );
+
+    expect(response.status).toBe(401);
+    const body = await response.json() as { error: { message: string } };
+    expect(body.error.message).not.toContain("AWS_ACCESS_KEY_ID");
   });
 });
 

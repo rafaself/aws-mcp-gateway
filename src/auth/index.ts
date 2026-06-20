@@ -1,9 +1,12 @@
 import { authenticateLegacyBearerRequest } from "./bearer.js";
-import { authenticateOAuthRequestStub } from "./oauth/oauth-auth.js";
+import { authenticateOAuthRequest } from "./oauth/verify-token.js";
 import { GatewayError, errorResponse } from "../errors/public-error.js";
 import { parseAuthMode, validateOAuthConfig } from "../config/env.js";
 
-export function authenticateRequest(request: Request, env: unknown): Response | null {
+export async function authenticateRequest(
+  request: Request,
+  env: unknown,
+): Promise<Response | null> {
   const authMode = parseAuthMode(env);
 
   if (authMode === "oauth") {
@@ -14,7 +17,7 @@ export function authenticateRequest(request: Request, env: unknown): Response | 
         503,
       );
     }
-    return authenticateOAuthRequestStub(request, oauthResult.config!);
+    return authenticateOAuthRequest(request, oauthResult.config!);
   }
 
   return authenticateLegacyBearerRequest(request, env);

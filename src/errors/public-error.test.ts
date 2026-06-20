@@ -62,6 +62,16 @@ describe("errorResponse", () => {
 
     expect(body.error.retryable).toBe(true);
   });
+
+  it("includes optional response headers", async () => {
+    const err = new GatewayError("unauthorized", "Authentication is required.");
+
+    const response = errorResponse(err, 401, {
+      "WWW-Authenticate": 'Bearer scope="aws:read"',
+    });
+
+    expect(response.headers.get("WWW-Authenticate")).toBe('Bearer scope="aws:read"');
+  });
 });
 
 describe("mcpErrorResult", () => {
