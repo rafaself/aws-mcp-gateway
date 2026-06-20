@@ -163,7 +163,7 @@ Expected commands after scaffolding:
 pnpm install
 pnpm run typecheck
 pnpm test
-wrangler dev
+pnpm dev
 ```
 
 ## Deployment
@@ -174,7 +174,7 @@ Expected deployment flow:
 wrangler secret put AWS_ACCESS_KEY_ID
 wrangler secret put AWS_SECRET_ACCESS_KEY
 wrangler secret put MCP_AUTH_TOKEN
-wrangler deploy
+pnpm deploy
 ```
 
 The deployed MCP endpoint should look like:
