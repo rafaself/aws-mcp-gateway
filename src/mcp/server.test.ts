@@ -51,5 +51,6 @@ describe("createServer", () => {
     expect(toolNames).toContain("get_aws_cost_summary");
     expect(toolNames).toContain("get_aws_cost_by_service");
     expect(toolNames).toContain("list_ec2_instances");
+    expect(toolNames).toContain("get_cloudwatch_alarms");
   });
 });
