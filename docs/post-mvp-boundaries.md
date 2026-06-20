@@ -61,11 +61,11 @@ Any write or management capability must:
 
 ## OAuth and multi-user authentication
 
-The MVP uses a **single shared bearer token** (`MCP_AUTH_TOKEN`) suitable for personal or single-tenant deployment. OAuth or multi-user auth is **not required for the MVP** and must not weaken the current model unless explicitly replaced by a reviewed design.
+The MVP uses a **single shared bearer token** (`MCP_AUTH_TOKEN`) suitable for personal or single-tenant deployment. ChatGPT connector OAuth is **designed** in [docs/specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md) and must not weaken the current model unless explicitly replaced by that reviewed design.
 
 ### Requirements before implementation
 
-Any future OAuth or multi-user auth must:
+Any OAuth or multi-user auth implementation must follow the spec above. Additionally:
 
 1. **Be designed separately** from the MVP bearer-auth model. Do not bolt OAuth onto the existing token check without a dedicated spec covering identity, storage, and authorization.
 2. **Define user identity, token storage, revocation, and authorization boundaries.** Document how users are identified, how tokens are issued and stored, how revocation works, and which tools each principal may call.
