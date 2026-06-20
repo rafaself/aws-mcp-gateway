@@ -1,0 +1,655 @@
+# MCP Tool Contracts
+
+This document defines the public contract for every MCP tool exposed by the
+gateway. It is the authoritative reference for input validation, output shape,
+error behavior, caching, region handling, and safety boundaries.
+
+**Contract rules:**
+
+- `structuredContent` is the stable machine-readable contract. Human-readable
+  `text` is secondary and non-authoritative.
+- All normalized outputs are documented. Raw AWS response fields are never
+  exposed.
+- Every tool is read-only. Write and management operations are out of scope for
+  the MVP.
+- Invalid input always fails before any downstream AWS call.
+- Generic AWS access (arbitrary API proxy or CLI execution) is outside scope.
+
+---
+
+## Tool index
+
+| # | Tool | Page |
+|---|------|------|
+| 1 | `get_gateway_status` | [↓](#1-get_gateway_status) |
+| 2 | `get_aws_cost_summary` | [↓](#2-get_aws_cost_summary) |
+| 3 | `get_aws_cost_by_service` | [↓](#3-get_aws_cost_by_service) |
+| 4 | `list_ec2_instances` | [↓](#4-list_ec2_instances) |
+| 5 | `get_cloudwatch_alarms` | [↓](#5-get_cloudwatch_alarms) |
+| 6 | `get_recent_log_errors` | [↓](#6-get_recent_log_errors) |
+
+---
+
+## 1. `get_gateway_status`
+
+**Purpose:** Returns the current gateway status. Use this to verify the MCP
+server is running without making any AWS calls.
+
+### Input
+
+No parameters.
+
+### Behavior
+
+- Does not require authentication to invoke (the tool is registered before the
+  per-request auth check, and the handler is stateless).
+- Makes no AWS calls.
+- Always succeeds.
+
+### Output
+
+```typescript
+{
+  content: [
+    {
+      type: "text",
+      text: string, // JSON: {"service":"aws-mcp-gateway","status":"ok","mode":"read-only"}
+    }
+  ]
+  // No structuredContent field
+}
+```
+
+### Error codes
+
+None — the handler always returns a successful response.
+
+### Safety boundaries
+
+- This tool is purely informational. It has no side effects.
+- The `mode` field always reads `"read-only"` to reinforce the gateway's
+  security posture.
+
+---
+
+## 2. `get_aws_cost_summary`
+
+**Purpose:** Returns the total AWS cost for a given time period via Cost
+Explorer.
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `startDate` | `string` | yes | — | Must match `YYYY-MM-DD`, valid calendar date, not in the future. |
+| `endDate` | `string` | yes | — | Must match `YYYY-MM-DD`, valid calendar date, not in the future, after `startDate`. |
+| `granularity` | `"DAILY"` \| `"MONTHLY"` | no | `"MONTHLY"` | Must be one of the two values. |
+
+**Additional validation (server-side, after Zod checks):**
+
+- `startDate` must be before `endDate`.
+- Neither date may be in the future.
+- Date range must not exceed **90 days** (`COST_MAX_DATE_RANGE_DAYS`).
+
+### Region behavior
+
+- Always signs requests to `us-east-1` (Cost Explorer is a global API). The
+  tool does not accept a region parameter.
+- The `ctx.region` value is used for signing but Cost Explorer is always a
+  global `us-east-1` call.
+
+### AWS API
+
+- **Service:** Cost Explorer (`ce`)
+- **Target:** `AWSInsightsIndexService.GetCostAndUsage`
+- **Metric:** `UnblendedCost` (hard-coded, not configurable by the caller)
+- **Request body variant:** No `GroupBy` — returns a single total per time
+  period.
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `startDate`, `endDate`, `granularity`, `metric` (always `UnblendedCost`) |
+| TTL | 1800 seconds (30 minutes) — the KV default |
+| Cache miss | Calls AWS, then stores the normalized result |
+| AWS failure | Result is **not** cached |
+| Cache absent | Works without caching when `AWS_MCP_CACHE` is not configured |
+
+### Output
+
+```typescript
+{
+  content: [
+    {
+      type: "text",
+      text: string, // e.g. "AWS cost from 2025-01-01 to 2025-01-31 is 1234.56 USD."
+    }
+  ],
+  structuredContent: {
+    period: {
+      startDate: string, // YYYY-MM-DD
+      endDate: string    // YYYY-MM-DD
+    },
+    granularity: "DAILY" | "MONTHLY",
+    total: number,       // e.g. 1234.56
+    currency: string     // e.g. "USD"
+  }
+}
+```
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Invalid date format | `validation_error` | false |
+| `startDate` after `endDate` | `validation_error` | false |
+| Future date | `validation_error` | false |
+| Range > 90 days | `validation_error` | false |
+| Invalid granularity | `validation_error` | false |
+| AWS API failure | `aws_request_failed` | varies |
+| Unknown error | `internal_error` | false |
+
+### Safety boundaries
+
+- No AWS call is made when validation fails.
+- Raw `ResultsByTime`, `TimePeriod`, or `UnblendedCost` fields from the AWS
+  response are never exposed in the MCP output.
+- `UnblendedCost` is the only metric — no other cost metric is exposed.
+- Credentials and signed headers are never leaked in error payloads.
+
+---
+
+## 3. `get_aws_cost_by_service`
+
+**Purpose:** Returns AWS costs broken down by service for a given time period
+via Cost Explorer.
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `startDate` | `string` | yes | — | See `get_aws_cost_summary`. |
+| `endDate` | `string` | yes | — | See `get_aws_cost_summary`. |
+| `granularity` | `"DAILY"` \| `"MONTHLY"` | no | `"MONTHLY"` | Must be one of the two values. |
+| `limit` | `number` | no | `10` | Integer, min 1, max **25** (`COST_MAX_SERVICE_ROWS`). |
+
+### Region behavior
+
+Same as `get_aws_cost_summary` — always `us-east-1`.
+
+### AWS API
+
+- **Service:** Cost Explorer (`ce`)
+- **Target:** `AWSInsightsIndexService.GetCostAndUsage`
+- **Metric:** `UnblendedCost` (hard-coded)
+- **Request body variant:** `GroupBy: [{ Type: "DIMENSION", Key: "SERVICE" }]`
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `startDate`, `endDate`, `granularity`, `metric` |
+| TTL | 1800 seconds (30 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [
+    {
+      type: "text",
+      text: string, // e.g. "AWS cost from 2025-01-01 to 2025-01-31 is 1234.56 USD.\nTop services by cost:\nEC2: 500.00 USD\nS3: 300.00 USD"
+    }
+  ],
+  structuredContent: {
+    period: {
+      startDate: string, // YYYY-MM-DD
+      endDate: string    // YYYY-MM-DD
+    },
+    granularity: "DAILY" | "MONTHLY",
+    total: number,
+    currency: string,
+    services: [
+      { service: string, amount: number }, // sorted by amount descending
+      // ... up to `limit` entries
+    ]
+  }
+}
+```
+
+### Error codes
+
+Same as `get_aws_cost_summary`, plus:
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| `limit` out of range (1–25) | `validation_error` | false |
+
+### Safety boundaries
+
+- Same as `get_aws_cost_summary`.
+- Services are sorted by cost descending before the `limit` slice is applied.
+- The `limit` parameter only controls how many entries are returned to the
+  caller; the AWS API is called for all services before filtering.
+
+---
+
+## 4. `list_ec2_instances`
+
+**Purpose:** Lists EC2 instances across regions with optional state and region
+filtering.
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `regions` | `string[]` | no | All allowed regions | Each region must be in the `AWS_ALLOWED_REGIONS` allowlist. |
+| `states` | `string[]` | no | All states | Each value must be one of: `pending`, `running`, `stopping`, `stopped`, `shutting-down`, `terminated`. |
+
+### Region behavior
+
+- If `regions` is omitted, all regions in the `AWS_ALLOWED_REGIONS` allowlist
+  are queried.
+- Each requested region is validated against the allowlist before any AWS call.
+- Regions are queried in parallel using `Promise.allSettled`.
+- Partial failures are tolerated: data from successful regions is returned. If
+  **all** regions fail, the first error is thrown.
+
+### AWS API
+
+- **Service:** EC2 (`ec2`)
+- **Action:** `DescribeInstances`
+- **API version:** `2016-11-15`
+- **Content-Type:** `application/x-www-form-urlencoded`
+- **Response format:** XML (parsed via `fast-xml-parser`)
+- **Timeout:** 30 seconds per region
+- **State filter:** Sent as `Filter.1.Name=instance-state-name` with
+  `Filter.1.Value.N={state}` values.
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `regions` (sorted), `stateFilter` (sorted) |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [
+    {
+      type: "text",
+      text: string, // Summary grouped by state and by region
+    }
+  ],
+  structuredContent: {
+    regions: string[],        // Sorted unique region names
+    count: number,
+    instances: [
+      {
+        instanceId: string,   // e.g. "i-1234567890abcdef0"
+        region: string,       // e.g. "us-east-1"
+        state: string,        // e.g. "running"
+        instanceType: string, // e.g. "t3.micro"
+        name: string          // From "Name" tag, empty string if absent
+      }
+      // Sorted by region, then instanceId
+    ]
+  }
+}
+```
+
+### Redacted fields
+
+The following raw EC2 response fields are explicitly **not** included in the
+MCP output:
+
+- `launchTime`
+- `availabilityZone`
+- `publicIpAddress`
+- `privateIpAddress`
+- `tagSet` (except the `Name` tag which is extracted as `name`)
+- `reservationId`
+- `ownerId`
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Invalid instance state | `validation_error` | false |
+| Region not in allowlist | `validation_error` | false |
+| AWS request failure (all regions) | `aws_request_failed` | true (on 5xx / timeout) |
+| Timeout | `aws_request_failed` | true |
+| Unknown error | `internal_error` | false |
+
+### Safety boundaries
+
+- No AWS call if region validation fails.
+- No AWS call if a provided state value is invalid.
+- Partial region failure is tolerated — usable data from successful regions is
+  still returned.
+- Instances are sorted deterministically (by region, then instanceId) to
+  produce stable output.
+
+---
+
+## 5. `get_cloudwatch_alarms`
+
+**Purpose:** Lists CloudWatch alarms across regions with optional state and
+region filtering.
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `regions` | `string[]` | no | All allowed regions | Each region must be in the `AWS_ALLOWED_REGIONS` allowlist. |
+| `states` | `string[]` | no | All states | Each value must be one of: `ALARM`, `INSUFFICIENT_DATA`, `OK`. |
+
+### Region behavior
+
+- Same pattern as `list_ec2_instances`: defaults to all allowed regions,
+  allowlist validation, parallel queries, partial failure tolerance.
+
+### AWS API
+
+- **Service:** CloudWatch (`monitoring`)
+- **Target:** `GraniteServiceVersion20100801.DescribeAlarms`
+- **Pagination:** Handles `NextToken` — fetches all pages.
+- **Single state filter:** Sent as `StateValue` in the request body.
+- **Multiple state filters:** Applied client-side after retrieving all alarms.
+- **Max records per page:** 100 (`MAX_RECORDS`).
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `regions` (sorted), `stateFilter` (sorted) |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [
+    {
+      type: "text",
+      text: string, // Grouped by state: ALARM first, INSUFFICIENT_DATA, then OK
+    }
+  ],
+  structuredContent: {
+    regions: string[], // Queried regions list
+    count: number,
+    alarms: [
+      {
+        name: string,       // Alarm name
+        region: string,     // e.g. "us-east-1"
+        state: "ALARM" | "INSUFFICIENT_DATA" | "OK",
+        reason: string,     // State reason text
+        updatedAt: string   // ISO 8601 timestamp
+      }
+      // Sorted by state priority (ALARM first), then region, then name
+    ]
+  }
+}
+```
+
+### Redacted fields
+
+The raw CloudWatch response includes `namespace` and `metricName` in the
+internal type, but these are **not** included in `structuredContent.alarms`
+entries. Only `name`, `region`, `state`, `reason`, and `updatedAt` are exposed.
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Invalid alarm state | `validation_error` | false |
+| Region not in allowlist | `validation_error` | false |
+| AWS request failure (all regions) | `aws_request_failed` | varies |
+| Unknown error | `internal_error` | false |
+
+### Safety boundaries
+
+- No AWS call if region validation fails.
+- No AWS call if a provided state value is invalid.
+- Partial region failure is tolerated.
+- Alarms are sorted deterministically (ALARM first, then by region, then by
+  name).
+
+---
+
+## 6. `get_recent_log_errors`
+
+**Purpose:** Returns recent error, exception, and warning log events from a
+CloudWatch log group.
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `region` | `string` | yes | — | Must be in the `AWS_ALLOWED_REGIONS` allowlist. |
+| `logGroupName` | `string` | yes | — | Must be a non-empty, non-whitespace string. |
+| `hours` | `number` | no | `1` | Integer, min 1, max **24** (`LOGS_MAX_HOURS`). |
+| `limit` | `number` | no | `20` | Integer, min 1, max **50** (`LOGS_MAX_EVENTS`). |
+
+### Region behavior
+
+- Single region (not an array like EC2 / CloudWatch tools).
+- Validated against the `AWS_ALLOWED_REGIONS` allowlist before any AWS call.
+
+### AWS API
+
+- **Service:** CloudWatch Logs (`logs`)
+- **Target:** `Logs_20140328.FilterLogEvents`
+- **Filter pattern (hard-coded):**
+  `"?ERROR ?Error ?error ?Exception ?exception ?WARN ?Warn ?warn"`
+- **Time range:** `startTime = now - (hours * 3600000)`, `endTime = now`.
+- **Message truncation:** Messages longer than **1000 characters**
+  (`LOGS_MAX_MESSAGE_LENGTH`) are truncated.
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `logGroupName`, `region`, `filterPattern`, `startTime`, `endTime`, `limit` |
+| TTL | 300 seconds (5 minutes) |
+| Time bucketing | `startTime` and `endTime` are rounded to the nearest cache TTL window (`cacheBucketMs = 300_000`) so that queries within the same window produce the same cache key. |
+
+### Output
+
+```typescript
+{
+  content: [
+    {
+      type: "text",
+      text: string, // e.g. "Found 5 error log event(s) in /aws/lambda/my-function (us-east-1, last 1h)."
+    }
+  ],
+  structuredContent: {
+    region: string,          // e.g. "us-east-1"
+    logGroupName: string,    // e.g. "/aws/lambda/my-function"
+    count: number,
+    events: [
+      {
+        timestamp: string,     // ISO 8601
+        logStreamName: string, // e.g. "2025/01/01/[$LATEST]abc123"
+        message: string       // Truncated to 1000 characters
+      }
+    ]
+  }
+}
+```
+
+### Redacted fields
+
+The following raw CloudWatch Logs response fields are **not** included in the
+MCP output:
+
+- `eventId`
+- `ingestionTime`
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Region not in allowlist | `validation_error` | false |
+| Empty `logGroupName` | `validation_error` | false |
+| `hours` out of range (1–24) | `validation_error` | false |
+| `limit` out of range (1–50) | `validation_error` | false |
+| AWS API failure | `aws_request_failed` | varies |
+| Unknown error | `internal_error` | false |
+
+### Safety boundaries
+
+- No AWS call if validation fails (region, hours, limit, logGroupName).
+- Log messages are truncated to 1000 characters to prevent oversized responses.
+- Timestamps are normalized to ISO 8601 strings.
+- The filter pattern is fixed and cannot be overridden by the caller.
+
+---
+
+## Error codes reference
+
+All tool errors use the `GatewayError` class hierarchy and return a consistent
+shape.
+
+### Error response shapes
+
+**HTTP-level error (`errorResponse`):**
+
+```typescript
+{
+  error: {
+    code: string,      // GatewayErrorCode
+    message: string,   // Human-readable description
+    retryable: boolean // Whether the client may retry
+  }
+}
+```
+
+**MCP-level error (`mcpErrorResult`):**
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  isError: true,
+  structuredContent: {
+    error: {
+      code: string,
+      retryable: boolean
+    }
+    // message is NOT included in structuredContent — only in text
+  }
+}
+```
+
+### Error codes
+
+| Code | Meaning | When |
+|------|---------|------|
+| `unauthorized` | Authentication failed | Missing or invalid `MCP_AUTH_TOKEN` |
+| `configuration_error` | Gateway configuration is invalid | Missing or invalid env bindings |
+| `validation_error` | Tool input failed validation | Invalid date, region, state, limit, etc. |
+| `aws_request_failed` | AWS API call failed | Network error, 5xx, timeout, invalid request |
+| `not_found` | Unknown route | HTTP path not matching `/mcp` or `/health` |
+| `internal_error` | Unexpected error | Uncaught exception in handler |
+
+### Error hierarchy
+
+```
+Error
+  └── GatewayError (code, retryable, toJSON())
+        ├── ValidationError (retryable always false)
+        │     ├── Ec2Error
+        │     ├── CloudWatchError
+        │     ├── LogsError
+        │     └── CostExplorerError
+        └── AwsRequestError (statusCode, service, region)
+```
+
+### Error handler wrapper
+
+Every tool handler is wrapped in `safeMcpHandler` which:
+
+- Catches `GatewayError` instances and returns `mcpErrorResult(error)`.
+- Catches any other error and returns an `internal_error` with a generic
+  message `"An unexpected error occurred."`.
+
+---
+
+## Cache behavior summary
+
+| Tool | Cached | Key components | TTL |
+|------|--------|----------------|-----|
+| `get_gateway_status` | No | N/A | N/A |
+| `get_aws_cost_summary` | Yes | startDate, endDate, granularity, metric | 1800s (30 min) |
+| `get_aws_cost_by_service` | Yes | startDate, endDate, granularity, metric | 1800s (30 min) |
+| `list_ec2_instances` | Yes | regions, stateFilter | 300s (5 min) |
+| `get_cloudwatch_alarms` | Yes | regions, stateFilter | 300s (5 min) |
+| `get_recent_log_errors` | Yes | logGroupName, region, filterPattern, startTime, endTime, limit | 300s (5 min) |
+
+**Key generation:** `SHA-256(toolName:normalizedParams)` → `ce:{64-hex-chars}`.
+Parameters are normalized with sorted keys and type-tagged serialization.
+
+**General rules:**
+
+- AWS is **not** called on cache hit.
+- AWS results are **not** cached when the AWS call fails.
+- Caching is optional. When `AWS_MCP_CACHE` KV namespace is not configured, all
+  tools work without caching.
+
+---
+
+## Security boundaries
+
+1. **Read-only mandate:** All tools are read-only. No write, management, or
+   mutation operations are exposed.
+2. **No generic AWS access:** There is no `run_aws_cli`, `call_any_aws_api`, or
+   arbitrary API proxy tool.
+3. **Region allowlist:** Every regional tool validates regions against the
+   `AWS_ALLOWED_REGIONS` environment variable.
+4. **Input validation before AWS calls:** Zod schemas and security validators
+   reject invalid input before any downstream call.
+5. **Normalized output:** Raw AWS response fields are never exposed in MCP
+   output. Only normalized, documented fields are included.
+6. **Credentials never leaked:** AWS access keys, bearer tokens, signed headers,
+   and raw stack traces are never exposed in error payloads or MCP content.
+7. **Bearer token authentication:** The `/mcp` endpoint requires a valid
+   `MCP_AUTH_TOKEN` in the `Authorization` header.
+8. **Result size limits:** Cost results are capped at 25 services, log events
+   at 50, and date ranges at 90 days.
+9. **Log message truncation:** Log event messages are truncated to 1000
+   characters.
+10. **Cache TTL limits:** Short TTLs (300 seconds for most tools, 1800 seconds
+    for cost tools) limit stale data exposure.
+
+---
+
+## Environment configuration
+
+The following environment bindings are required to use the AWS-backed MCP tools:
+
+| Binding | Description |
+|---------|-------------|
+| `AWS_ACCESS_KEY_ID` | AWS access key |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret key |
+| `AWS_REGION` | Default signing region (must be in `AWS_ALLOWED_REGIONS`) |
+| `AWS_ALLOWED_REGIONS` | Comma-separated list of allowed regions |
+| `MCP_AUTH_TOKEN` | Bearer token for MCP authentication |
+
+Optional binding:
+
+| Binding | Description |
+|---------|-------------|
+| `AWS_MCP_CACHE` | Cloudflare KV namespace for caching |
+
+If configuration is missing, unauthenticated callers receive a generic
+`configuration_error`. Authenticated callers receive a specific list of missing
+bindings.
