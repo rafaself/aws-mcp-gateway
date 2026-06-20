@@ -205,21 +205,35 @@ pnpm dev
 
 PRs are expected to pass `pnpm run typecheck` and `pnpm test` before merge. The CI workflow runs these checks automatically on every pull request and push to `main`.
 
+See [docs/deployment.md](docs/deployment.md) for the full deployment and verification guide.
+
 ## Deployment
 
-Expected deployment flow:
+See [docs/deployment.md](docs/deployment.md) for the full deployment guide, including:
+
+- Prerequisites and local install
+- Required secrets and configuration
+- Optional KV cache setup
+- Deployment command
+- Verification steps for `/health` and `/mcp`
+- Rollback notes
+
+Quick reference:
 
 ```bash
+pnpm install
+pnpm run typecheck
+pnpm test
 wrangler secret put AWS_ACCESS_KEY_ID
 wrangler secret put AWS_SECRET_ACCESS_KEY
 wrangler secret put MCP_AUTH_TOKEN
 pnpm deploy
 ```
 
-The deployed MCP endpoint should look like:
+The deployed MCP endpoint will be available at:
 
 ```text
-https://aws-mcp-gateway.<account>.workers.dev/mcp
+https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp
 ```
 
 A custom domain can be added later, but it is not required for the MVP.
@@ -233,6 +247,8 @@ https://<your-worker-domain>/mcp
 ```
 
 The connector must authenticate before calling AWS-backed tools.
+
+See [docs/mcp-testing.md](docs/mcp-testing.md) for the recommended smoke test sequence and expected tool behavior, including failure modes for invalid regions, date ranges, and missing authentication.
 
 ## Repository safety
 
@@ -271,6 +287,8 @@ Never commit:
 ## Testing
 
 Unit tests run via Vitest and are **offline by default**.
+
+For manual smoke testing of a deployed gateway, see [docs/mcp-testing.md](docs/mcp-testing.md).
 
 ```bash
 pnpm test
