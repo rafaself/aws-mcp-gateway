@@ -1,4 +1,5 @@
 import { ValidationError } from "../../security/errors.js";
+import type { GatewayErrorCode } from "../../errors/public-error.js";
 
 export type CostGranularity = "DAILY" | "MONTHLY";
 export type CostMetric = "UnblendedCost" | "AmortizedCost";
@@ -35,7 +36,7 @@ export interface CostByServiceResult {
 }
 
 export class CostExplorerError extends ValidationError {
-  constructor(code: string, message: string) {
+  constructor(code: GatewayErrorCode, message: string) {
     super(code, message);
     this.name = "CostExplorerError";
   }

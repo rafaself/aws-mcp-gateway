@@ -48,11 +48,11 @@ describe("validateAllowedRegions", () => {
     expect(() => validateAllowedRegions([])).toThrow(ValidationError);
   });
 
-  it("throws with empty_allowed_regions code", () => {
+  it("throws with validation_error code for empty allowed regions", () => {
     try {
       validateAllowedRegions([]);
     } catch (e) {
-      expect(e).toMatchObject({ code: "empty_allowed_regions" });
+      expect(e).toMatchObject({ code: "validation_error" });
     }
   });
 });
@@ -86,11 +86,11 @@ describe("resolveRegions", () => {
     );
   });
 
-  it("throws with region_not_allowed code", () => {
+  it("throws with validation_error code", () => {
     try {
       resolveRegions(["us-west-2"], allowed);
     } catch (e) {
-      expect(e).toMatchObject({ code: "region_not_allowed" });
+      expect(e).toMatchObject({ code: "validation_error" });
     }
   });
 
@@ -116,11 +116,11 @@ describe("validateRegion", () => {
     expect(() => validateRegion("us-west-2", ["us-east-1", "sa-east-1"])).toThrow(ValidationError);
   });
 
-  it("throws with region_not_allowed code", () => {
+  it("throws with validation_error code", () => {
     try {
       validateRegion("eu-central-1", ["us-east-1"]);
     } catch (e) {
-      expect(e).toMatchObject({ code: "region_not_allowed" });
+      expect(e).toMatchObject({ code: "validation_error" });
     }
   });
 
@@ -132,11 +132,11 @@ describe("validateRegion", () => {
     }
   });
 
-  it("throws empty_allowed_regions when allowlist is empty", () => {
+  it("throws validation_error when allowlist is empty", () => {
     try {
       validateRegion("us-east-1", []);
     } catch (e) {
-      expect(e).toMatchObject({ code: "empty_allowed_regions" });
+      expect(e).toMatchObject({ code: "validation_error" });
     }
   });
 });

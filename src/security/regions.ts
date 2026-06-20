@@ -8,7 +8,7 @@ export function parseRegions(raw: string | undefined): string[] {
 export function validateAllowedRegions(allowedRegions: string[]): void {
   if (allowedRegions.length === 0) {
     throw new ValidationError(
-      "empty_allowed_regions",
+      "validation_error",
       "The allowed regions list is empty.",
     );
   }
@@ -19,7 +19,7 @@ export function validateRegion(region: string, allowedRegions: string[]): void {
 
   if (!allowedRegions.includes(region)) {
     throw new ValidationError(
-      "region_not_allowed",
+      "validation_error",
       `Region "${region}" is not in the allowed regions list.`,
     );
   }
@@ -38,7 +38,7 @@ export function resolveRegions(
   for (const region of requestedRegions) {
     if (!allowedRegions.includes(region)) {
       throw new ValidationError(
-        "region_not_allowed",
+        "validation_error",
         `Region "${region}" is not in the allowed regions list.`,
       );
     }

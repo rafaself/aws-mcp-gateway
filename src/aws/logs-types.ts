@@ -1,4 +1,5 @@
 import { ValidationError } from "../security/errors.js";
+import type { GatewayErrorCode } from "../errors/public-error.js";
 
 export interface LogEvent {
   logGroupName: string;
@@ -25,7 +26,7 @@ export interface FilterLogEventsOptions {
 }
 
 export class LogsError extends ValidationError {
-  constructor(code: string, message: string) {
+  constructor(code: GatewayErrorCode, message: string) {
     super(code, message);
     this.name = "LogsError";
   }

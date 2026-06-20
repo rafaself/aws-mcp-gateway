@@ -130,7 +130,7 @@ describe("getCostSummary", () => {
       credentials,
     ).catch((e) => e);
 
-    expect(err).toMatchObject({ code: "unsupported_metric" });
+    expect(err).toMatchObject({ code: "validation_error" });
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -148,7 +148,7 @@ describe("getCostSummary", () => {
       credentials,
     ).catch((e) => e);
 
-    expect(err).toMatchObject({ code: "unsupported_granularity" });
+    expect(err).toMatchObject({ code: "validation_error" });
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -294,7 +294,7 @@ describe("getCostSummary", () => {
       credentials,
     ).catch((e) => e);
 
-    expect(err).toMatchObject({ code: "future_date" });
+    expect(err).toMatchObject({ code: "validation_error" });
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -308,7 +308,7 @@ describe("getCostSummary", () => {
       credentials,
     ).catch((e) => e);
 
-    expect(err).toMatchObject({ code: "future_date" });
+    expect(err).toMatchObject({ code: "validation_error" });
     expect(mockFetch).not.toHaveBeenCalled();
   });
 });
@@ -360,7 +360,7 @@ describe("getCostByService", () => {
       credentials,
     ).catch((e) => e);
 
-    expect(err).toMatchObject({ code: "unsupported_metric" });
+    expect(err).toMatchObject({ code: "validation_error" });
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -378,7 +378,7 @@ describe("getCostByService", () => {
       credentials,
     ).catch((e) => e);
 
-    expect(err).toMatchObject({ code: "unsupported_granularity" });
+    expect(err).toMatchObject({ code: "validation_error" });
     expect(mockFetch).not.toHaveBeenCalled();
   });
 

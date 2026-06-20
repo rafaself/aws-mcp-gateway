@@ -45,11 +45,11 @@ describe("validateGranularity", () => {
     expect(() => validateGranularity("YEARLY")).toThrow(CostExplorerError);
   });
 
-  it("throws with unsupported_granularity code", () => {
+  it("throws with validation_error code for unsupported granularity", () => {
     try {
       validateGranularity("HOURLY");
     } catch (e) {
-      expect(e).toMatchObject({ code: "unsupported_granularity" });
+      expect(e).toMatchObject({ code: "validation_error" });
     }
   });
 });
@@ -67,11 +67,11 @@ describe("validateMetric", () => {
     expect(() => validateMetric("BlendedCost")).toThrow(CostExplorerError);
   });
 
-  it("throws with unsupported_metric code", () => {
+  it("throws with validation_error code for unsupported metric", () => {
     try {
       validateMetric("BlendedCost");
     } catch (e) {
-      expect(e).toMatchObject({ code: "unsupported_metric" });
+      expect(e).toMatchObject({ code: "validation_error" });
     }
   });
 });

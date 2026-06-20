@@ -15,11 +15,11 @@ describe("parseIsoDate", () => {
     expect(() => parseIsoDate("01-01-2025")).toThrow(ValidationError);
   });
 
-  it("throws with invalid_date_format code", () => {
+  it("throws with validation_error code", () => {
     try {
       parseIsoDate("01/01/2025");
     } catch (e) {
-      expect(e).toMatchObject({ code: "invalid_date_format" });
+      expect(e).toMatchObject({ code: "validation_error" });
     }
   });
 
@@ -27,11 +27,11 @@ describe("parseIsoDate", () => {
     expect(() => parseIsoDate("2025-02-30")).toThrow(ValidationError);
   });
 
-  it("throws with invalid_date code for non-existent date", () => {
+  it("throws with validation_error code for non-existent date", () => {
     try {
       parseIsoDate("2025-02-30");
     } catch (e) {
-      expect(e).toMatchObject({ code: "invalid_date" });
+      expect(e).toMatchObject({ code: "validation_error" });
     }
   });
 
@@ -59,11 +59,11 @@ describe("validateCostDates", () => {
     ).toThrow(ValidationError);
   });
 
-  it("throws with invalid_date_range code for inverted dates", () => {
+  it("throws with validation_error code for inverted dates", () => {
     try {
       validateCostDates("2025-02-01", "2025-01-01");
     } catch (e) {
-      expect(e).toMatchObject({ code: "invalid_date_range" });
+      expect(e).toMatchObject({ code: "validation_error" });
     }
   });
 
@@ -73,11 +73,11 @@ describe("validateCostDates", () => {
     ).toThrow(ValidationError);
   });
 
-  it("throws with date_range_exceeded code for long range", () => {
+  it("throws with validation_error code for long range", () => {
     try {
       validateCostDates("2025-01-01", "2025-05-01");
     } catch (e) {
-      expect(e).toMatchObject({ code: "date_range_exceeded" });
+      expect(e).toMatchObject({ code: "validation_error" });
     }
   });
 
@@ -93,11 +93,11 @@ describe("validateCostDates", () => {
     ).toThrow(ValidationError);
   });
 
-  it("throws with future_date code for future dates", () => {
+  it("throws with validation_error code for future dates", () => {
     try {
       validateCostDates("2030-01-01", "2030-02-01");
     } catch (e) {
-      expect(e).toMatchObject({ code: "future_date" });
+      expect(e).toMatchObject({ code: "validation_error" });
     }
   });
 
