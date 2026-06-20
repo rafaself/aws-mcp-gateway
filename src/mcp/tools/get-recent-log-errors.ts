@@ -4,6 +4,7 @@ import type { GatewayContext } from "../context.js";
 import { filterLogEvents } from "../../aws/logs.js";
 import { LogsError } from "../../aws/logs-types.js";
 import { LOGS_MAX_HOURS, LOGS_MAX_EVENTS } from "../../security/limits.js";
+import { validateRegion } from "../../security/regions.js";
 import { safeMcpHandler } from "./response.js";
 
 export function registerGetRecentLogErrorsTool(server: McpServer, ctx: GatewayContext): void {
@@ -35,12 +36,7 @@ export function registerGetRecentLogErrorsTool(server: McpServer, ctx: GatewayCo
       }),
     },
     safeMcpHandler(async (args) => {
-      if (!ctx.allowedRegions.includes(args.region)) {
-        throw new LogsError(
-          "region_not_allowed",
-          `Region "${args.region}" is not in the allowed regions list.`,
-        );
-      }
+      validateRegion(args.region, ctx.allowedRegions);
 
       if (!args.logGroupName || args.logGroupName.trim().length === 0) {
         throw new LogsError("missing_log_group", "logGroupName is required.");
