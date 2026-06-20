@@ -269,4 +269,81 @@ describe("registerCostSummaryTool", () => {
     expect(result).toHaveProperty("structuredContent");
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
+
+  it("accepts a 90-day date range as valid", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayTotal("2025-01-01", "2025-04-01", "50.00")]),
+    );
+
+    const mock = makeMockServer();
+    registerCostSummaryTool(mock.server, testContext);
+    const tool = mock.getTool("get_aws_cost_summary")!;
+    const result = await tool.handler({
+      startDate: "2025-01-01",
+      endDate: "2025-04-01",
+      granularity: "MONTHLY",
+    }) as Record<string, unknown>;
+
+    expect(result.isError).toBeUndefined();
+    expect(result.structuredContent).toHaveProperty("total");
+  });
+
+  it("rejects date range exceeding 90-day maximum", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayTotal("2025-01-01", "2025-04-02", "50.00")]),
+    );
+
+    const mock = makeMockServer();
+    registerCostSummaryTool(mock.server, testContext);
+    const tool = mock.getTool("get_aws_cost_summary")!;
+    const result = await tool.handler({
+      startDate: "2025-01-01",
+      endDate: "2025-04-02",
+      granularity: "MONTHLY",
+    }) as Record<string, unknown>;
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      error: { code: "validation_error", retryable: false },
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("does not leak raw Cost Explorer response fields in MCP output", async () => {
+    mockFetch.mockResolvedValue(
+      ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "42.50")]),
+    );
+
+    const mock = makeMockServer();
+    registerCostSummaryTool(mock.server, testContext);
+    const tool = mock.getTool("get_aws_cost_summary")!;
+    const result = await tool.handler({
+      startDate: "2025-01-01",
+      endDate: "2025-02-01",
+      granularity: "MONTHLY",
+    }) as Record<string, unknown>;
+
+    const resultStr = JSON.stringify(result);
+    expect(resultStr).not.toContain("ResultsByTime");
+    expect(resultStr).not.toContain("TimePeriod");
+    expect(resultStr).not.toContain("UnblendedCost");
+  });
+
+  it("returns normalized error when AWS request fails", async () => {
+    mockFetch.mockRejectedValue(new Error("Network failure"));
+
+    const mock = makeMockServer();
+    registerCostSummaryTool(mock.server, testContext);
+    const tool = mock.getTool("get_aws_cost_summary")!;
+    const result = await tool.handler({
+      startDate: "2025-01-01",
+      endDate: "2025-02-01",
+      granularity: "MONTHLY",
+    }) as Record<string, unknown>;
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      error: { code: "aws_request_failed", retryable: false },
+    });
+  });
 });

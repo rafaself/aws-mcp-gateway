@@ -285,4 +285,54 @@ describe("registerListEc2InstancesTool", () => {
     expect(resultStr).not.toContain("reservationId");
     expect(resultStr).not.toContain("ownerId");
   });
+
+  it("returns instances in deterministic order (by region then instanceId)", async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes("us-west-2")) {
+        return Promise.resolve(
+          ec2XmlResponse(
+            describeInstancesXml([
+              instanceXml({ instanceId: "i-b-001" }),
+            ]),
+          ),
+        );
+      }
+      return Promise.resolve(
+        ec2XmlResponse(
+          describeInstancesXml([
+            instanceXml({ instanceId: "i-a-001" }),
+            instanceXml({ instanceId: "i-a-002" }),
+          ]),
+        ),
+      );
+    });
+
+    const mock = makeMockServer();
+    registerListEc2InstancesTool(mock.server, testContext);
+    const tool = mock.getTool("list_ec2_instances")!;
+    const result = await tool.handler({}) as Record<string, unknown>;
+
+    const instances = (result.structuredContent as Record<string, unknown>).instances as Array<{ instanceId: string; region: string }>;
+    expect(instances).toHaveLength(3);
+    expect(instances[0].instanceId).toBe("i-a-001");
+    expect(instances[0].region).toBe("us-east-1");
+    expect(instances[1].instanceId).toBe("i-a-002");
+    expect(instances[1].region).toBe("us-east-1");
+    expect(instances[2].instanceId).toBe("i-b-001");
+    expect(instances[2].region).toBe("us-west-2");
+  });
+
+  it("returns normalized error when all regions fail", async () => {
+    mockFetch.mockRejectedValue(new Error("EC2 service down"));
+
+    const mock = makeMockServer();
+    registerListEc2InstancesTool(mock.server, singleRegionContext);
+    const tool = mock.getTool("list_ec2_instances")!;
+    const result = await tool.handler({}) as Record<string, unknown>;
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      error: { code: "aws_request_failed", retryable: false },
+    });
+  });
 });
