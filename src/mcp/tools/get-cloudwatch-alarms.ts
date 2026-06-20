@@ -32,6 +32,7 @@ export function registerGetCloudwatchAlarmsTool(server: McpServer, ctx: GatewayC
         },
         ctx.allowedRegions,
         ctx.credentials,
+        ctx.cache,
       );
       const count = alarms.length;
 

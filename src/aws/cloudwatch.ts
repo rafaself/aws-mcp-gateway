@@ -1,7 +1,11 @@
 import { awsRequest } from "./client.js";
 import { resolveRegions } from "../security/regions.js";
 import { AwsRequestError } from "./errors.js";
+import { buildCacheKey } from "../cache/keys.js";
+import { cacheGet, cacheSet } from "../cache/kv.js";
+import { CW_CACHE_TTL_SECONDS } from "../security/limits.js";
 import type { AwsCredentials } from "./types.js";
+import type { KVNamespace } from "@cloudflare/workers-types";
 import {
   CloudWatchError,
   VALID_ALARM_STATES,
@@ -104,13 +108,25 @@ export async function listAlarms(
   options: ListAlarmsOptions,
   allowedRegions: string[],
   credentials: AwsCredentials,
+  cache?: KVNamespace,
 ): Promise<CloudWatchAlarm[]> {
   if (options.stateFilter && options.stateFilter.length > 0) {
     validateStateFilters(options.stateFilter);
   }
 
   const regions = resolveRegions(options.regions, allowedRegions);
+  const sortedRegions = [...regions].sort();
+  const sortedStateFilter = (options.stateFilter ?? []).slice().sort();
   const stateFilter = options.stateFilter ?? [];
+
+  if (cache) {
+    const cacheKey = await buildCacheKey("get_cloudwatch_alarms", {
+      regions: sortedRegions,
+      stateFilter: sortedStateFilter,
+    });
+    const cached = await cacheGet<CloudWatchAlarm[]>(cache, cacheKey);
+    if (cached) return cached;
+  }
 
   const outcomes = await Promise.allSettled(
     regions.map((region) =>
@@ -152,6 +168,14 @@ export async function listAlarms(
     if (regionCmp !== 0) return regionCmp;
     return a.name.localeCompare(b.name);
   });
+
+  if (cache) {
+    const cacheKey = await buildCacheKey("get_cloudwatch_alarms", {
+      regions: sortedRegions,
+      stateFilter: sortedStateFilter,
+    });
+    await cacheSet(cache, cacheKey, allAlarms, CW_CACHE_TTL_SECONDS);
+  }
 
   return allAlarms;
 }

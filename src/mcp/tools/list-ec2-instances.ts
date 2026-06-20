@@ -37,6 +37,7 @@ export function registerListEc2InstancesTool(server: McpServer, ctx: GatewayCont
         },
         ctx.allowedRegions,
         ctx.credentials,
+        ctx.cache,
       );
 
       const resultRegions = [...new Set(instances.map((i) => i.region))].sort();

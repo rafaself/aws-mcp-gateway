@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { listAlarms } from "./cloudwatch.js";
 import { CloudWatchError } from "./cloudwatch-types.js";
 import { ValidationError } from "../security/errors.js";
+import { buildCacheKey } from "../cache/keys.js";
 import { cwAlarmsResponse } from "../test/fixtures.js";
 import type { AwsCredentials } from "./types.js";
 
@@ -444,5 +445,96 @@ describe("listAlarms", () => {
       namespace: "",
       metricName: "",
     });
+  });
+});
+
+function createMockKv(): { store: Map<string, string>; get: ReturnType<typeof vi.fn>; put: ReturnType<typeof vi.fn> } {
+  const store = new Map<string, string>();
+
+  const get = vi.fn(async (key: string, _type?: string) => {
+    const raw = store.get(key);
+    if (raw === undefined) return null;
+    return JSON.parse(raw);
+  });
+
+  const put = vi.fn(
+    async (key: string, value: string, _options?: { expirationTtl?: number }) => {
+      store.set(key, value);
+    },
+  );
+
+  return { store, get, put };
+}
+
+describe("listAlarms with cache", () => {
+  it("returns cached result without calling AWS on cache hit", async () => {
+    const cache = createMockKv();
+    const cachedResult = [
+      {
+        name: "CachedAlarm",
+        region: "us-east-1",
+        state: "ALARM",
+        reason: "Cached reason",
+        updatedAt: "2026-06-19T12:00:00.000Z",
+        namespace: "AWS/EC2",
+        metricName: "CPUUtilization",
+      },
+    ];
+    const key = await buildCacheKey("get_cloudwatch_alarms", {
+      regions: ["us-east-1"],
+      stateFilter: [],
+    });
+    cache.store.set(key, JSON.stringify(cachedResult));
+
+    const result = await listAlarms(
+      {},
+      ["us-east-1"],
+      credentials,
+      cache as never,
+    );
+
+    expect(result).toEqual(cachedResult);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("calls AWS and stores result on cache miss", async () => {
+    const cache = createMockKv();
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(cwAlarmsResponse([makeAlarm({ name: "FreshAlarm" })])),
+    );
+
+    const result = await listAlarms(
+      {},
+      ["us-east-1"],
+      credentials,
+      cache as never,
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("FreshAlarm");
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(cache.put).toHaveBeenCalled();
+  });
+
+  it("does not cache when AWS call fails", async () => {
+    const cache = createMockKv();
+    mockFetch.mockRejectedValue(new Error("Network error"));
+
+    await expect(
+      listAlarms({}, ["us-east-1"], credentials, cache as never),
+    ).rejects.toThrow();
+
+    expect(cache.put).not.toHaveBeenCalled();
+  });
+
+  it("works when cache binding is absent", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(cwAlarmsResponse([makeAlarm({ name: "NoCache" })])),
+    );
+
+    const result = await listAlarms({}, ["us-east-1"], credentials);
+
+    expect(result).toHaveLength(1);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });

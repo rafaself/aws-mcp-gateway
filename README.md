@@ -118,7 +118,7 @@ These are operational configuration, not credentials. They are safe to commit an
 
 ### Optional KV namespace
 
-Cost Explorer results are cached in a Cloudflare KV namespace to reduce AWS API calls and cost.
+Cost Explorer, EC2, CloudWatch, and Logs results are cached in a Cloudflare KV namespace to reduce AWS API calls and cost.
 
 Configure the KV namespace in `wrangler.jsonc`:
 
@@ -141,9 +141,9 @@ wrangler kv:namespace create "AWS_MCP_CACHE"
 
 Copy the returned `id` into `wrangler.jsonc`.
 
-The cache is optional for local development and tests. If the binding is absent, Cost Explorer calls proceed without caching.
+The cache is optional for local development and tests. If the binding is absent, all tool calls proceed without caching.
 
-**Default TTL:** 30 minutes (1800 seconds).
+**TTLs:** Cost tools use 1800 seconds (30 minutes); EC2 inventory, CloudWatch alarms, and recent log events use 300 seconds (5 minutes).
 
 **Security:** Cache keys are SHA-256 hashes of the tool name and normalized input parameters. Keys and cached values never include AWS credentials, MCP auth tokens, or raw request headers. Only normalized tool output is stored — never raw AWS responses.
 
@@ -172,13 +172,16 @@ This template is intentionally narrow. Do not use `AdministratorAccess` or broad
 
 ## Cost controls
 
-The most important cost control is caching Cost Explorer responses via Cloudflare KV.
+The most important cost control is caching tool responses via Cloudflare KV.
 
 Cache TTL:
 
 ```text
-Cost summary: 30 minutes
-Cost by service: 30 minutes
+Cost summary:          30 minutes (1800s)
+Cost by service:       30 minutes (1800s)
+EC2 inventory:          5 minutes  (300s)
+CloudWatch alarms:      5 minutes  (300s)
+Recent log events:      5 minutes  (300s)
 ```
 
 Tool-level limits should reject overly broad requests before calling AWS.
