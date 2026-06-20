@@ -96,6 +96,38 @@ Copy the returned `id` into `wrangler.jsonc`:
 
 If the KV binding is absent, all tool calls proceed without caching. This is acceptable for evaluation but not recommended for regular use.
 
+## Local credential files
+
+Use **project-prefixed** names for deploy credentials so they do not clash with other Cloudflare or AWS tooling on your machine.
+
+| File | Purpose | Variable naming |
+| --- | --- | --- |
+| `.dev.vars` | `pnpm dev` Worker runtime | Fixed binding names (`AWS_ACCESS_KEY_ID`, `MCP_AUTH_TOKEN`, …) required by the Worker code |
+| `.env.deploy.local` | `wrangler secret put` / deploy | `AWS_MCP_GATEWAY_*` prefixes (see [`.env.deploy.example`](../.env.deploy.example)) |
+
+Copy the examples and fill in values:
+
+```bash
+cp .dev.vars.example .dev.vars
+cp .env.deploy.example .env.deploy.local
+```
+
+Wrangler only reads `CLOUDFLARE_API_TOKEN` from the shell. Store the token as `AWS_MCP_GATEWAY_CLOUDFLARE_API_TOKEN` in `.env.deploy.local`; the deploy scripts map it automatically. If you use `wrangler login`, the Cloudflare token is optional.
+
+Sync Worker secrets from `.env.deploy.local`:
+
+```bash
+pnpm run sync-secrets
+```
+
+Sync secrets and deploy in one step:
+
+```bash
+pnpm run deploy:configured
+```
+
+Do **not** put `CLOUDFLARE_API_TOKEN` in `.dev.vars` — that file is injected into the Worker during local dev and is not used for Wrangler authentication.
+
 ## Deploy
 
 ```bash

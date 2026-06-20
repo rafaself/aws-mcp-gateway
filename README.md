@@ -226,6 +226,13 @@ Quick reference:
 pnpm install
 pnpm run typecheck
 pnpm test
+cp .env.deploy.example .env.deploy.local   # fill AWS_MCP_GATEWAY_* values
+pnpm run deploy:configured                 # sync secrets + deploy
+```
+
+Or manually:
+
+```bash
 wrangler secret put AWS_ACCESS_KEY_ID
 wrangler secret put AWS_SECRET_ACCESS_KEY
 wrangler secret put MCP_AUTH_TOKEN

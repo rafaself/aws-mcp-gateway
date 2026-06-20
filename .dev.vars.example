@@ -1,0 +1,13 @@
+# Local Worker runtime bindings for `pnpm dev` only.
+# Copy to .dev.vars (gitignored) and fill in values.
+#
+# Binding names are fixed by the Worker code (see src/config/env.ts).
+# Use credentials from the dedicated IAM user aws-mcp-gateway.
+#
+# Do NOT put Cloudflare deploy tokens here — use .env.deploy.local instead.
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=us-east-1
+AWS_ALLOWED_REGIONS=us-east-1,sa-east-1
+MCP_AUTH_TOKEN=

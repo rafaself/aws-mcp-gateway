@@ -10,6 +10,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "sync-secrets": "bash scripts/sync-secrets.sh",
+    "deploy:configured": "bash scripts/deploy-with-env.sh",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

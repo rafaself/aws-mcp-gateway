@@ -1,16 +1,23 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "aws-mcp-gateway",
-  "main": "src/index.ts",
-  "compatibility_date": "2025-04-01",
-  "vars": {
-    "AWS_REGION": "us-east-1",
-    "AWS_ALLOWED_REGIONS": "us-east-1,sa-east-1"
-  },
-  "kv_namespaces": [
-    {
-      "binding": "AWS_MCP_CACHE",
-      "id": "PLACEHOLDER_ID"
-    }
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "aws-mcp-gateway",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"dev": {
+		"ip": "127.0.0.1"
+	},
+	"vars": {
+		"AWS_REGION": "us-east-1",
+		"AWS_ALLOWED_REGIONS": "us-east-1,sa-east-1"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "AWS_MCP_CACHE",
+			"id": "5e3e4ee0a3194c7e9a34256b0febda8a",
+			"remote": true
+		}
+	]
 }
