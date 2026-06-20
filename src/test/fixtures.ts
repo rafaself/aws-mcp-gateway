@@ -124,6 +124,26 @@ export function makeDayTotal(
   };
 }
 
+export function cwAlarmsResponse(
+  alarms: Array<Record<string, unknown>>,
+  nextToken?: string,
+  includeComposite = false,
+): Response {
+  const body: Record<string, unknown> = {};
+  if (!includeComposite) {
+    body.MetricAlarms = alarms;
+  } else {
+    body.CompositeAlarms = alarms;
+  }
+  if (nextToken) {
+    body.NextToken = nextToken;
+  }
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "content-type": "application/x-amz-json-1.1" },
+  });
+}
+
 export function makeDayWithGroups(
   start: string,
   end: string,
