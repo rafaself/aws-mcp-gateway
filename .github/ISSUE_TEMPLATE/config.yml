@@ -1,5 +1,2 @@
 blank_issues_enabled: true
 contact_links: []
-issue_templates:
-  - contract-task.md
-  - spec-driven-change.yml
