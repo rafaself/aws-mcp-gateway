@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getCostSummary, getCostByService, CostExplorerError } from "./cost-explorer.js";
-import { ValidationError } from "../security/errors.js";
-import type { AwsCredentials } from "./types.js";
+import { getCostSummary, getCostByService } from "./client.js";
+import { CostExplorerError } from "./types.js";
+import { ValidationError } from "../../security/errors.js";
+import type { AwsCredentials } from "../types.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
-import { buildCacheKey } from "../cache/keys.js";
+import { buildCacheKey } from "../../cache/keys.js";
 
 const { mockFetch, awsClientConstructors } = vi.hoisted(() => {
   const mockFetch = vi.fn();
@@ -34,7 +35,7 @@ vi.mock("aws4fetch", () => ({
   },
 }));
 
-import { ceResponse, makeDayTotal, makeDayWithGroups } from "../test/fixtures.js";
+import { ceResponse, makeDayTotal, makeDayWithGroups } from "../../test/fixtures.js";
 
 const credentials: AwsCredentials = {
   accessKeyId: "AKIA-test-key",

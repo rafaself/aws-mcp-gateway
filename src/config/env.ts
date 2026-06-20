@@ -1,3 +1,5 @@
+import { GatewayError, errorResponse } from "../errors/public-error.js";
+
 export interface GatewayEnv {
   AWS_ACCESS_KEY_ID: string | undefined;
   AWS_SECRET_ACCESS_KEY: string | undefined;
@@ -47,8 +49,6 @@ export function validateEnv(env: unknown): EnvValidationResult {
 
   return { valid: errors.length === 0, errors };
 }
-
-import { GatewayError, errorResponse } from "./errors.js";
 
 export function envErrorResponse(
   result: EnvValidationResult,

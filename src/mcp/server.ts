@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { type GatewayContext, registerDiagnosticTools, registerCostTools } from "./tools.js";
+import type { GatewayContext } from "./context.js";
+import { registerTools } from "./tools/index.js";
 
 export function createServer(ctx: GatewayContext): McpServer {
   const server = new McpServer({
@@ -7,8 +8,7 @@ export function createServer(ctx: GatewayContext): McpServer {
     version: "0.1.0",
   });
 
-  registerDiagnosticTools(server);
-  registerCostTools(server, ctx);
+  registerTools(server, ctx);
 
   return server;
 }

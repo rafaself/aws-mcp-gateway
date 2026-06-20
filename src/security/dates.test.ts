@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseIsoDate, validateCostDates } from "./validation.js";
+import { parseIsoDate, validateCostDates } from "./dates.js";
 import { ValidationError } from "./errors.js";
 
 describe("parseIsoDate", () => {

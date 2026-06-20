@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { authenticateRequest } from "./auth.js";
+import { authenticateRequest } from "./bearer.js";
 
 function makeRequest(authHeader: string | null): Request {
   const headers = new Headers();
