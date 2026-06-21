@@ -32,10 +32,36 @@ require_var() {
 
 json_rpc() {
   local payload="$1"
-  curl -fsS -X POST "$MCP_URL" \
+  local headers_file
+  local body_file
+  local content_type
+
+  headers_file="$(mktemp)"
+  body_file="$(mktemp)"
+
+  curl -fsS -D "$headers_file" -o "$body_file" -X POST "$MCP_URL" \
     -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+    -H "Accept: application/json, text/event-stream" \
     -H "Content-Type: application/json" \
     -d "$payload"
+
+  content_type="$(
+    awk 'BEGIN { IGNORECASE = 1 } /^content-type:/ { print $2; exit }' "$headers_file" \
+      | tr -d '\r'
+  )"
+
+  if [[ "$content_type" == *"text/event-stream"* ]]; then
+    awk '
+      /^data: / {
+        sub(/^data: /, "", $0)
+        print
+      }
+    ' "$body_file" | tail -n 1
+  else
+    cat "$body_file"
+  fi
+
+  rm -f "$headers_file" "$body_file"
 }
 
 if [[ -z "$ACCESS_TOKEN" ]]; then
@@ -81,16 +107,18 @@ TOOLS_LIST_RESPONSE="$(json_rpc '{"jsonrpc":"2.0","id":2,"method":"tools/list","
 echo "$TOOLS_LIST_RESPONSE" | jq .
 echo "$TOOLS_LIST_RESPONSE" | jq -e '.result.tools | length == 8' >/dev/null
 echo "$TOOLS_LIST_RESPONSE" | jq -e '
-  ([.result.tools[].name] | sort) == [
-    "search",
-    "fetch",
-    "get_gateway_status",
-    "get_aws_cost_summary",
-    "get_aws_cost_by_service",
-    "list_ec2_instances",
-    "get_cloudwatch_alarms",
-    "get_recent_log_errors"
-  ] | sort' >/dev/null
+  ([.result.tools[].name] | sort) == (
+    [
+      "search",
+      "fetch",
+      "get_gateway_status",
+      "get_aws_cost_summary",
+      "get_aws_cost_by_service",
+      "list_ec2_instances",
+      "get_cloudwatch_alarms",
+      "get_recent_log_errors"
+    ] | sort
+  )' >/dev/null
 echo "$TOOLS_LIST_RESPONSE" | jq -e '
   all(.result.tools[];
     (.securitySchemes | length > 0)

@@ -102,6 +102,7 @@ Automated alternative: configure the smoke OAuth variables from `.env.deploy.loc
 ```bash
 curl -sS -X POST https://<worker-host>/mcp \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -H "Accept: application/json, text/event-stream" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"acceptance","version":"1.0.0"}}}'
 ```
@@ -115,6 +116,7 @@ curl -sS -X POST https://<worker-host>/mcp \
 ```bash
 curl -sS -X POST https://<worker-host>/mcp \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -H "Accept: application/json, text/event-stream" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```

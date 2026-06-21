@@ -103,6 +103,7 @@ Obtain an OAuth access token through the ChatGPT connector flow (or your OIDC pr
 ```bash
 curl -X POST https://<worker-host>/mcp \
   -H "Authorization: Bearer <oauth-access-token>" \
+  -H "Accept: application/json, text/event-stream" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```

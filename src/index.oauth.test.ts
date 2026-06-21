@@ -8,9 +8,24 @@ import {
 } from "./test/fixtures/oauth-jwks.js";
 
 const createServerMock = vi.fn((_ctx?: unknown) => ({}));
+const createMcpHandlerMock = vi.fn((_server?: unknown, options?: { transport?: { __options?: { onsessioninitialized?: (sessionId: string) => void } } }) =>
+  async () => {
+    await options?.transport?.__options?.onsessioninitialized?.("session-from-test");
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "text/event-stream" },
+    });
+  });
 
 vi.mock("agents/mcp", () => ({
-  createMcpHandler: () => async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
+  createMcpHandler: createMcpHandlerMock,
+  WorkerTransport: class WorkerTransport {
+    __options?: unknown;
+
+    constructor(options?: unknown) {
+      this.__options = options;
+    }
+  },
 }));
 
 vi.mock("./mcp/server.js", () => ({
@@ -65,6 +80,7 @@ const legacyEnv = {
 beforeEach(() => {
   resetJwksCache();
   createServerMock.mockClear();
+  createMcpHandlerMock.mockClear();
 });
 
 describe("oauth protected-resource metadata route", () => {
@@ -210,6 +226,38 @@ describe("oauth /mcp challenge", () => {
 
     expect(response.status).toBe(200);
     expect(createServerMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("adds mcp-session-id to initialize responses when transport initializes a session", async () => {
+    const fixture = await createTestOAuthFixture();
+    setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
+    const token = await fixture.signAccessToken();
+
+    const response = await worker.fetch(
+      new Request("https://gateway.example.com/mcp", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json, text/event-stream",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: {
+            protocolVersion: "2024-11-05",
+            capabilities: {},
+            clientInfo: { name: "test", version: "1.0.0" },
+          },
+        }),
+      }),
+      oauthEnvBase,
+      {} as ExecutionContext,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("mcp-session-id")).toBe("session-from-test");
   });
 
   it("does not create MCP server for invalid OAuth tokens", async () => {
