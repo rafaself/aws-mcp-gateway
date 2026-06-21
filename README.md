@@ -369,6 +369,10 @@ A passing test suite is required but not sufficient — tests must prove the int
 - Security, validation, redaction, authentication, region allowlist, and read-only behavior tests are **contract tests** defining the safety boundary.
 - Run `pnpm run test:integrity` to check for focused or unjustified skipped tests.
 
+### Dependency upgrades
+
+Runtime MCP/auth dependency upgrades must be treated as protocol changes until HTTP-level MCP tests prove ChatGPT-compatible discovery still works. Pinned runtime packages (`agents`, `@modelcontextprotocol/sdk`, `jose`, `zod`, `aws4fetch`, `fast-xml-parser`) use exact versions in `package.json`. See [docs/dependency-upgrade-contract.md](docs/dependency-upgrade-contract.md) for the required checklist before bumping any of them.
+
 ### Rules
 
 - Every unit test must pass without a network connection.

@@ -75,6 +75,10 @@ Tool descriptors advertise OAuth security metadata (`securitySchemes`, `_meta.se
 
 Contract regression tests: `src/index.oauth.test.ts`, `src/auth/oauth/`, `src/mcp/tools/descriptor-contract.test.ts`.
 
+### Dependency stability
+
+Runtime MCP/auth dependency upgrades must be treated as protocol changes until HTTP-level MCP tests prove ChatGPT-compatible discovery still works. The gateway pins transport and auth-critical runtime packages to exact versions; see [dependency-upgrade-contract.md](dependency-upgrade-contract.md) for the upgrade checklist and verification steps.
+
 ## Connector setup (summary)
 
 1. Deploy the Worker with `AUTH_MODE=oauth` and OAuth vars configured (see [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md)).
