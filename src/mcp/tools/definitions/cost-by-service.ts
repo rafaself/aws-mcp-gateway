@@ -4,9 +4,9 @@ import { getCostByService } from "../../../aws/cost-explorer/index.js";
 import { summarizeCostDateRangeInput } from "../../audit/tool-input.js";
 import { safeMcpHandler } from "../response.js";
 import {
-  AWS_READ_ONLY_ANNOTATIONS,
   costByServiceOutputSchema,
-  OAUTH_SECURITY_SCHEMES,
+  PUBLIC_TOOL_TITLES,
+  readOnlyAwsToolDescriptor,
 } from "../descriptor.js";
 import type { GatewayToolDefinition } from "../registry.js";
 
@@ -35,18 +35,13 @@ const costByServiceInputSchema = z.object({
 type CostByServiceInput = z.infer<typeof costByServiceInputSchema>;
 
 export function createCostByServiceToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
-  const securitySchemes = [...OAUTH_SECURITY_SCHEMES];
-
-  return {
+  return readOnlyAwsToolDescriptor({
     name: "get_aws_cost_by_service",
-    title: "AWS cost by service",
+    title: PUBLIC_TOOL_TITLES.get_aws_cost_by_service,
     description:
       "Returns AWS costs broken down by service for a given time period via Cost Explorer.",
     inputSchema: costByServiceInputSchema,
     outputSchema: costByServiceOutputSchema,
-    annotations: AWS_READ_ONLY_ANNOTATIONS,
-    securitySchemes,
-    _meta: { securitySchemes },
     visibility: { mcp: true, chatgpt: true },
     catalog: {
       keywords: ["cost", "service", "breakdown", "billing", "cost explorer"],
@@ -98,5 +93,5 @@ export function createCostByServiceToolDefinition(ctx: GatewayContext): GatewayT
         };
       },
     ),
-  };
+  });
 }

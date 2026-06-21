@@ -1,4 +1,4 @@
-import { z } from "zod";
+import type { z } from "zod";
 import type { GatewayContext } from "../../../config/context.js";
 import { GatewayError } from "../../../errors/public-error.js";
 import { fetchCatalogEntry } from "../../chatgpt/catalog.js";
@@ -7,8 +7,8 @@ import { safeMcpHandler, chatgptStructuredResult } from "../response.js";
 import {
   chatgptFetchInputSchema,
   chatgptFetchOutputSchema,
-  CHATGPT_DISCOVERY_ANNOTATIONS,
-  OAUTH_SECURITY_SCHEMES,
+  chatgptDiscoveryToolDescriptor,
+  PUBLIC_TOOL_TITLES,
 } from "../descriptor.js";
 import type { GatewayToolDefinition } from "../registry.js";
 import { createStatusToolDefinition } from "./status.js";
@@ -48,18 +48,13 @@ function catalogEntriesForContext(ctx: GatewayContext) {
 }
 
 export function createFetchToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
-  const securitySchemes = [...OAUTH_SECURITY_SCHEMES];
-
-  return {
+  return chatgptDiscoveryToolDescriptor({
     name: "fetch",
-    title: "Fetch AWS MCP tool details",
+    title: PUBLIC_TOOL_TITLES.fetch,
     description:
       "Retrieve full details for a search result id, including how to invoke the underlying read-only AWS MCP tool.",
     inputSchema: chatgptFetchInputSchema,
     outputSchema: chatgptFetchOutputSchema,
-    annotations: CHATGPT_DISCOVERY_ANNOTATIONS,
-    securitySchemes,
-    _meta: { securitySchemes },
     visibility: { mcp: true, chatgpt: true },
     handler: safeMcpHandler({ toolName: "fetch" }, async (args: FetchInput) => {
       const liveStatus =
@@ -77,5 +72,5 @@ export function createFetchToolDefinition(ctx: GatewayContext): GatewayToolDefin
 
       return chatgptStructuredResult(payload);
     }),
-  };
+  });
 }

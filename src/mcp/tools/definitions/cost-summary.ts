@@ -4,9 +4,9 @@ import { getCostSummary } from "../../../aws/cost-explorer/index.js";
 import { summarizeCostDateRangeInput } from "../../audit/tool-input.js";
 import { safeMcpHandler } from "../response.js";
 import {
-  AWS_READ_ONLY_ANNOTATIONS,
   costSummaryOutputSchema,
-  OAUTH_SECURITY_SCHEMES,
+  PUBLIC_TOOL_TITLES,
+  readOnlyAwsToolDescriptor,
 } from "../descriptor.js";
 import type { GatewayToolDefinition } from "../registry.js";
 
@@ -28,17 +28,12 @@ const costSummaryInputSchema = z.object({
 type CostSummaryInput = z.infer<typeof costSummaryInputSchema>;
 
 export function createCostSummaryToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
-  const securitySchemes = [...OAUTH_SECURITY_SCHEMES];
-
-  return {
+  return readOnlyAwsToolDescriptor({
     name: "get_aws_cost_summary",
-    title: "AWS cost summary",
+    title: PUBLIC_TOOL_TITLES.get_aws_cost_summary,
     description: "Returns the total AWS cost for a given time period via Cost Explorer.",
     inputSchema: costSummaryInputSchema,
     outputSchema: costSummaryOutputSchema,
-    annotations: AWS_READ_ONLY_ANNOTATIONS,
-    securitySchemes,
-    _meta: { securitySchemes },
     visibility: { mcp: true, chatgpt: true },
     catalog: {
       keywords: ["cost", "billing", "spend", "total", "cost explorer", "budget"],
@@ -81,5 +76,5 @@ export function createCostSummaryToolDefinition(ctx: GatewayContext): GatewayToo
         };
       },
     ),
-  };
+  });
 }

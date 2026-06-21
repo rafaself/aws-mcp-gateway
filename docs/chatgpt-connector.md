@@ -14,9 +14,9 @@ ChatGPT connectors require:
 | OAuth authentication | `AUTH_MODE=oauth` with Auth0 (or compatible OIDC) |
 | `search` tool | Catalog search over read-only AWS MCP tools |
 | `fetch` tool | Full tool document for a `search` result id |
-| Tool discovery in Actions UI | `search` advertises `noauth` + `oauth2`; AWS tools use `oauth2` only |
+| Tool discovery in Actions UI | Valid `tools/list` descriptors with OAuth `securitySchemes` for every public tool |
 
-Without `search` and `fetch`, OAuth may succeed but ChatGPT shows **“No app actions available yet”** because the connector cannot discover tools.
+Without valid `tools/list` descriptors (stable `title`, `description`, `inputSchema`, `outputSchema` where applicable, annotations, and OAuth `securitySchemes`), OAuth may succeed but ChatGPT shows **“No app actions available yet”** because the connector cannot list actions.
 
 ## OAuth linking and discovery
 

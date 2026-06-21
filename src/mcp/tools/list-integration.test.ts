@@ -12,6 +12,8 @@ const testContext: GatewayContext = {
   allowedRegions: ["us-east-1", "us-west-2"],
 };
 
+const OAUTH_SECURITY = [{ type: "oauth2" as const, scopes: ["aws:read"] }];
+
 const clients: Client[] = [];
 
 afterEach(async () => {
@@ -57,19 +59,9 @@ describe("tools/list MCP protocol integration", () => {
     const tools = listResult!.result.tools;
     expect(tools).toHaveLength(8);
 
-    const searchTool = tools.find((tool) => tool.name === "search");
-    expect(searchTool?.securitySchemes).toEqual([
-      { type: "noauth" },
-      { type: "oauth2", scopes: ["aws:read"] },
-    ]);
-
     for (const tool of tools) {
-      if (tool.name !== "search") {
-        expect(tool.securitySchemes).toEqual([{ type: "oauth2", scopes: ["aws:read"] }]);
-        expect((tool._meta as Record<string, unknown>)?.securitySchemes).toEqual([
-          { type: "oauth2", scopes: ["aws:read"] },
-        ]);
-      }
+      expect(tool.securitySchemes).toEqual(OAUTH_SECURITY);
+      expect((tool._meta as Record<string, unknown>)?.securitySchemes).toEqual(OAUTH_SECURITY);
 
       expect((tool.annotations as Record<string, unknown>)?.readOnlyHint).toBe(true);
       expect(tool).not.toHaveProperty("execution");
@@ -82,5 +74,6 @@ describe("tools/list MCP protocol integration", () => {
     const statusTool = tools.find((tool) => tool.name === "get_gateway_status");
     expect((statusTool?.annotations as Record<string, unknown>)?.openWorldHint).toBe(false);
     expect((statusTool?.annotations as Record<string, unknown>)?.idempotentHint).toBe(true);
+    expect(statusTool?.outputSchema).toMatchObject({ type: "object" });
   });
 });

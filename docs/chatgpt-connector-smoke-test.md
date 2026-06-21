@@ -106,9 +106,9 @@ Full Auth0 setup: [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
 
 After OAuth succeeds, open the connector and confirm **Actions** lists AWS tools.
 
-**Expected:** Tools such as `search`, `fetch`, `get_gateway_status`, and AWS read-only tools appear. You should **not** see “No app actions available yet” if `search` and `fetch` are deployed.
+**Expected:** Tools such as `search`, `fetch`, `get_gateway_status`, and AWS read-only tools appear. You should **not** see “No app actions available yet” if the deployed gateway returns valid OAuth-backed `tools/list` descriptors for all public tools.
 
-If Actions are empty, refresh the connector (Step 4) and verify the deployed commit includes ChatGPT discovery tools.
+If Actions are empty, refresh the connector (Step 4) and verify the deployed commit includes valid tool descriptors (titles, schemas, annotations, and OAuth `securitySchemes` on every public tool).
 
 ---
 

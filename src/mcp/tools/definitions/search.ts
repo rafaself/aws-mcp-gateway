@@ -1,4 +1,3 @@
-import { z } from "zod";
 import type { GatewayContext } from "../../../config/context.js";
 import { searchCatalog } from "../../chatgpt/catalog.js";
 import { getChatGptCatalogEntries } from "../registry.js";
@@ -6,8 +5,8 @@ import { safeMcpHandler, chatgptStructuredResult } from "../response.js";
 import {
   chatgptSearchInputSchema,
   chatgptSearchOutputSchema,
-  CHATGPT_DISCOVERY_ANNOTATIONS,
-  CHATGPT_MIXED_SECURITY_SCHEMES,
+  chatgptDiscoveryToolDescriptor,
+  PUBLIC_TOOL_TITLES,
 } from "../descriptor.js";
 import type { GatewayToolDefinition } from "../registry.js";
 import { createStatusToolDefinition } from "./status.js";
@@ -16,6 +15,7 @@ import { createCostByServiceToolDefinition } from "./cost-by-service.js";
 import { createListEc2InstancesToolDefinition } from "./list-ec2-instances.js";
 import { createGetCloudwatchAlarmsToolDefinition } from "./get-cloudwatch-alarms.js";
 import { createGetRecentLogErrorsToolDefinition } from "./get-recent-log-errors.js";
+import type { z } from "zod";
 
 const DEFAULT_RESOURCE_URL = "https://aws-mcp-gateway.local";
 
@@ -37,19 +37,14 @@ function catalogEntriesForContext(ctx: GatewayContext) {
 }
 
 export function createSearchToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
-  const securitySchemes = [...CHATGPT_MIXED_SECURITY_SCHEMES];
-
-  return {
+  return chatgptDiscoveryToolDescriptor({
     name: "search",
-    title: "Search AWS MCP tools",
+    title: PUBLIC_TOOL_TITLES.search,
     description:
       "Search read-only AWS MCP tools exposed by this gateway (cost, EC2, CloudWatch, logs). " +
       "Use fetch with a result id for full tool details.",
     inputSchema: chatgptSearchInputSchema,
     outputSchema: chatgptSearchOutputSchema,
-    annotations: CHATGPT_DISCOVERY_ANNOTATIONS,
-    securitySchemes,
-    _meta: { securitySchemes },
     visibility: { mcp: true, chatgpt: true },
     handler: safeMcpHandler({ toolName: "search" }, async (args: SearchInput) => {
       const payload = searchCatalog(
@@ -59,5 +54,5 @@ export function createSearchToolDefinition(ctx: GatewayContext): GatewayToolDefi
       );
       return chatgptStructuredResult(payload);
     }),
-  };
+  });
 }

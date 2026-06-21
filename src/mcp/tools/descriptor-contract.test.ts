@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GatewayContext } from "../../config/context.js";
+import { PUBLIC_TOOL_TITLES } from "./descriptor.js";
 import { createToolRegistry, PUBLIC_TOOL_NAMES } from "./registry.js";
 import { buildPublicToolList } from "./public-list.js";
 
@@ -20,14 +21,17 @@ const AWS_BACKED_TOOLS = [
   "get_recent_log_errors",
 ] as const;
 
+const LOCAL_TOOLS = ["get_gateway_status", ...CHATGPT_CONNECTOR_TOOLS] as const;
+
 const STRUCTURED_OUTPUT_TOOLS = [
   ...CHATGPT_CONNECTOR_TOOLS,
+  "get_gateway_status",
   ...AWS_BACKED_TOOLS,
 ] as const;
 
-const OAUTH_ONLY_TOOLS = ["fetch", "get_gateway_status", ...AWS_BACKED_TOOLS] as const;
+const PUBLIC_TOOLS = [...LOCAL_TOOLS, ...AWS_BACKED_TOOLS] as const;
 
-const PUBLIC_TOOLS = [...CHATGPT_CONNECTOR_TOOLS, "get_gateway_status", ...AWS_BACKED_TOOLS] as const;
+const OAUTH_SECURITY = [{ type: "oauth2" as const, scopes: ["aws:read"] }];
 
 describe("MCP tool registry", () => {
   const registry = createToolRegistry(testContext);
@@ -54,32 +58,21 @@ describe("MCP tool descriptor contract", () => {
       expect(tool.description?.length).toBeGreaterThan(0);
     });
 
+    it(`${toolName} has the stable public title`, () => {
+      expect(toolsByName[toolName].title).toBe(
+        PUBLIC_TOOL_TITLES[toolName as keyof typeof PUBLIC_TOOL_TITLES],
+      );
+    });
+
     it(`${toolName} has an inputSchema object`, () => {
       expect(toolsByName[toolName].inputSchema).toMatchObject({ type: "object" });
     });
-  }
 
-  it("search advertises noauth and oauth2 for ChatGPT discovery", () => {
-    const tool = toolsByName.search;
-    expect(tool.securitySchemes).toEqual([
-      { type: "noauth" },
-      { type: "oauth2", scopes: ["aws:read"] },
-    ]);
-    expect((tool._meta as { securitySchemes: unknown }).securitySchemes).toEqual([
-      { type: "noauth" },
-      { type: "oauth2", scopes: ["aws:read"] },
-    ]);
-    expect((tool._meta as Record<string, unknown>)["mcp/www_authenticate"]).toBeUndefined();
-  });
-
-  for (const toolName of OAUTH_ONLY_TOOLS) {
     it(`${toolName} advertises OAuth security metadata`, () => {
       const tool = toolsByName[toolName];
 
-      expect(tool.securitySchemes).toEqual([{ type: "oauth2", scopes: ["aws:read"] }]);
-      expect((tool._meta as { securitySchemes: unknown }).securitySchemes).toEqual([
-        { type: "oauth2", scopes: ["aws:read"] },
-      ]);
+      expect(tool.securitySchemes).toEqual(OAUTH_SECURITY);
+      expect((tool._meta as { securitySchemes: unknown }).securitySchemes).toEqual(OAUTH_SECURITY);
       expect((tool._meta as Record<string, unknown>)["mcp/www_authenticate"]).toBeUndefined();
     });
   }
@@ -135,11 +128,8 @@ describe("MCP tool descriptor contract", () => {
     expect(serialized).not.toContain("call_any_aws_api");
   });
 
-  it("only search advertises noauth", () => {
-    const noauthTools = tools.filter((tool) =>
-      tool.securitySchemes.some((scheme) => scheme.type === "noauth"),
-    );
-    expect(noauthTools.map((tool) => tool.name)).toEqual(["search"]);
+  it("no public tool advertises noauth", () => {
+    expect(JSON.stringify(tools)).not.toContain('"type":"noauth"');
   });
 
   it("does not embed hardcoded OAuth discovery URLs in tool descriptors", () => {
