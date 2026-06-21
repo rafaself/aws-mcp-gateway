@@ -7,6 +7,15 @@ type McpSuccessResult = {
   structuredContent?: Record<string, unknown>;
 };
 
+export function chatgptStructuredResult(
+  payload: Record<string, unknown>,
+): McpSuccessResult {
+  return {
+    structuredContent: payload,
+    content: [{ type: "text", text: JSON.stringify(payload) }],
+  };
+}
+
 export type McpToolHandler<T> = (args: T) => Promise<McpSuccessResult>;
 
 export function safeMcpHandler<T>(

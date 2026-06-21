@@ -6,7 +6,10 @@ const testContext: GatewayContext = {
   credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
   region: "us-east-1",
   allowedRegions: ["us-east-1", "us-west-2"],
+  mcpResourceUrl: "https://aws-mcp-gateway.example.workers.dev",
 };
+
+const CHATGPT_CONNECTOR_TOOLS = ["search", "fetch"] as const;
 
 const AWS_BACKED_TOOLS = [
   "get_aws_cost_summary",
@@ -16,9 +19,14 @@ const AWS_BACKED_TOOLS = [
   "get_recent_log_errors",
 ] as const;
 
-const STRUCTURED_OUTPUT_TOOLS = [...AWS_BACKED_TOOLS] as const;
+const STRUCTURED_OUTPUT_TOOLS = [
+  ...CHATGPT_CONNECTOR_TOOLS,
+  ...AWS_BACKED_TOOLS,
+] as const;
 
-const PUBLIC_TOOLS = ["get_gateway_status", ...AWS_BACKED_TOOLS] as const;
+const OAUTH_ONLY_TOOLS = ["fetch", "get_gateway_status", ...AWS_BACKED_TOOLS] as const;
+
+const PUBLIC_TOOLS = [...CHATGPT_CONNECTOR_TOOLS, "get_gateway_status", ...AWS_BACKED_TOOLS] as const;
 
 describe("MCP tool descriptor contract", () => {
   const server = createServer(testContext);
@@ -29,7 +37,20 @@ describe("MCP tool descriptor contract", () => {
     expect(tools.map((tool) => tool.name).sort()).toEqual([...PUBLIC_TOOLS].sort());
   });
 
-  for (const toolName of PUBLIC_TOOLS) {
+  it("search advertises noauth and oauth2 for ChatGPT discovery", () => {
+    const tool = toolsByName.search;
+    expect(tool.securitySchemes).toEqual([
+      { type: "noauth" },
+      { type: "oauth2", scopes: ["aws:read"] },
+    ]);
+    expect((tool._meta as { securitySchemes: unknown }).securitySchemes).toEqual([
+      { type: "noauth" },
+      { type: "oauth2", scopes: ["aws:read"] },
+    ]);
+    expect((tool._meta as Record<string, unknown>)["mcp/www_authenticate"]).toBeUndefined();
+  });
+
+  for (const toolName of OAUTH_ONLY_TOOLS) {
     it(`${toolName} advertises OAuth security metadata`, () => {
       const tool = toolsByName[toolName];
 
@@ -39,7 +60,9 @@ describe("MCP tool descriptor contract", () => {
       ]);
       expect((tool._meta as Record<string, unknown>)["mcp/www_authenticate"]).toBeUndefined();
     });
+  }
 
+  for (const toolName of PUBLIC_TOOLS) {
     it(`${toolName} declares read-only annotations`, () => {
       const annotations = toolsByName[toolName].annotations as Record<string, boolean>;
 
@@ -63,6 +86,14 @@ describe("MCP tool descriptor contract", () => {
     expect(annotations.idempotentHint).toBe(true);
   });
 
+  it("ChatGPT connector tools are local discovery helpers", () => {
+    for (const toolName of CHATGPT_CONNECTOR_TOOLS) {
+      const annotations = toolsByName[toolName].annotations as Record<string, boolean>;
+      expect(annotations.openWorldHint).toBe(false);
+      expect(annotations.idempotentHint).toBe(true);
+    }
+  });
+
   for (const toolName of STRUCTURED_OUTPUT_TOOLS) {
     it(`${toolName} declares outputSchema`, () => {
       expect(toolsByName[toolName].outputSchema).toBeDefined();
@@ -70,15 +101,21 @@ describe("MCP tool descriptor contract", () => {
     });
   }
 
-  it("does not advertise noauth, write scopes, or management scopes", () => {
+  it("does not advertise write scopes or management scopes", () => {
     const serialized = JSON.stringify(tools);
 
-    expect(serialized).not.toContain("noauth");
     expect(serialized).not.toContain("aws:write");
     expect(serialized).not.toContain("management");
     expect(serialized).not.toContain("AKIA");
     expect(serialized).not.toContain("secret");
     expect(serialized).not.toContain("execution");
+  });
+
+  it("only search advertises noauth", () => {
+    const noauthTools = tools.filter((tool) =>
+      tool.securitySchemes.some((scheme) => scheme.type === "noauth"),
+    );
+    expect(noauthTools.map((tool) => tool.name)).toEqual(["search"]);
   });
 
   it("does not embed hardcoded OAuth discovery URLs in tool descriptors", () => {

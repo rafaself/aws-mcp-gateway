@@ -15,18 +15,91 @@ error behavior, caching, region handling, and safety boundaries.
 - Invalid input always fails before any downstream AWS call.
 - Generic AWS access (arbitrary API proxy or CLI execution) is outside scope.
 
+**ChatGPT connector:** Tools `search` and `fetch` implement the OpenAI MCP discovery schema. They catalog the AWS tools below and do not call AWS. See [chatgpt-connector.md](chatgpt-connector.md).
+
 ---
 
 ## Tool index
 
 | # | Tool | Page |
 |---|------|------|
+| — | `search` | [↓](#search-chatgpt-discovery) |
+| — | `fetch` | [↓](#fetch-chatgpt-discovery) |
 | 1 | `get_gateway_status` | [↓](#1-get_gateway_status) |
 | 2 | `get_aws_cost_summary` | [↓](#2-get_aws_cost_summary) |
 | 3 | `get_aws_cost_by_service` | [↓](#3-get_aws_cost_by_service) |
 | 4 | `list_ec2_instances` | [↓](#4-list_ec2_instances) |
 | 5 | `get_cloudwatch_alarms` | [↓](#5-get_cloudwatch_alarms) |
 | 6 | `get_recent_log_errors` | [↓](#6-get_recent_log_errors) |
+
+---
+
+## `search` (ChatGPT discovery)
+
+**Purpose:** Lets ChatGPT discover read-only AWS MCP tools by natural-language query. Does not call AWS.
+
+### Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `query` | string | yes | Search terms (for example `cost`, `ec2`, `logs`) |
+
+### Output (`structuredContent`)
+
+```json
+{
+  "results": [
+    {
+      "id": "tool/list_ec2_instances",
+      "title": "EC2 instances",
+      "url": "https://<worker-host>/mcp#tool=list_ec2_instances"
+    }
+  ]
+}
+```
+
+### Security
+
+- `securitySchemes`: `noauth` and `oauth2` (`aws:read`) — required for ChatGPT Actions discovery.
+- `readOnlyHint`: true; `openWorldHint`: false.
+
+---
+
+## `fetch` (ChatGPT discovery)
+
+**Purpose:** Returns full documentation for a catalog id from `search`. Does not call AWS (except embedding live `get_gateway_status` JSON when fetching that tool).
+
+### Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | yes | Catalog id (prefix `tool/`, e.g. `tool/get_aws_cost_summary`) |
+
+### Output (`structuredContent`)
+
+```json
+{
+  "id": "tool/get_aws_cost_summary",
+  "title": "AWS cost summary",
+  "text": "# AWS cost summary\n\n...",
+  "url": "https://<worker-host>/mcp#tool=get_aws_cost_summary",
+  "metadata": {
+    "mcpTool": "get_aws_cost_summary",
+    "docsUrl": "https://github.com/rafaself/aws-mcp-gateway/blob/main/docs/mcp-tools.md#2-get_aws_cost_summary",
+    "readOnly": "true",
+    "awsService": "ce"
+  }
+}
+```
+
+### Errors
+
+- Unknown `id` → `validation_error` before any AWS call.
+
+### Security
+
+- `securitySchemes`: `oauth2` (`aws:read`) only.
+- `readOnlyHint`: true; `openWorldHint`: false.
 
 ---
 

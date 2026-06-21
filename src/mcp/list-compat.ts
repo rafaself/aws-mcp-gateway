@@ -16,7 +16,7 @@ import {
   type ZodRawShapeCompat,
 } from "@modelcontextprotocol/sdk/server/zod-compat.js";
 import { toJsonSchemaCompat } from "@modelcontextprotocol/sdk/server/zod-json-schema-compat.js";
-import { OAUTH_SECURITY_SCHEMES } from "./tools/descriptor.js";
+import { OAUTH_SECURITY_SCHEMES, type ToolSecurityScheme } from "./tools/descriptor.js";
 
 const EMPTY_OBJECT_JSON_SCHEMA = {
   type: "object" as const,
@@ -56,9 +56,17 @@ export type PublicToolDescriptor = {
   inputSchema: Record<string, unknown>;
   outputSchema?: Record<string, unknown>;
   annotations?: unknown;
-  securitySchemes: typeof OAUTH_SECURITY_SCHEMES extends readonly (infer T)[] ? T[] : never;
+  securitySchemes: ToolSecurityScheme[];
   _meta: Record<string, unknown>;
 };
+
+function readToolSecuritySchemes(tool: RegisteredToolRecord): ToolSecurityScheme[] {
+  const fromMeta = tool._meta?.securitySchemes;
+  if (Array.isArray(fromMeta) && fromMeta.length > 0) {
+    return fromMeta as ToolSecurityScheme[];
+  }
+  return [...OAUTH_SECURITY_SCHEMES];
+}
 
 function readRegisteredTools(server: McpServer): Record<string, RegisteredToolRecord> {
   return (server as unknown as McpServerInternals)._registeredTools;
@@ -92,16 +100,17 @@ export function buildPublicToolList(server: McpServer): { tools: PublicToolDescr
     tools: Object.entries(registeredTools)
       .filter(([, tool]) => tool.enabled)
       .map(([name, tool]) => {
+        const securitySchemes = readToolSecuritySchemes(tool);
         const descriptor: PublicToolDescriptor = {
           name,
           title: tool.title,
           description: tool.description,
           inputSchema: toJsonInputSchema(tool.inputSchema),
           annotations: tool.annotations,
-          securitySchemes: [...OAUTH_SECURITY_SCHEMES],
+          securitySchemes,
           _meta: {
             ...tool._meta,
-            securitySchemes: [...OAUTH_SECURITY_SCHEMES],
+            securitySchemes,
           },
         };
 

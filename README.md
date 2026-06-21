@@ -49,7 +49,7 @@ The Worker acts as a policy and translation layer. ChatGPT calls strongly typed 
 
 The MVP must remain read-only. Post-MVP expansion (write operations, broader inventory) is governed by [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md).
 
-ChatGPT connector OAuth is specified in [docs/specs/oauth-chatgpt-connector.md](docs/specs/oauth-chatgpt-connector.md). For production ChatGPT setup, see [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md).
+ChatGPT connector OAuth is specified in [docs/specs/oauth-chatgpt-connector.md](docs/specs/oauth-chatgpt-connector.md). For production ChatGPT setup, see [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md) and [docs/chatgpt-connector.md](docs/chatgpt-connector.md).
 
 For a verifiable pre-deployment and pre-merge checklist, see [SECURITY.md](SECURITY.md).
 
@@ -256,15 +256,18 @@ A custom domain can be added later, but it is not required for the MVP.
 
 ## ChatGPT connection
 
-The ChatGPT connector should point to the deployed HTTPS MCP endpoint:
+The primary use case for this gateway is a **ChatGPT custom app connector** pointing at the deployed HTTPS MCP endpoint:
 
 ```text
 https://<your-worker-domain>/mcp
 ```
 
-The connector must authenticate before calling AWS-backed tools.
+Use **OAuth** authentication in production (`AUTH_MODE=oauth`). ChatGPT discovers AWS tools through the `search` and `fetch` MCP tools, then calls read-only AWS tools after OAuth.
 
-See [docs/mcp-testing.md](docs/mcp-testing.md) for the recommended smoke test sequence and expected tool behavior, including failure modes for invalid regions, date ranges, and missing authentication.
+**Setup and troubleshooting:** [docs/chatgpt-connector.md](docs/chatgpt-connector.md)  
+**Auth0 OAuth configuration:** [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md)
+
+See [docs/mcp-testing.md](docs/mcp-testing.md) for smoke tests and expected failure modes.
 
 ## Repository safety
 

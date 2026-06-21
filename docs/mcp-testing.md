@@ -50,7 +50,9 @@ Expected: HTTP `401` with `WWW-Authenticate` containing `resource_metadata`.
 
 ### Verify tools through ChatGPT
 
-Complete OAuth in the ChatGPT connector UI and verify `tools/list` and `get_gateway_status`. Do not copy OAuth access tokens into docs or terminal commands.
+Complete OAuth in the ChatGPT connector UI, click **Refresh** on the connector, and confirm **Actions** lists AWS tools. The gateway must expose `search` and `fetch` for ChatGPT discovery — see [chatgpt-connector.md](chatgpt-connector.md).
+
+Do not copy OAuth access tokens into docs or terminal commands.
 
 ## Endpoint
 
@@ -60,12 +62,14 @@ https://<worker-host>/mcp
 
 Replace `<worker-host>` with the URL output by `pnpm deploy`, e.g. `https://aws-mcp-gateway.<your-subdomain>.workers.dev`.
 
-## Tool allowlist (MVP)
+## Tool allowlist
 
-The gateway exposes the following tools. See [docs/mcp-tools.md](mcp-tools.md) for the full input and output contracts.
+The gateway exposes the following tools. See [docs/mcp-tools.md](mcp-tools.md) for the full input and output contracts. ChatGPT connector discovery is documented in [chatgpt-connector.md](chatgpt-connector.md).
 
 | Tool | Purpose | Requires AWS call |
 |------|---------|-------------------|
+| `search` | ChatGPT discovery — search read-only AWS tools | No |
+| `fetch` | ChatGPT discovery — tool details by catalog id | No |
 | `get_gateway_status` | Return gateway service status | No |
 | `get_aws_cost_summary` | Total AWS cost for a date range | Yes (Cost Explorer) |
 | `get_aws_cost_by_service` | AWS cost broken down by service | Yes (Cost Explorer) |
@@ -115,7 +119,7 @@ curl -X POST https://<worker-host>/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-Expected: `200` with a `result.tools` array containing all 6 registered tools.
+Expected: `200` with a `result.tools` array containing all 8 registered tools (`search`, `fetch`, and six AWS tools).
 
 ### 4. Low-risk status tool
 

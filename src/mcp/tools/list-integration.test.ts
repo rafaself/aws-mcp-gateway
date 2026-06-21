@@ -55,13 +55,22 @@ describe("tools/list MCP protocol integration", () => {
     expect(listResult).toBeDefined();
 
     const tools = listResult!.result.tools;
-    expect(tools).toHaveLength(6);
+    expect(tools).toHaveLength(8);
+
+    const searchTool = tools.find((tool) => tool.name === "search");
+    expect(searchTool?.securitySchemes).toEqual([
+      { type: "noauth" },
+      { type: "oauth2", scopes: ["aws:read"] },
+    ]);
 
     for (const tool of tools) {
-      expect(tool.securitySchemes).toEqual([{ type: "oauth2", scopes: ["aws:read"] }]);
-      expect((tool._meta as Record<string, unknown>)?.securitySchemes).toEqual([
-        { type: "oauth2", scopes: ["aws:read"] },
-      ]);
+      if (tool.name !== "search") {
+        expect(tool.securitySchemes).toEqual([{ type: "oauth2", scopes: ["aws:read"] }]);
+        expect((tool._meta as Record<string, unknown>)?.securitySchemes).toEqual([
+          { type: "oauth2", scopes: ["aws:read"] },
+        ]);
+      }
+
       expect((tool.annotations as Record<string, unknown>)?.readOnlyHint).toBe(true);
       expect(tool).not.toHaveProperty("execution");
 

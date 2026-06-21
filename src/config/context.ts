@@ -8,6 +8,8 @@ export interface GatewayContext {
   region: string;
   allowedRegions: string[];
   cache?: KVNamespace;
+  /** MCP resource URL for ChatGPT search/fetch citations (oauth production). */
+  mcpResourceUrl?: string;
 }
 
 export function buildGatewayContext(config: ValidatedGatewayConfig): GatewayContext {
@@ -19,5 +21,6 @@ export function buildGatewayContext(config: ValidatedGatewayConfig): GatewayCont
     region: config.AWS_REGION,
     allowedRegions: parseRegions(config.AWS_ALLOWED_REGIONS),
     cache: config.AWS_MCP_CACHE,
+    mcpResourceUrl: config.oauth?.MCP_RESOURCE_URL,
   };
 }

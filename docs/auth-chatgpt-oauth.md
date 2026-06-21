@@ -110,7 +110,19 @@ Complete the OAuth flow in the ChatGPT UI. Do not copy access tokens manually.
 
 ### 10. Confirm tools work
 
-From ChatGPT, verify `tools/list` and `get_gateway_status` succeed. Use ChatGPT for tool verification — do not paste OAuth access tokens into docs or terminal history.
+From ChatGPT:
+
+1. Open the connector and click **Refresh** so ChatGPT reloads `tools/list`.
+2. Confirm **Actions** lists AWS tools (not “No app actions available yet”).
+3. Verify `get_gateway_status` or ask ChatGPT to search for a tool (for example “EC2 instances”).
+
+The gateway exposes `search` and `fetch` for ChatGPT connector discovery, plus six read-only AWS tools. See [chatgpt-connector.md](chatgpt-connector.md).
+
+Do not paste OAuth access tokens into docs or terminal history.
+
+## Full connector guide
+
+See [chatgpt-connector.md](chatgpt-connector.md) for discovery flow, tool surface, troubleshooting, and curl smoke tests.
 
 ## Local development (legacy bearer)
 

@@ -7,7 +7,14 @@ export const OAUTH_SECURITY_SCHEMES = [
   { type: "oauth2" as const, scopes: [OAUTH_REQUIRED_SCOPE] },
 ] as const;
 
+export const CHATGPT_MIXED_SECURITY_SCHEMES = [
+  { type: "noauth" as const },
+  { type: "oauth2" as const, scopes: [OAUTH_REQUIRED_SCOPE] },
+] as const;
+
 export type OAuthSecurityScheme = (typeof OAUTH_SECURITY_SCHEMES)[number];
+export type ChatGptMixedSecurityScheme = (typeof CHATGPT_MIXED_SECURITY_SCHEMES)[number];
+export type ToolSecurityScheme = OAuthSecurityScheme | { type: "noauth" };
 
 type OAuthToolMetadata = {
   securitySchemes: OAuthSecurityScheme[];
@@ -64,6 +71,86 @@ export function localStatusToolDescriptor<T extends Record<string, unknown>>(
   descriptor: T,
 ): T & OAuthToolMetadata {
   return withOAuthToolMetadata(descriptor, STATUS_ANNOTATIONS);
+}
+
+type ChatGptToolMetadata = {
+  securitySchemes: ChatGptMixedSecurityScheme[];
+  _meta: { securitySchemes: ChatGptMixedSecurityScheme[]; [key: string]: unknown };
+  annotations: ToolAnnotations;
+};
+
+function chatgptDescriptorMeta(
+  securitySchemes: readonly ChatGptMixedSecurityScheme[] | readonly OAuthSecurityScheme[],
+): Record<string, unknown> {
+  return {
+    securitySchemes: [...securitySchemes],
+  };
+}
+
+function withChatGptToolMetadata<T extends Record<string, unknown>>(
+  descriptor: T,
+  securitySchemes: readonly ChatGptMixedSecurityScheme[] | readonly OAuthSecurityScheme[],
+  annotations: ToolAnnotations,
+): T & ChatGptToolMetadata {
+  const meta: ChatGptToolMetadata["_meta"] = {
+    ...chatgptDescriptorMeta(securitySchemes),
+    ...(typeof descriptor._meta === "object" && descriptor._meta !== null
+      ? (descriptor._meta as Record<string, unknown>)
+      : {}),
+    securitySchemes: [...securitySchemes],
+  };
+
+  return {
+    ...descriptor,
+    securitySchemes: [...securitySchemes],
+    _meta: meta,
+    annotations,
+  };
+}
+
+const CHATGPT_DISCOVERY_ANNOTATIONS: ToolAnnotations = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  openWorldHint: false,
+  idempotentHint: true,
+};
+
+export const chatgptSearchInputSchema = z.object({
+  query: z.string().describe("Natural language search query for AWS read-only MCP tools."),
+});
+
+export const chatgptFetchInputSchema = z.object({
+  id: z.string().describe("Catalog document id returned by the search tool."),
+});
+
+export const chatgptSearchOutputSchema = z.object({
+  results: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      url: z.string(),
+    }),
+  ),
+});
+
+export const chatgptFetchOutputSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  text: z.string(),
+  url: z.string(),
+  metadata: z.record(z.string(), z.string()),
+});
+
+export function chatgptSearchToolDescriptor<T extends Record<string, unknown>>(
+  descriptor: T,
+): T & ChatGptToolMetadata {
+  return withChatGptToolMetadata(descriptor, CHATGPT_MIXED_SECURITY_SCHEMES, CHATGPT_DISCOVERY_ANNOTATIONS);
+}
+
+export function chatgptFetchToolDescriptor<T extends Record<string, unknown>>(
+  descriptor: T,
+): T & ChatGptToolMetadata {
+  return withChatGptToolMetadata(descriptor, OAUTH_SECURITY_SCHEMES, CHATGPT_DISCOVERY_ANNOTATIONS);
 }
 
 export const costPeriodSchema = z.object({
