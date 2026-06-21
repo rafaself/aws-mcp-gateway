@@ -48,6 +48,8 @@ aws:read
 
 Create a regular web application (or native/public client per your Auth0 tenant policy) for the ChatGPT connector.
 
+When using the repository helper script `pnpm run setup:auth0`, the generated client is intentionally limited to the authorization-code flow. It does **not** grant `client_credentials` or refresh-token access to the ChatGPT-facing client.
+
 ### 4. Configure the ChatGPT redirect URI
 
 In the Auth0 application settings, add the redirect URI shown in the ChatGPT connector setup screen:
@@ -64,14 +66,26 @@ Copy [`wrangler.example.jsonc`](../wrangler.example.jsonc) for a portable templa
 
 ```text
 AUTH_MODE=oauth
+RATE_LIMIT_MAX_REQUESTS=120
+RATE_LIMIT_WINDOW_SECONDS=60
 MCP_RESOURCE_URL=https://<worker-host>
 OAUTH_ISSUER=https://<auth0-domain>/
 OAUTH_AUDIENCE=https://<worker-host>
+OAUTH_TOKEN_VALIDATION_MODE=jwks
 OAUTH_JWKS_URI=https://<auth0-domain>/.well-known/jwks.json
 OAUTH_REQUIRED_SCOPES=aws:read
 ```
 
 Do **not** set `MCP_AUTH_TOKEN` in OAuth mode.
+
+To accept opaque access tokens from an external provider, configure:
+
+```text
+OAUTH_TOKEN_VALIDATION_MODE=introspection
+OAUTH_INTROSPECTION_URL=https://<auth-provider-domain>/oauth/introspect
+```
+
+and set `OAUTH_INTROSPECTION_CLIENT_ID` / `OAUTH_INTROSPECTION_CLIENT_SECRET` as Worker secrets. `hybrid` keeps JWKS validation for JWTs and falls back to introspection for opaque tokens.
 
 To create the Auth0 API, `aws:read` scope, and ChatGPT application automatically, add Management API credentials to `.env.deploy.local` (see `.env.deploy.example`) and run:
 
@@ -96,15 +110,20 @@ Or use `pnpm run sync-secrets` with `AUTH_MODE=oauth` in `.env.deploy.local` (se
 pnpm deploy
 ```
 
+OAuth mode also requires the `AUTH_RATE_LIMITER` Durable Object binding and migration from [`wrangler.example.jsonc`](../wrangler.example.jsonc). The gateway enforces request throttling before authentication reaches the MCP runtime.
+
 ### 8. Verify protected-resource metadata
 
 ```bash
 pnpm run verify:oauth
+pnpm run verify:oauth:authenticated
 # or manually:
 curl https://<worker-host>/.well-known/oauth-protected-resource
 ```
 
 Expected: `200` with `resource`, `authorization_servers`, and `scopes_supported` including `aws:read`.
+
+`verify:oauth:authenticated` validates authenticated `initialize`, `tools/list`, `get_gateway_status`, `search`, and `fetch` using either `AWS_MCP_GATEWAY_ACCESS_TOKEN` or the smoke client variables in `.env.deploy.local`.
 
 ### 9. Create the ChatGPT app connector
 

@@ -22,6 +22,23 @@ vi.mock("./mcp/server.js", () => ({
 
 const { default: worker } = await import("./index.js");
 
+function makeRateLimiterBinding(allowed = true): DurableObjectNamespace {
+  return {
+    idFromName: () => "ratelimit-id" as never,
+    get: () =>
+      ({
+        fetch: async () =>
+          Response.json({
+            allowed,
+            limit: 10,
+            remaining: allowed ? 9 : 0,
+            resetAtMs: Date.now() + 60_000,
+            retryAfterSeconds: 60,
+          }),
+      }) as never,
+  } as never;
+}
+
 const oauthEnvBase = {
   AUTH_MODE: "oauth",
   MCP_RESOURCE_URL: TEST_OAUTH_AUDIENCE,
@@ -33,6 +50,7 @@ const oauthEnvBase = {
   AWS_SECRET_ACCESS_KEY: "secret",
   AWS_REGION: "us-east-1",
   AWS_ALLOWED_REGIONS: "us-east-1",
+  AUTH_RATE_LIMITER: makeRateLimiterBinding(),
 };
 
 const legacyEnv = {
@@ -258,6 +276,22 @@ describe("oauth /mcp challenge", () => {
     expect(response.status).toBe(401);
     const body = await response.json() as { error: { message: string } };
     expect(body.error.message).not.toContain("AWS_ACCESS_KEY_ID");
+    expect(createServerMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 before authentication when the caller exceeds the request budget", async () => {
+    const response = await worker.fetch(
+      new Request("https://gateway.example.com/mcp", { method: "POST" }),
+      {
+        ...oauthEnvBase,
+        AUTH_RATE_LIMITER: makeRateLimiterBinding(false),
+      },
+      {} as ExecutionContext,
+    );
+
+    expect(response.status).toBe(429);
+    const body = await response.json() as { error: { code: string } };
+    expect(body.error.code).toBe("rate_limited");
     expect(createServerMock).not.toHaveBeenCalled();
   });
 });

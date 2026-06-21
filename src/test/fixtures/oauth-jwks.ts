@@ -32,6 +32,7 @@ export async function createTestOAuthFixture(): Promise<TestOAuthFixture> {
     OAUTH_AUDIENCE: TEST_OAUTH_AUDIENCE,
     OAUTH_JWKS_URI: TEST_OAUTH_JWKS_URI,
     OAUTH_REQUIRED_SCOPES: ["aws:read"],
+    OAUTH_TOKEN_VALIDATION_MODE: "jwks",
   };
 
   async function signAccessToken(

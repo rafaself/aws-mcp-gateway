@@ -46,6 +46,7 @@ The gateway is a **read-only**, public-facing MCP endpoint for explicit AWS tool
 - ChatGPT connector OAuth is documented in [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md).
 - Contract: [docs/specs/oauth-chatgpt-connector.md](docs/specs/oauth-chatgpt-connector.md).
 - ChatGPT action visibility requires authenticated `tools/list` with valid descriptors for all 8 public tools; `search`/`fetch` are catalog helpers only.
+- OAuth mode requires the `AUTH_RATE_LIMITER` Durable Object binding so `/mcp` request throttling happens before the MCP runtime or AWS-backed tools execute.
 
 ---
 
@@ -72,6 +73,8 @@ Configure secrets with `wrangler secret put` and non-secret vars in `wrangler.js
 - [ ] `AWS_REGION` is set in `[vars]` and matches the primary region for regional tools.
 - [ ] `AWS_ALLOWED_REGIONS` is set in `[vars]` as a non-empty comma-separated allowlist.
 - [ ] `AWS_REGION` is included in `AWS_ALLOWED_REGIONS`.
+- [ ] `AUTH_RATE_LIMITER` Durable Object binding and migration are configured for OAuth deployments.
+- [ ] `RATE_LIMIT_MAX_REQUESTS` and `RATE_LIMIT_WINDOW_SECONDS` are set (or intentionally left at documented defaults).
 - [ ] Optional KV binding `AWS_MCP_CACHE` is configured in production if caching is desired (see [docs/deployment.md](docs/deployment.md)).
 - [ ] Missing or invalid required bindings return a normalized `configuration_error` response — not raw stack traces or binding dumps to unauthenticated callers.
 

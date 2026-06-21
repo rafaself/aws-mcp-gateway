@@ -170,7 +170,7 @@ CLIENT_PAYLOAD="$(jq -n \
     name: $name,
     app_type: "regular_web",
     oidc_conformant: true,
-    grant_types: ["authorization_code", "refresh_token", "client_credentials"],
+    grant_types: ["authorization_code"],
     is_first_party: true,
     callbacks: $callbacks,
     allowed_logout_urls: [],

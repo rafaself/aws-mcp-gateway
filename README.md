@@ -108,6 +108,8 @@ Use `.env.example` for documentation only. Real values must be configured with W
 - **Local legacy** (`AUTH_MODE=legacy-bearer`, default): requires `MCP_AUTH_TOKEN` secret. See [docs/mcp-testing.md](docs/mcp-testing.md).
 - **ChatGPT OAuth** (`AUTH_MODE=oauth`): requires OAuth vars in `[vars]`; `MCP_AUTH_TOKEN` is not used. See [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md).
 
+Production OAuth deployments also require the `AUTH_RATE_LIMITER` Durable Object binding. The gateway enforces request throttling at the `/mcp` HTTP boundary before AWS-backed tool execution.
+
 ### Required secrets (configure with `wrangler secret put`)
 
 ```text
@@ -125,6 +127,7 @@ For your own deployment, copy [`wrangler.example.jsonc`](wrangler.example.jsonc)
 - Worker hostname in `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE` (origin only — **do not** append `/mcp`)
 - Auth0 (or OIDC) tenant in `OAUTH_ISSUER` and `OAUTH_JWKS_URI`
 - KV namespace `id` in `kv_namespaces`
+- Durable Object migration/binding for `AUTH_RATE_LIMITER`
 
 **ChatGPT connector URL model:**
 
@@ -138,12 +141,26 @@ Protected resource metadata: https://<your-worker-domain>/.well-known/oauth-prot
 {
   "vars": {
     "AWS_REGION": "us-east-1",
-    "AWS_ALLOWED_REGIONS": "us-east-1,sa-east-1"
+    "AWS_ALLOWED_REGIONS": "us-east-1,sa-east-1",
+    "RATE_LIMIT_MAX_REQUESTS": "120",
+    "RATE_LIMIT_WINDOW_SECONDS": "60",
+    "OAUTH_TOKEN_VALIDATION_MODE": "jwks"
   }
 }
 ```
 
 These are operational configuration, not credentials. They are safe to commit and review.
+
+Optional broader-provider OAuth support:
+
+```text
+OAUTH_TOKEN_VALIDATION_MODE=introspection
+OAUTH_INTROSPECTION_URL=https://<auth-provider-domain>/oauth/introspect
+OAUTH_INTROSPECTION_CLIENT_ID=<secret>
+OAUTH_INTROSPECTION_CLIENT_SECRET=<secret>
+```
+
+`jwks` remains the default. `hybrid` accepts JWT validation first, then falls back to introspection for opaque tokens.
 
 ### Optional KV namespace
 
@@ -176,12 +193,27 @@ The cache is optional for local development and tests. If the binding is absent,
 
 **Security:** Cache keys are SHA-256 hashes of the tool name and normalized input parameters. Keys and cached values never include AWS credentials, MCP auth tokens, or raw request headers. Only normalized tool output is stored — never raw AWS responses.
 
+### Required rate-limiter Durable Object
+
+OAuth mode requires the `AUTH_RATE_LIMITER` Durable Object binding configured in `wrangler.jsonc`. This provides per-caller request throttling before authentication reaches the MCP runtime. Default limits are 120 `/mcp` requests per 60 seconds unless `RATE_LIMIT_MAX_REQUESTS` or `RATE_LIMIT_WINDOW_SECONDS` are overridden.
+
 ### Optional variables
 
 ```text
 APP_ENV=production
 MCP_NAME=aws-mcp-gateway
 ```
+
+### Authenticated production smoke test
+
+After deploying, run:
+
+```bash
+pnpm run verify:oauth
+pnpm run verify:oauth:authenticated
+```
+
+`verify:oauth:authenticated` uses either `AWS_MCP_GATEWAY_ACCESS_TOKEN` or the smoke OAuth client variables from [`.env.deploy.example`](.env.deploy.example) to verify authenticated `initialize`, `tools/list`, `get_gateway_status`, `search`, and `fetch`. It can optionally call `list_ec2_instances` when `AWS_MCP_GATEWAY_SMOKE_REGION` is set.
 
 ### Configure secrets with Wrangler
 

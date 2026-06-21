@@ -4,7 +4,7 @@ This gateway is designed for use as a **ChatGPT custom app connector**. ChatGPT 
 
 For OAuth setup with Auth0, see [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md). For authorization contract details, see [specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md). For client identification modes (predefined client vs future CIMD), see [specs/oauth-client-identification.md](specs/oauth-client-identification.md).
 
-**Production acceptance:** Run `pnpm run verify:connector-contract` locally, then complete [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) before treating a deployment as ChatGPT-ready.
+**Production acceptance:** Run `pnpm run verify:connector-contract` locally, then `pnpm run verify:oauth`, then `pnpm run verify:oauth:authenticated`, and finally complete [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) before treating a deployment as ChatGPT-ready.
 
 ## Final connector contract
 
@@ -72,6 +72,8 @@ ChatGPT discovers how to authorize against this gateway through two public HTTP 
 2. **HTTP `WWW-Authenticate` challenge** — unauthenticated `POST /mcp` returns `401` with a `Bearer` challenge containing `resource_metadata`, `scope`, and `error="invalid_token"`.
 
 The gateway **authenticates before MCP server creation**. Unauthenticated, invalid-token, and insufficient-scope requests never reach tool execution.
+
+OAuth mode also rate-limits `/mcp` requests before the MCP server is created. This keeps abuse control at the HTTP boundary instead of relying on individual AWS-backed tools.
 
 Tool descriptors advertise OAuth security metadata (`securitySchemes`, `_meta.securitySchemes`, read-only annotations). Tool-level `_meta["mcp/www_authenticate"]` is **not** used for unauthenticated `/mcp` requests because those requests never reach tools.
 

@@ -1,0 +1,49 @@
+name: Connector Smoke
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run verify:connector-contract
+
+  deployed-smoke:
+    runs-on: ubuntu-latest
+    needs: contract
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Skip when smoke secrets are absent
+        if: ${{ secrets.AWS_MCP_GATEWAY_WORKER_URL == '' || secrets.AWS_MCP_GATEWAY_OAUTH_TOKEN_URL == '' || secrets.AWS_MCP_GATEWAY_OAUTH_CLIENT_ID == '' || secrets.AWS_MCP_GATEWAY_OAUTH_CLIENT_SECRET == '' }}
+        run: echo "Skipping deployed connector smoke check because required secrets are not configured."
+      - name: Run deployed connector smoke
+        if: ${{ secrets.AWS_MCP_GATEWAY_WORKER_URL != '' && secrets.AWS_MCP_GATEWAY_OAUTH_TOKEN_URL != '' && secrets.AWS_MCP_GATEWAY_OAUTH_CLIENT_ID != '' && secrets.AWS_MCP_GATEWAY_OAUTH_CLIENT_SECRET != '' }}
+        env:
+          AWS_MCP_GATEWAY_WORKER_URL: ${{ secrets.AWS_MCP_GATEWAY_WORKER_URL }}
+          AWS_MCP_GATEWAY_OAUTH_TOKEN_URL: ${{ secrets.AWS_MCP_GATEWAY_OAUTH_TOKEN_URL }}
+          AWS_MCP_GATEWAY_OAUTH_CLIENT_ID: ${{ secrets.AWS_MCP_GATEWAY_OAUTH_CLIENT_ID }}
+          AWS_MCP_GATEWAY_OAUTH_CLIENT_SECRET: ${{ secrets.AWS_MCP_GATEWAY_OAUTH_CLIENT_SECRET }}
+          AWS_MCP_GATEWAY_OAUTH_AUDIENCE: ${{ secrets.AWS_MCP_GATEWAY_OAUTH_AUDIENCE }}
+          AWS_MCP_GATEWAY_OAUTH_SCOPE: ${{ secrets.AWS_MCP_GATEWAY_OAUTH_SCOPE }}
+          AWS_MCP_GATEWAY_SMOKE_REGION: ${{ secrets.AWS_MCP_GATEWAY_SMOKE_REGION }}
+        run: pnpm run verify:oauth:authenticated

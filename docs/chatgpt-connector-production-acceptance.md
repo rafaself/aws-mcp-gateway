@@ -89,12 +89,15 @@ curl -i -X POST https://<worker-host>/mcp \
 **Expected:** HTTP `401`; `WWW-Authenticate` includes `Bearer`, `resource_metadata=`, `scope=` (includes `aws:read`), and `error="invalid_token"`.
 
 Optional automated check: `pnpm run verify:oauth https://<worker-host>`.
+Optional authenticated smoke check: `pnpm run verify:oauth:authenticated`.
 
 - [ ] **5.** Unauthenticated `/mcp` returns OAuth 401 challenge
 
 ### 6. Authenticated `initialize` succeeds
 
 Obtain an OAuth access token through the ChatGPT connector flow or your OIDC provider (staging). Use placeholders only in docs and scripts.
+
+Automated alternative: configure the smoke OAuth variables from `.env.deploy.local` and run `pnpm run verify:oauth:authenticated`. This covers steps 6 through 12 without the ChatGPT UI.
 
 ```bash
 curl -sS -X POST https://<worker-host>/mcp \

@@ -28,6 +28,13 @@ export function validateHttpsUrl(
   return value;
 }
 
+export function validateOAuthIntrospectionUrl(
+  value: string,
+  errors: string[],
+): string | null {
+  return validateHttpsUrl(value, "OAUTH_INTROSPECTION_URL", errors);
+}
+
 export function validateOAuthIssuerUrl(
   value: string,
   errors: string[],

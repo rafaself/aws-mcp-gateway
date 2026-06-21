@@ -11,7 +11,7 @@ The Worker acts as an **OAuth resource server only**. Client registration and id
 ```text
 ChatGPT connector
   -> identifies itself to the external authorization server
-  -> external authorization server issues JWT access token
+  -> external authorization server issues an OAuth access token
   -> ChatGPT calls Worker /mcp with Authorization: Bearer <token>
   -> Worker validates issuer, audience, expiry, signature, and aws:read scope
 ```
@@ -33,7 +33,7 @@ Related specs:
 AUTH_MODE=oauth
 External provider: Auth0-compatible OIDC provider
 Client registration: predefined ChatGPT application/client in the provider
-Access token format accepted by Worker: JWT
+Access token format accepted by Worker: JWT by default; opaque tokens via RFC 7662 introspection are also supported
 Required scope: aws:read
 ```
 
@@ -54,7 +54,7 @@ The authorization server accepts that client identification method
 Worker token validation remains unchanged
 ```
 
-**Worker runtime code should not change** unless the authorization server's resulting tokens require additional validation claims (for example new required JWT fields). Token validation rules remain: JWT signature via JWKS, issuer, audience, expiry, and `aws:read` scope.
+**Worker runtime code should not change** unless the authorization server's resulting tokens require additional validation claims (for example new required JWT fields). Token validation rules remain: JWT signature via JWKS or introspection, issuer, audience/resource, expiry, and `aws:read` scope.
 
 ### 3. Explicitly unsupported mode: custom DCR server inside the Worker
 
@@ -73,7 +73,7 @@ CIMD-related work is allowed only under these constraints:
 - Add provider-specific CIMD setup steps **only after** validating the selected provider supports them with the real ChatGPT connector.
 - Do **not** remove predefined-client Auth0 setup until CIMD is proven with a real ChatGPT connector smoke test (see [chatgpt-connector-smoke-test.md](../chatgpt-connector-smoke-test.md)).
 - Do **not** weaken JWT validation to support CIMD.
-- Do **not** accept unsigned tokens or opaque tokens without a separately specified validation strategy.
+- Do **not** accept unsigned tokens or opaque tokens without a separately specified validation strategy such as RFC 7662 introspection.
 - Keep `OAUTH_AUDIENCE` equal to `MCP_RESOURCE_URL` unless a new spec explicitly changes the resource model.
 - Do **not** add broader scopes than `aws:read` for the MVP read-only gateway.
 

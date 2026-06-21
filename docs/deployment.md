@@ -82,7 +82,7 @@ wrangler secret put MCP_AUTH_TOKEN
 | Mode | Use case | `MCP_AUTH_TOKEN` | OAuth vars |
 |------|----------|------------------|------------|
 | `legacy-bearer` (default) | Local `pnpm dev`, curl testing | Required (secret) | Not used |
-| `oauth` | ChatGPT connector production | Not required | Required in `[vars]` |
+| `oauth` | ChatGPT connector production | Not required | Required in `[vars]` plus `AUTH_RATE_LIMITER` Durable Object binding |
 
 OAuth vars (non-secret, safe in `wrangler.jsonc` or dashboard):
 
@@ -90,14 +90,30 @@ OAuth vars (non-secret, safe in `wrangler.jsonc` or dashboard):
 {
   "vars": {
     "AUTH_MODE": "oauth",
+    "RATE_LIMIT_MAX_REQUESTS": "120",
+    "RATE_LIMIT_WINDOW_SECONDS": "60",
     "MCP_RESOURCE_URL": "https://<worker-host>",
     "OAUTH_ISSUER": "https://<auth-provider-domain>/",
     "OAUTH_AUDIENCE": "https://<worker-host>",
+    "OAUTH_TOKEN_VALIDATION_MODE": "jwks",
     "OAUTH_JWKS_URI": "https://<auth-provider-domain>/.well-known/jwks.json",
     "OAUTH_REQUIRED_SCOPES": "aws:read"
   }
 }
 ```
+
+To support opaque access tokens from providers that expose RFC 7662 introspection, switch to:
+
+```jsonc
+{
+  "vars": {
+    "OAUTH_TOKEN_VALIDATION_MODE": "introspection",
+    "OAUTH_INTROSPECTION_URL": "https://<auth-provider-domain>/oauth/introspect"
+  }
+}
+```
+
+and configure `OAUTH_INTROSPECTION_CLIENT_ID` / `OAUTH_INTROSPECTION_CLIENT_SECRET` as Worker secrets.
 
 Keep committed `wrangler.jsonc` production-neutral if you prefer — use [`wrangler.example.jsonc`](../wrangler.example.jsonc) as the reusable template and set values in the Cloudflare dashboard per environment.
 
@@ -118,6 +134,30 @@ Open `wrangler.jsonc` and ensure the `[vars]` section contains:
 
 - `AWS_REGION` — The default AWS region for global tools (e.g. Cost Explorer).
 - `AWS_ALLOWED_REGIONS` — A comma-separated list of regions that regional tools may query. The default region must be included.
+- `RATE_LIMIT_MAX_REQUESTS` / `RATE_LIMIT_WINDOW_SECONDS` — request budget enforced before the MCP runtime in OAuth mode.
+
+### Required rate-limiter Durable Object
+
+OAuth deployments must bind the `AUTH_RATE_LIMITER` Durable Object and include the matching migration:
+
+```jsonc
+{
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "AUTH_RATE_LIMITER",
+        "class_name": "AuthRateLimitDurableObject"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["AuthRateLimitDurableObject"]
+    }
+  ]
+}
+```
 
 ### Optional KV namespace
 
@@ -272,6 +312,8 @@ curl -X POST https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp \
 A successful response includes a `result` object with a `tools` array containing all registered MCP tools.
 
 **OAuth mode** — complete authentication through the ChatGPT connector UI. Do not copy OAuth access tokens into shell history. See [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
+
+For a non-UI smoke check, run `pnpm run verify:oauth:authenticated` with either `AWS_MCP_GATEWAY_ACCESS_TOKEN` or the smoke OAuth client variables from `.env.deploy.local`.
 
 ### 4. Tool smoke tests
 
