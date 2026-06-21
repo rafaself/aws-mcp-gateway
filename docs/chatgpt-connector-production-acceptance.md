@@ -100,14 +100,14 @@ Obtain an OAuth access token through the ChatGPT connector flow or your OIDC pro
 Automated alternative: configure the smoke OAuth variables from `.env.deploy.local` and run `pnpm run verify:oauth:authenticated`. This covers steps 6 through 12 without the ChatGPT UI.
 
 ```bash
-curl -sS -X POST https://<worker-host>/mcp \
+curl -i -X POST https://<worker-host>/mcp \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -H "Accept: application/json, text/event-stream" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"acceptance","version":"1.0.0"}}}'
 ```
 
-**Expected:** HTTP `200` with a valid `initialize` result.
+**Expected:** HTTP `200` with a valid `initialize` result and response header `mcp-session-id` (UUID).
 
 - [ ] **6.** Authenticated `initialize` succeeds
 

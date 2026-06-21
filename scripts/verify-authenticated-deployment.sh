@@ -30,6 +30,10 @@ require_var() {
   fi
 }
 
+MCP_LAST_RESPONSE=""
+MCP_LAST_HEADERS_FILE=""
+MCP_LAST_BODY_FILE=""
+
 json_rpc() {
   local payload="$1"
   local headers_file
@@ -43,7 +47,12 @@ json_rpc() {
     -H "Authorization: Bearer ${ACCESS_TOKEN}" \
     -H "Accept: application/json, text/event-stream" \
     -H "Content-Type: application/json" \
+    ${MCP_PROTOCOL_VERSION:+-H "mcp-protocol-version: ${MCP_PROTOCOL_VERSION}"} \
+    ${MCP_SESSION_ID:+-H "mcp-session-id: ${MCP_SESSION_ID}"} \
     -d "$payload"
+
+  MCP_LAST_HEADERS_FILE="$headers_file"
+  MCP_LAST_BODY_FILE="$body_file"
 
   content_type="$(
     awk 'BEGIN { IGNORECASE = 1 } /^content-type:/ { print $2; exit }' "$headers_file" \
@@ -51,17 +60,28 @@ json_rpc() {
   )"
 
   if [[ "$content_type" == *"text/event-stream"* ]]; then
-    awk '
-      /^data: / {
-        sub(/^data: /, "", $0)
-        print
-      }
-    ' "$body_file" | tail -n 1
+    MCP_LAST_RESPONSE="$(
+      awk '
+        /^data: / {
+          sub(/^data: /, "", $0)
+          print
+        }
+      ' "$body_file" | tail -n 1
+    )"
   else
-    cat "$body_file"
+    MCP_LAST_RESPONSE="$(cat "$body_file")"
   fi
+}
 
-  rm -f "$headers_file" "$body_file"
+cleanup_json_rpc_temp_files() {
+  if [[ -n "${MCP_LAST_HEADERS_FILE:-}" ]]; then
+    rm -f "$MCP_LAST_HEADERS_FILE"
+    MCP_LAST_HEADERS_FILE=""
+  fi
+  if [[ -n "${MCP_LAST_BODY_FILE:-}" ]]; then
+    rm -f "$MCP_LAST_BODY_FILE"
+    MCP_LAST_BODY_FILE=""
+  fi
 }
 
 if [[ -z "$ACCESS_TOKEN" ]]; then
@@ -98,12 +118,25 @@ if [[ -z "$ACCESS_TOKEN" ]]; then
 fi
 
 echo "Checking authenticated initialize ..."
-INITIALIZE_RESPONSE="$(json_rpc '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"deployment-smoke","version":"1.0.0"}}}')"
+json_rpc '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"deployment-smoke","version":"1.0.0"}}}'
+INITIALIZE_RESPONSE="$MCP_LAST_RESPONSE"
+MCP_SESSION_ID="$(
+  awk 'BEGIN { IGNORECASE = 1 } /^mcp-session-id:/ { print $2; exit }' "$MCP_LAST_HEADERS_FILE" \
+    | tr -d '\r'
+)"
+cleanup_json_rpc_temp_files
+if [[ -z "$MCP_SESSION_ID" ]]; then
+  echo "Missing mcp-session-id header on initialize response." >&2
+  exit 1
+fi
+MCP_PROTOCOL_VERSION="2024-11-05"
 echo "$INITIALIZE_RESPONSE" | jq .
 echo "$INITIALIZE_RESPONSE" | jq -e '.result.serverInfo.name == "aws-mcp-gateway"' >/dev/null
 
 echo "Checking authenticated tools/list ..."
-TOOLS_LIST_RESPONSE="$(json_rpc '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}')"
+json_rpc '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+TOOLS_LIST_RESPONSE="$MCP_LAST_RESPONSE"
+cleanup_json_rpc_temp_files
 echo "$TOOLS_LIST_RESPONSE" | jq .
 echo "$TOOLS_LIST_RESPONSE" | jq -e '.result.tools | length == 8' >/dev/null
 echo "$TOOLS_LIST_RESPONSE" | jq -e '
@@ -127,24 +160,29 @@ echo "$TOOLS_LIST_RESPONSE" | jq -e '
   )' >/dev/null
 
 echo "Checking get_gateway_status ..."
-STATUS_RESPONSE="$(json_rpc '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_gateway_status","arguments":{}}}')"
+json_rpc '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_gateway_status","arguments":{}}}'
+STATUS_RESPONSE="$MCP_LAST_RESPONSE"
+cleanup_json_rpc_temp_files
 echo "$STATUS_RESPONSE" | jq .
 echo "$STATUS_RESPONSE" | jq -e '.result.structuredContent.status == "ok"' >/dev/null
 
 echo "Checking search ..."
-SEARCH_RESPONSE="$(json_rpc '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"search","arguments":{"query":"ec2"}}}')"
+json_rpc '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"search","arguments":{"query":"ec2"}}}'
+SEARCH_RESPONSE="$MCP_LAST_RESPONSE"
+cleanup_json_rpc_temp_files
 echo "$SEARCH_RESPONSE" | jq .
 echo "$SEARCH_RESPONSE" | jq -e '.result.structuredContent.results | length > 0' >/dev/null
 
 echo "Checking fetch ..."
-FETCH_RESPONSE="$(json_rpc '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"fetch","arguments":{"id":"tool/list_ec2_instances"}}}')"
+json_rpc '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"fetch","arguments":{"id":"tool/list_ec2_instances"}}}'
+FETCH_RESPONSE="$MCP_LAST_RESPONSE"
+cleanup_json_rpc_temp_files
 echo "$FETCH_RESPONSE" | jq .
 echo "$FETCH_RESPONSE" | jq -e '.result.structuredContent.id == "tool/list_ec2_instances"' >/dev/null
 
 if [[ -n "${AWS_MCP_GATEWAY_SMOKE_REGION:-}" ]]; then
   echo "Checking bounded AWS tool (list_ec2_instances in ${AWS_MCP_GATEWAY_SMOKE_REGION}) ..."
-  EC2_RESPONSE="$(
-    json_rpc "$(jq -nc \
+  json_rpc "$(jq -nc \
       --arg region "$AWS_MCP_GATEWAY_SMOKE_REGION" \
       '{
         jsonrpc: "2.0",
@@ -155,7 +193,8 @@ if [[ -n "${AWS_MCP_GATEWAY_SMOKE_REGION:-}" ]]; then
           arguments: { regions: [$region] }
         }
       }')"
-  )"
+  EC2_RESPONSE="$MCP_LAST_RESPONSE"
+  cleanup_json_rpc_temp_files
   echo "$EC2_RESPONSE" | jq .
   echo "$EC2_RESPONSE" | jq -e '
     (.result.structuredContent.count >= 0)

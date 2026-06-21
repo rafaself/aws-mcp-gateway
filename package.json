@@ -31,7 +31,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
-    "agents": "0.16.2",
     "aws4fetch": "1.0.20",
     "fast-xml-parser": "5.9.3",
     "jose": "6.2.3",

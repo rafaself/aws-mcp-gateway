@@ -8,24 +8,16 @@ import {
 } from "./test/fixtures/oauth-jwks.js";
 
 const createServerMock = vi.fn((_ctx?: unknown) => ({}));
-const createMcpHandlerMock = vi.fn((_server?: unknown, options?: { transport?: { __options?: { onsessioninitialized?: (sessionId: string) => void } } }) =>
-  async () => {
-    await options?.transport?.__options?.onsessioninitialized?.("session-from-test");
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { "Content-Type": "text/event-stream" },
-    });
-  });
+const streamableHttpHandlerMock = vi.fn(async () =>
+  new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { "Content-Type": "text/event-stream" },
+  }),
+);
+const createStreamableHttpMcpHandlerMock = vi.fn(() => streamableHttpHandlerMock);
 
-vi.mock("agents/mcp", () => ({
-  createMcpHandler: createMcpHandlerMock,
-  WorkerTransport: class WorkerTransport {
-    __options?: unknown;
-
-    constructor(options?: unknown) {
-      this.__options = options;
-    }
-  },
+vi.mock("./mcp/streamable-http-handler.js", () => ({
+  createStreamableHttpMcpHandler: createStreamableHttpMcpHandlerMock,
 }));
 
 vi.mock("./mcp/server.js", () => ({
@@ -80,7 +72,8 @@ const legacyEnv = {
 beforeEach(() => {
   resetJwksCache();
   createServerMock.mockClear();
-  createMcpHandlerMock.mockClear();
+  createStreamableHttpMcpHandlerMock.mockClear();
+  streamableHttpHandlerMock.mockClear();
 });
 
 describe("oauth protected-resource metadata route", () => {
@@ -203,7 +196,7 @@ describe("oauth /mcp challenge", () => {
     const body = await response.json() as { error: { code: string; message: string } };
     expect(body.error.code).toBe("unauthorized");
     expect(body.error.message).toBe("Authentication is required.");
-    expect(createServerMock).not.toHaveBeenCalled();
+    expect(createStreamableHttpMcpHandlerMock).not.toHaveBeenCalled();
   });
 
   it("accepts valid OAuth JWT without MCP_AUTH_TOKEN", async () => {
@@ -225,10 +218,11 @@ describe("oauth /mcp challenge", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(createServerMock).toHaveBeenCalledTimes(1);
+    expect(createStreamableHttpMcpHandlerMock).toHaveBeenCalledTimes(1);
+    expect(streamableHttpHandlerMock).toHaveBeenCalledTimes(1);
   });
 
-  it("adds mcp-session-id to initialize responses when transport initializes a session", async () => {
+  it("delegates authenticated MCP requests to the streamable HTTP handler", async () => {
     const fixture = await createTestOAuthFixture();
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
     const token = await fixture.signAccessToken();
@@ -257,7 +251,8 @@ describe("oauth /mcp challenge", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("mcp-session-id")).toBe("session-from-test");
+    expect(createStreamableHttpMcpHandlerMock).toHaveBeenCalledTimes(1);
+    expect(streamableHttpHandlerMock).toHaveBeenCalledTimes(1);
   });
 
   it("does not create MCP server for invalid OAuth tokens", async () => {
@@ -278,7 +273,7 @@ describe("oauth /mcp challenge", () => {
     );
 
     expect(response.status).toBe(401);
-    expect(createServerMock).not.toHaveBeenCalled();
+    expect(createStreamableHttpMcpHandlerMock).not.toHaveBeenCalled();
   });
 
   it("does not create MCP server for insufficient-scope OAuth tokens", async () => {
@@ -304,7 +299,7 @@ describe("oauth /mcp challenge", () => {
     expect(wwwAuth).toContain('error="insufficient_scope"');
     const body = await response.json() as { error: { code: string } };
     expect(body.error.code).toBe("forbidden");
-    expect(createServerMock).not.toHaveBeenCalled();
+    expect(createStreamableHttpMcpHandlerMock).not.toHaveBeenCalled();
   });
 
   it("does not expose AWS config details to unauthenticated callers", async () => {
@@ -324,7 +319,7 @@ describe("oauth /mcp challenge", () => {
     expect(response.status).toBe(401);
     const body = await response.json() as { error: { message: string } };
     expect(body.error.message).not.toContain("AWS_ACCESS_KEY_ID");
-    expect(createServerMock).not.toHaveBeenCalled();
+    expect(createStreamableHttpMcpHandlerMock).not.toHaveBeenCalled();
   });
 
   it("returns 429 before authentication when the caller exceeds the request budget", async () => {
@@ -340,7 +335,7 @@ describe("oauth /mcp challenge", () => {
     expect(response.status).toBe(429);
     const body = await response.json() as { error: { code: string } };
     expect(body.error.code).toBe("rate_limited");
-    expect(createServerMock).not.toHaveBeenCalled();
+    expect(createStreamableHttpMcpHandlerMock).not.toHaveBeenCalled();
   });
 });
 
@@ -370,7 +365,7 @@ describe("legacy bearer mode", () => {
 
     expect(response.status).toBe(401);
     expect(response.headers.get("WWW-Authenticate")).toBeNull();
-    expect(createServerMock).not.toHaveBeenCalled();
+    expect(createStreamableHttpMcpHandlerMock).not.toHaveBeenCalled();
   });
 
   it("still accepts valid MCP_AUTH_TOKEN", async () => {
@@ -388,6 +383,7 @@ describe("legacy bearer mode", () => {
     );
 
     expect(response.status).not.toBe(401);
-    expect(createServerMock).toHaveBeenCalledTimes(1);
+    expect(createStreamableHttpMcpHandlerMock).toHaveBeenCalledTimes(1);
+    expect(streamableHttpHandlerMock).toHaveBeenCalledTimes(1);
   });
 });

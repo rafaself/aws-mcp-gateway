@@ -2,7 +2,7 @@
 
 Runtime MCP/auth dependency upgrades must be treated as protocol changes until HTTP-level MCP tests prove ChatGPT-compatible discovery still works.
 
-The `/mcp` endpoint depends on pinned runtime packages for transport, OAuth token validation, input validation, and AWS request signing. A compatible but changed release of `agents` or the MCP SDK could alter session handling, response shape, headers, or `tools/list` behavior without breaking typecheck or unit tests that mock those layers.
+The `/mcp` endpoint depends on pinned runtime packages for transport, OAuth token validation, input validation, and AWS request signing. A compatible but changed release of the MCP SDK could alter session handling, response shape, headers, or `tools/list` behavior without breaking typecheck or unit tests that mock those layers.
 
 ## Pinned runtime dependencies
 
@@ -10,8 +10,7 @@ These packages are pinned to exact versions in `package.json`:
 
 | Package | Role |
 |---------|------|
-| `@modelcontextprotocol/sdk` | MCP protocol types and server primitives |
-| `agents` | HTTP MCP transport helper (`createMcpHandler`) |
+| `@modelcontextprotocol/sdk` | MCP protocol types, server primitives, and streamable HTTP transport |
 | `zod` | Tool input/output schema validation |
 | `jose` | OAuth JWT verification |
 | `aws4fetch` | AWS request signing for read-only tools |
@@ -36,7 +35,7 @@ If `pnpm install --frozen-lockfile` cannot be run locally, run `pnpm install` an
 
 After automated checks pass, confirm ChatGPT Connector discovery safety:
 
-- [ ] HTTP `initialize` still works over `/mcp`
+- [ ] HTTP `initialize` still works over `/mcp` and returns `mcp-session-id`
 - [ ] HTTP `tools/list` still returns all 8 public tools
 - [ ] Descriptors still include `title`, `inputSchema`, `outputSchema` (where applicable), `annotations`, `securitySchemes`, and `_meta.securitySchemes`
 - [ ] Unauthenticated `POST /mcp` still returns an OAuth `401` challenge with `WWW-Authenticate`
@@ -44,6 +43,7 @@ After automated checks pass, confirm ChatGPT Connector discovery safety:
 
 Automated contract tests that guard this surface:
 
+- `src/mcp/streamable-http-handler.test.ts`
 - `src/mcp/tools/descriptor-contract.test.ts`
 - `src/mcp/tools/list-integration.test.ts`
 - `src/index.oauth.test.ts`

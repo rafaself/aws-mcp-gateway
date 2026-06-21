@@ -1,5 +1,5 @@
-import { createMcpHandler, WorkerTransport } from "agents/mcp";
 import { createServer } from "./mcp/server.js";
+import { createStreamableHttpMcpHandler } from "./mcp/streamable-http-handler.js";
 import { authenticateRequest } from "./auth/index.js";
 import { buildProtectedResourceMetadata } from "./auth/oauth/metadata.js";
 import {
@@ -69,40 +69,10 @@ export default {
       }
 
       const gatewayCtx = buildGatewayContext(envResult.config);
-      const server = createServer(gatewayCtx);
-      const isInitializeRequest = await isInitializeRpcRequest(request);
-      let initializedSessionId: string | undefined;
-      const transport = new WorkerTransport({
-        ...(isInitializeRequest
-          ? {
-              // Work around a transport/header propagation issue observed in ChatGPT.
-              onsessioninitialized: (sessionId: string) => {
-                initializedSessionId = sessionId;
-              },
-            }
-          : {}),
-      } as ConstructorParameters<typeof WorkerTransport>[0]);
-
-      const response = await createMcpHandler(server, { transport })(request, env, ctx);
-      if (!isInitializeRequest) {
-        return response;
-      }
-
-      const sessionId =
-        response.headers.get("mcp-session-id") ??
-        initializedSessionId ??
-        transport.sessionId;
-      if (!sessionId) {
-        return response;
-      }
-
-      const headers = new Headers(response.headers);
-      headers.set("mcp-session-id", sessionId);
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers,
+      const handler = createStreamableHttpMcpHandler({
+        createServer: () => createServer(gatewayCtx),
       });
+      return handler(request);
     }
 
     return errorResponse(new GatewayError("not_found", "Not Found"), 404);
@@ -110,33 +80,3 @@ export default {
 } satisfies ExportedHandler;
 
 export { AuthRateLimitDurableObject };
-
-async function isInitializeRpcRequest(request: Request): Promise<boolean> {
-  if (request.method !== "POST") {
-    return false;
-  }
-
-  const contentType = request.headers.get("content-type") ?? "";
-  if (!contentType.includes("application/json")) {
-    return false;
-  }
-
-  try {
-    const body = (await request.clone().json()) as unknown;
-    if (Array.isArray(body)) {
-      return body.length === 1 && hasInitializeMethod(body[0]);
-    }
-    return hasInitializeMethod(body);
-  } catch {
-    return false;
-  }
-}
-
-function hasInitializeMethod(body: unknown): boolean {
-  return (
-    typeof body === "object" &&
-    body !== null &&
-    "method" in body &&
-    (body as { method?: unknown }).method === "initialize"
-  );
-}

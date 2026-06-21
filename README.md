@@ -405,7 +405,7 @@ A passing test suite is required but not sufficient — tests must prove the int
 
 ### Dependency upgrades
 
-Runtime MCP/auth dependency upgrades must be treated as protocol changes until HTTP-level MCP tests prove ChatGPT-compatible discovery still works. Pinned runtime packages (`agents`, `@modelcontextprotocol/sdk`, `jose`, `zod`, `aws4fetch`, `fast-xml-parser`) use exact versions in `package.json`. See [docs/dependency-upgrade-contract.md](docs/dependency-upgrade-contract.md) for the required checklist before bumping any of them.
+Runtime MCP/auth dependency upgrades must be treated as protocol changes until HTTP-level MCP tests prove ChatGPT-compatible discovery still works. Pinned runtime packages (`@modelcontextprotocol/sdk`, `jose`, `zod`, `aws4fetch`, `fast-xml-parser`) use exact versions in `package.json`. See [docs/dependency-upgrade-contract.md](docs/dependency-upgrade-contract.md) for the required checklist before bumping any of them.
 
 ### Rules
 

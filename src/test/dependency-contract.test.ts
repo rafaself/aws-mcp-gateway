@@ -3,7 +3,6 @@ import packageJson from "../../package.json";
 
 const PINNED_RUNTIME_DEPENDENCIES = [
   "@modelcontextprotocol/sdk",
-  "agents",
   "aws4fetch",
   "fast-xml-parser",
   "jose",
