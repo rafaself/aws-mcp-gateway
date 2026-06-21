@@ -265,9 +265,10 @@ https://<your-worker-domain>/mcp
 Use **OAuth** authentication in production (`AUTH_MODE=oauth`). ChatGPT discovers AWS tools through the `search` and `fetch` MCP tools, then calls read-only AWS tools after OAuth.
 
 **Setup and troubleshooting:** [docs/chatgpt-connector.md](docs/chatgpt-connector.md)  
-**Auth0 OAuth configuration:** [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md)
+**Auth0 OAuth configuration:** [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md)  
+**End-to-end ChatGPT smoke validation:** [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md)
 
-See [docs/mcp-testing.md](docs/mcp-testing.md) for smoke tests and expected failure modes.
+See [docs/mcp-testing.md](docs/mcp-testing.md) for curl smoke tests and expected failure modes.
 
 ## Repository safety
 

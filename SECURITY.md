@@ -186,6 +186,7 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 - [ ] `GET /health` returns `{ "ok": true, "service": "aws-mcp-gateway" }` without authentication.
 - [ ] With valid runtime configuration, `POST /mcp` without authentication returns HTTP 401 (with `WWW-Authenticate` in `oauth` mode).
 - [ ] Authenticated MCP access works (legacy bearer token or ChatGPT OAuth flow — see [docs/mcp-testing.md](docs/mcp-testing.md)).
+- [ ] For ChatGPT production connectors, complete the end-to-end smoke runbook in [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md) (OAuth login, Actions visible, `get_gateway_status`, `search`/`fetch`, bounded AWS tool).
 - [ ] A smoke test confirms at least one AWS-backed tool returns normalized output in an allowed region.
 
 ---

@@ -63,6 +63,8 @@ Implementation: [`src/mcp/chatgpt/catalog.ts`](../src/mcp/chatgpt/catalog.ts), [
 
 ## Verify in ChatGPT
 
+For the full manual validation flow (HTTP pre-checks through OAuth login, Actions, `get_gateway_status`, `search`/`fetch`, and a bounded AWS tool), see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md).
+
 After OAuth succeeds:
 
 1. Confirm **Actions** lists AWS tools (not “No app actions available yet”).
@@ -100,6 +102,7 @@ Production ChatGPT connectors use OAuth, not `MCP_AUTH_TOKEN`. See [mcp-testing.
 
 ## References
 
+- [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md) — end-to-end ChatGPT connector smoke runbook
 - [OpenAI — Connect from ChatGPT](https://developers.openai.com/apps-sdk/deploy/connect-chatgpt)
 - [OpenAI — Authentication](https://developers.openai.com/apps-sdk/build/auth)
 - [OpenAI — Testing](https://developers.openai.com/apps-sdk/deploy/testing)
