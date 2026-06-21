@@ -49,7 +49,7 @@ Automated contract tests that guard this surface:
 - `src/index.oauth.test.ts`
 - `src/test/dependency-contract.test.ts`
 
-For manual ChatGPT validation after deployment, see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md).
+For manual ChatGPT validation after deployment, see [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) and [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md).
 
 ## Security constraints
 

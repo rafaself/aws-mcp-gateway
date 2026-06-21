@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { authenticateOAuthRequest } from "./verify-token.js";
 import { resetJwksCache, setJwksResolverForTesting } from "./jwks.js";
 import {
@@ -23,6 +23,7 @@ function makeRequest(token: string | null, scheme = "Bearer"): Request {
 describe("authenticateOAuthRequest", () => {
   beforeEach(() => {
     resetJwksCache();
+    vi.restoreAllMocks();
   });
 
   it("returns 401 with challenge when Authorization header is missing", async () => {
@@ -155,5 +156,79 @@ describe("authenticateOAuthRequest", () => {
     expect(serialized).not.toContain("user@example.com");
     expect(serialized).not.toContain(TEST_OAUTH_ISSUER);
     expect(serialized).not.toContain(TEST_OAUTH_AUDIENCE);
+  });
+
+  it("accepts tokens with a resource claim matching the configured audience", async () => {
+    const fixture = await createTestOAuthFixture();
+    setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
+    const token = await fixture.signAccessToken({
+      scope: "aws:read",
+      resource: TEST_OAUTH_AUDIENCE,
+    });
+
+    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+
+    expect(response).toBeNull();
+  });
+
+  it("accepts opaque tokens through introspection mode", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({
+        active: true,
+        iss: TEST_OAUTH_ISSUER,
+        aud: TEST_OAUTH_AUDIENCE,
+        scope: "aws:read",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      }),
+    );
+
+    const response = await authenticateOAuthRequest(
+      makeRequest("opaque-token-value"),
+      {
+        MCP_RESOURCE_URL: TEST_OAUTH_AUDIENCE,
+        OAUTH_ISSUER: TEST_OAUTH_ISSUER,
+        OAUTH_AUDIENCE: TEST_OAUTH_AUDIENCE,
+        OAUTH_REQUIRED_SCOPES: ["aws:read"],
+        OAUTH_TOKEN_VALIDATION_MODE: "introspection",
+        OAUTH_INTROSPECTION: {
+          url: "https://auth.example.com/oauth/introspect",
+          clientId: "client-id",
+          clientSecret: "client-secret",
+        },
+      },
+    );
+
+    expect(response).toBeNull();
+  });
+
+  it("supports hybrid validation for opaque tokens", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({
+        active: true,
+        iss: TEST_OAUTH_ISSUER,
+        resource: TEST_OAUTH_AUDIENCE,
+        scope: "aws:read",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      }),
+    );
+
+    const response = await authenticateOAuthRequest(
+      makeRequest("opaque-token-value"),
+      {
+        MCP_RESOURCE_URL: TEST_OAUTH_AUDIENCE,
+        OAUTH_ISSUER: TEST_OAUTH_ISSUER,
+        OAUTH_AUDIENCE: TEST_OAUTH_AUDIENCE,
+        OAUTH_JWKS_URI: TEST_OAUTH_JWKS_URI,
+        OAUTH_REQUIRED_SCOPES: ["aws:read"],
+        OAUTH_TOKEN_VALIDATION_MODE: "hybrid",
+        OAUTH_INTROSPECTION: {
+          url: "https://auth.example.com/oauth/introspect",
+          clientId: "client-id",
+          clientSecret: "client-secret",
+        },
+      },
+    );
+
+    expect(response).toBeNull();
   });
 });

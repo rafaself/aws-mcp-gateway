@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import type { EnvValidationFailure, EnvValidationSuccess } from "./env.js";
 import { validateEnv, envErrorResponse } from "./env.js";
 
+const rateLimiterBinding = {} as never;
+
 describe("validateEnv", () => {
   it("rejects missing required bindings", () => {
     const env = {};
@@ -176,6 +178,7 @@ describe("validateEnv", () => {
       AWS_SECRET_ACCESS_KEY: "secret",
       AWS_REGION: "us-east-1",
       AWS_ALLOWED_REGIONS: "us-east-1",
+      AUTH_RATE_LIMITER: rateLimiterBinding,
     };
 
     const result = validateEnv(env) as EnvValidationSuccess;
@@ -197,6 +200,7 @@ describe("validateEnv", () => {
       AWS_SECRET_ACCESS_KEY: "secret",
       AWS_REGION: "us-east-1",
       AWS_ALLOWED_REGIONS: "us-east-1",
+      AUTH_RATE_LIMITER: rateLimiterBinding,
     };
 
     const result = validateEnv(env) as EnvValidationSuccess;
@@ -205,6 +209,7 @@ describe("validateEnv", () => {
     expect(result.config.authMode).toBe("oauth");
     expect(result.config.MCP_AUTH_TOKEN).toBeUndefined();
     expect(result.config.oauth?.OAUTH_REQUIRED_SCOPES).toEqual(["aws:read"]);
+    expect(result.config.rateLimit?.namespace).toBe(rateLimiterBinding);
   });
 
   it("defaults to legacy-bearer when AUTH_MODE is absent", () => {
@@ -247,6 +252,7 @@ describe("validateEnv", () => {
       AWS_SECRET_ACCESS_KEY: "secret",
       AWS_REGION: "us-east-1",
       AWS_ALLOWED_REGIONS: "us-east-1",
+      AUTH_RATE_LIMITER: rateLimiterBinding,
     });
 
     expect(result.valid).toBe(false);
@@ -265,10 +271,53 @@ describe("validateEnv", () => {
       AWS_SECRET_ACCESS_KEY: "secret",
       AWS_REGION: "us-east-1",
       AWS_ALLOWED_REGIONS: "us-east-1",
+      AUTH_RATE_LIMITER: rateLimiterBinding,
     });
 
     expect(result.valid).toBe(false);
     expect(result.errors).toContain("OAUTH_AUDIENCE (must equal MCP_RESOURCE_URL)");
+  });
+
+  it("requires rate limiting in oauth mode", () => {
+    const result = validateEnv({
+      AUTH_MODE: "oauth",
+      MCP_RESOURCE_URL: "https://gateway.example.com",
+      OAUTH_ISSUER: "https://auth.example.com/",
+      OAUTH_AUDIENCE: "https://gateway.example.com",
+      OAUTH_JWKS_URI: "https://auth.example.com/.well-known/jwks.json",
+      OAUTH_REQUIRED_SCOPES: "aws:read",
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("AUTH_RATE_LIMITER");
+  });
+
+  it("accepts introspection-only oauth validation", () => {
+    const result = validateEnv({
+      AUTH_MODE: "oauth",
+      MCP_RESOURCE_URL: "https://gateway.example.com",
+      OAUTH_ISSUER: "https://auth.example.com/",
+      OAUTH_AUDIENCE: "https://gateway.example.com",
+      OAUTH_REQUIRED_SCOPES: "aws:read",
+      OAUTH_TOKEN_VALIDATION_MODE: "introspection",
+      OAUTH_INTROSPECTION_URL: "https://auth.example.com/oauth/introspect",
+      OAUTH_INTROSPECTION_CLIENT_ID: "client-id",
+      OAUTH_INTROSPECTION_CLIENT_SECRET: "client-secret",
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+      AUTH_RATE_LIMITER: rateLimiterBinding,
+    });
+
+    expect(result.valid).toBe(true);
+    expect((result as EnvValidationSuccess).config.oauth?.OAUTH_TOKEN_VALIDATION_MODE).toBe(
+      "introspection",
+    );
   });
 });
 

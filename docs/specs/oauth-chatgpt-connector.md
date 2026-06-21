@@ -37,7 +37,7 @@ Predefined OAuth client in the external identity provider (no Dynamic Client Reg
 ```text
 Authorization server: external Auth0-compatible OIDC provider
 OAuth flow: authorization code + PKCE
-Token type accepted by Worker: JWT access token
+Token type accepted by Worker: JWT access token by default; opaque access tokens via RFC 7662 introspection when configured
 Token endpoint auth: public client / none, unless provider configuration requires otherwise
 Required application scope: aws:read
 Worker role: protected resource / resource server
@@ -54,8 +54,15 @@ Worker role: protected resource / resource server
 | `MCP_RESOURCE_URL` | `oauth` only | yes | no |
 | `OAUTH_ISSUER` | `oauth` only | yes | no |
 | `OAUTH_AUDIENCE` | `oauth` only | yes | no |
-| `OAUTH_JWKS_URI` | `oauth` only | yes | no |
+| `OAUTH_TOKEN_VALIDATION_MODE` | `oauth` only | yes (`jwks` default) | no |
+| `OAUTH_JWKS_URI` | `oauth` with `jwks` / `hybrid` | yes | no |
+| `OAUTH_INTROSPECTION_URL` | `oauth` with `introspection` / `hybrid` | yes | no |
+| `OAUTH_INTROSPECTION_CLIENT_ID` | `oauth` with `introspection` / `hybrid` | yes | yes (Cloudflare secret) |
+| `OAUTH_INTROSPECTION_CLIENT_SECRET` | `oauth` with `introspection` / `hybrid` | yes | yes (Cloudflare secret) |
 | `OAUTH_REQUIRED_SCOPES` | `oauth` only | yes | no |
+| `RATE_LIMIT_MAX_REQUESTS` | `oauth` only | yes (defaulted) | no |
+| `RATE_LIMIT_WINDOW_SECONDS` | `oauth` only | yes (defaulted) | no |
+| `AUTH_RATE_LIMITER` | `oauth` only | yes | binding |
 
 AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) remain Cloudflare secrets in both modes and are unrelated to OAuth user tokens.
 
@@ -70,9 +77,12 @@ MCP_AUTH_TOKEN=<local-only-token>
 
 ```text
 AUTH_MODE=oauth
+RATE_LIMIT_MAX_REQUESTS=120
+RATE_LIMIT_WINDOW_SECONDS=60
 MCP_RESOURCE_URL=https://<worker-host>
 OAUTH_ISSUER=https://<auth-provider-domain>/
 OAUTH_AUDIENCE=https://<worker-host>
+OAUTH_TOKEN_VALIDATION_MODE=jwks
 OAUTH_JWKS_URI=https://<auth-provider-domain>/.well-known/jwks.json
 OAUTH_REQUIRED_SCOPES=aws:read
 ```
@@ -127,13 +137,13 @@ Response body (normalized public error):
 
 ### Token validation (oauth mode)
 
-When `AUTH_MODE=oauth`, `/mcp` accepts only valid OAuth JWT access tokens. Validation requires:
+When `AUTH_MODE=oauth`, `/mcp` accepts only valid OAuth access tokens. Validation requires:
 
 - `Authorization` header exists
 - Scheme is `Bearer`
-- JWT signature verifies against configured JWKS (`OAUTH_JWKS_URI`)
+- Either JWT signature verifies against configured JWKS (`OAUTH_JWKS_URI`) or the configured introspection endpoint marks the token active
 - `iss` equals `OAUTH_ISSUER`
-- `aud` equals `OAUTH_AUDIENCE`
+- `aud` or `resource` matches `OAUTH_AUDIENCE`
 - `exp` is valid
 - `nbf` is valid when present
 - `scope` (space-delimited string) or `scp` (array) includes every configured required scope (`aws:read`)
@@ -147,6 +157,7 @@ Invalid, missing, expired, malformed, wrong-issuer, wrong-audience, wrong-signat
 2. Validate mode-specific public auth config
 3. Authenticate request
 4. On auth failure: return 401/403 with normalized error and OAuth challenge where appropriate
+4a. In oauth mode: enforce request throttling before the MCP server is created
 5. Only after auth succeeds: validate full gateway config including AWS credentials
 6. Build GatewayContext
 7. Create MCP server and handle request

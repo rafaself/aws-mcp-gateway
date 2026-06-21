@@ -8,6 +8,7 @@ const testConfig: ValidatedOAuthConfig = {
   OAUTH_AUDIENCE: "https://gateway.example.com",
   OAUTH_JWKS_URI: "https://auth.example.com/.well-known/jwks.json",
   OAUTH_REQUIRED_SCOPES: ["aws:read"],
+  OAUTH_TOKEN_VALIDATION_MODE: "jwks",
 };
 
 describe("buildOAuthChallenge", () => {

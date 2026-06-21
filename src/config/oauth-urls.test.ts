@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   validateOAuthAudienceUrl,
+  validateOAuthIntrospectionUrl,
   validateOAuthIssuerUrl,
   validateOAuthJwksUri,
   validateOAuthResourceUrl,
@@ -52,5 +53,12 @@ describe("oauth URL validation", () => {
     expect(
       validateOAuthJwksUri("https://auth.example.com/.well-known/jwks.json", errors),
     ).toBe("https://auth.example.com/.well-known/jwks.json");
+  });
+
+  it("accepts https introspection URLs", () => {
+    const errors: string[] = [];
+    expect(
+      validateOAuthIntrospectionUrl("https://auth.example.com/oauth/introspect", errors),
+    ).toBe("https://auth.example.com/oauth/introspect");
   });
 });

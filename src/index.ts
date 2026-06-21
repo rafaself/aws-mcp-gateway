@@ -6,10 +6,12 @@ import {
   resolveAuthMode,
   validateEnv,
   validateOAuthConfig,
+  validateRateLimitConfig,
   envErrorResponse,
 } from "./config/env.js";
 import { buildGatewayContext } from "./config/context.js";
 import { GatewayError, errorResponse } from "./errors/public-error.js";
+import { AuthRateLimitDurableObject, enforceRateLimit } from "./security/rate-limit.js";
 
 export default {
   async fetch(request: Request, env: unknown, ctx: ExecutionContext): Promise<Response> {
@@ -43,6 +45,19 @@ export default {
     }
 
     if (url.pathname === "/mcp") {
+      const rateLimitResult = validateRateLimitConfig(env);
+      if (!rateLimitResult.valid) {
+        return envErrorResponse(
+          { valid: false, config: null, errors: rateLimitResult.errors },
+          false,
+        );
+      }
+
+      const rateLimitResponse = await enforceRateLimit(request, rateLimitResult.config);
+      if (rateLimitResponse) {
+        return rateLimitResponse;
+      }
+
       const authResponse = await authenticateRequest(request, env);
       if (authResponse) {
         return authResponse;
@@ -61,3 +76,5 @@ export default {
     return errorResponse(new GatewayError("not_found", "Not Found"), 404);
   },
 } satisfies ExportedHandler;
+
+export { AuthRateLimitDurableObject };

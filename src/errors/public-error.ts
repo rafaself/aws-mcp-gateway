@@ -1,6 +1,7 @@
 export type GatewayErrorCode =
   | "unauthorized"
   | "forbidden"
+  | "rate_limited"
   | "configuration_error"
   | "validation_error"
   | "aws_request_failed"

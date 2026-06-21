@@ -7,6 +7,7 @@ Use this document before deploying the gateway and before merging security-sensi
 - [README.md](README.md) — project overview and security model summary
 - [AGENTS.md](AGENTS.md) — contributor workflow and test integrity rules
 - [docs/mcp-tools.md](docs/mcp-tools.md) — per-tool input, output, and limit contracts
+- [docs/chatgpt-connector-production-acceptance.md](docs/chatgpt-connector-production-acceptance.md) — final ChatGPT Connector production acceptance gate
 - [docs/aws-iam-setup.md](docs/aws-iam-setup.md) — IAM user and credential setup
 - [docs/deployment.md](docs/deployment.md) — deployment and verification steps
 - [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md) — requirements for future expansion
@@ -45,6 +46,7 @@ The gateway is a **read-only**, public-facing MCP endpoint for explicit AWS tool
 - ChatGPT connector OAuth is documented in [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md).
 - Contract: [docs/specs/oauth-chatgpt-connector.md](docs/specs/oauth-chatgpt-connector.md).
 - ChatGPT action visibility requires authenticated `tools/list` with valid descriptors for all 8 public tools; `search`/`fetch` are catalog helpers only.
+- OAuth mode requires the `AUTH_RATE_LIMITER` Durable Object binding so `/mcp` request throttling happens before the MCP runtime or AWS-backed tools execute.
 
 ---
 
@@ -71,6 +73,8 @@ Configure secrets with `wrangler secret put` and non-secret vars in `wrangler.js
 - [ ] `AWS_REGION` is set in `[vars]` and matches the primary region for regional tools.
 - [ ] `AWS_ALLOWED_REGIONS` is set in `[vars]` as a non-empty comma-separated allowlist.
 - [ ] `AWS_REGION` is included in `AWS_ALLOWED_REGIONS`.
+- [ ] `AUTH_RATE_LIMITER` Durable Object binding and migration are configured for OAuth deployments.
+- [ ] `RATE_LIMIT_MAX_REQUESTS` and `RATE_LIMIT_WINDOW_SECONDS` are set (or intentionally left at documented defaults).
 - [ ] Optional KV binding `AWS_MCP_CACHE` is configured in production if caching is desired (see [docs/deployment.md](docs/deployment.md)).
 - [ ] Missing or invalid required bindings return a normalized `configuration_error` response — not raw stack traces or binding dumps to unauthenticated callers.
 
@@ -187,10 +191,11 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 - [ ] `AWS_ALLOWED_REGIONS` reflects only regions this deployment should serve.
 - [ ] IAM policy attached to the gateway principal matches [`infra/aws/iam-readonly-policy.json`](infra/aws/iam-readonly-policy.json) (or a narrower custom variant).
 - [ ] `pnpm run typecheck`, `pnpm test`, and `pnpm run test:integrity` pass on the commit being deployed.
+- [ ] `pnpm run verify:connector-contract` passes on the commit being deployed (ChatGPT Connector local gate).
 - [ ] `GET /health` returns `{ "ok": true, "service": "aws-mcp-gateway" }` without authentication.
 - [ ] With valid runtime configuration, `POST /mcp` without authentication returns HTTP 401 (with `WWW-Authenticate` in `oauth` mode).
 - [ ] Authenticated MCP access works (legacy bearer token or ChatGPT OAuth flow — see [docs/mcp-testing.md](docs/mcp-testing.md)).
-- [ ] For ChatGPT production connectors, complete the end-to-end smoke runbook in [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md) — including authenticated `tools/list` validation, OAuth login, Actions visible (all 8 tools), `get_gateway_status`, optional `search`/`fetch`, and a bounded AWS tool.
+- [ ] For ChatGPT production connectors, complete the production acceptance checklist in [docs/chatgpt-connector-production-acceptance.md](docs/chatgpt-connector-production-acceptance.md) — including authenticated `tools/list` validation, OAuth login, Actions visible (all 8 tools), `get_gateway_status`, optional `search`/`fetch`, and a bounded AWS tool. Detailed step-by-step responses: [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md).
 - [ ] A smoke test confirms at least one AWS-backed tool returns normalized output in an allowed region.
 
 ---
