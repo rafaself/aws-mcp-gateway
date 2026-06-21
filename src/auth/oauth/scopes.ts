@@ -1,15 +1,31 @@
+function appendStringScopes(scopes: Set<string>, value: unknown): void {
+  if (typeof value !== "string" || value.length === 0) {
+    return;
+  }
+  for (const scope of value.split(/\s+/)) {
+    if (scope) {
+      scopes.add(scope);
+    }
+  }
+}
+
+function appendArrayScopes(scopes: Set<string>, value: unknown): void {
+  if (!Array.isArray(value)) {
+    return;
+  }
+  for (const item of value) {
+    if (typeof item === "string" && item.length > 0) {
+      scopes.add(item);
+    }
+  }
+}
+
 export function extractScopes(payload: Record<string, unknown>): string[] {
-  const scope = payload.scope;
-  if (typeof scope === "string") {
-    return scope.split(/\s+/).filter(Boolean);
-  }
-
-  const scp = payload.scp;
-  if (Array.isArray(scp)) {
-    return scp.filter((value): value is string => typeof value === "string");
-  }
-
-  return [];
+  const scopes = new Set<string>();
+  appendStringScopes(scopes, payload.scope);
+  appendArrayScopes(scopes, payload.scp);
+  appendArrayScopes(scopes, payload.permissions);
+  return [...scopes];
 }
 
 export function hasRequiredScopes(tokenScopes: string[], required: string[]): boolean {

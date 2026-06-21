@@ -139,6 +139,42 @@ describe("authenticateOAuthRequest", () => {
     expect(response).toBeNull();
   });
 
+  it("accepts Auth0-style permissions claim without scope", async () => {
+    const fixture = await createTestOAuthFixture();
+    setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
+    const token = await fixture.signAccessToken({ permissions: ["aws:read"] });
+
+    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+
+    expect(response).toBeNull();
+  });
+
+  it("returns 403 when permissions omit aws:read", async () => {
+    const fixture = await createTestOAuthFixture();
+    setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
+    const token = await fixture.signAccessToken({ permissions: ["openid"] });
+
+    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+
+    expect(response?.status).toBe(403);
+    const body = await response!.json() as { error: { code: string } };
+    expect(body.error.code).toBe("forbidden");
+    expect(response?.headers.get("WWW-Authenticate")).toContain('error="insufficient_scope"');
+  });
+
+  it("accepts audience with /mcp suffix", async () => {
+    const fixture = await createTestOAuthFixture();
+    setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
+    const token = await fixture.signAccessToken(
+      { permissions: ["aws:read"] },
+      { audience: `${TEST_OAUTH_AUDIENCE}/mcp` },
+    );
+
+    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+
+    expect(response).toBeNull();
+  });
+
   it("does not leak token or claim details in error responses", async () => {
     const fixture = await createTestOAuthFixture();
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);

@@ -14,14 +14,23 @@ function stringValues(value: unknown): string[] {
   return [];
 }
 
+export function audienceCandidates(expectedAudience: string): string[] {
+  const normalized = expectedAudience.replace(/\/$/, "");
+  if (normalized.endsWith("/mcp")) {
+    return [normalized];
+  }
+  return [normalized, `${normalized}/mcp`];
+}
+
 export function hasExpectedAudience(
   payload: Record<string, unknown>,
   expectedAudience: string,
 ): boolean {
   const audiences = stringValues(payload.aud);
   const resources = stringValues(payload.resource);
+  const tokenValues = [...audiences, ...resources];
 
-  return audiences.includes(expectedAudience) || resources.includes(expectedAudience);
+  return audienceCandidates(expectedAudience).some((candidate) => tokenValues.includes(candidate));
 }
 
 export function hasValidTokenTimes(

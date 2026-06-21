@@ -143,10 +143,10 @@ When `AUTH_MODE=oauth`, `/mcp` accepts only valid OAuth access tokens. Validatio
 - Scheme is `Bearer`
 - Either JWT signature verifies against configured JWKS (`OAUTH_JWKS_URI`) or the configured introspection endpoint marks the token active
 - `iss` equals `OAUTH_ISSUER`
-- `aud` or `resource` matches `OAUTH_AUDIENCE`
+- `aud` or `resource` matches `OAUTH_AUDIENCE` (origin) or the same value with `/mcp` appended
 - `exp` is valid
 - `nbf` is valid when present
-- `scope` (space-delimited string) or `scp` (array) includes every configured required scope (`aws:read`)
+- `scope` (space-delimited string), `scp` (array), or `permissions` (array, Auth0 RBAC) includes every configured required scope (`aws:read`)
 
 Invalid, missing, expired, malformed, wrong-issuer, wrong-audience, wrong-signature, and insufficient-scope tokens must not reach MCP server creation or AWS calls.
 
