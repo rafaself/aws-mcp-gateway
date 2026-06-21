@@ -119,7 +119,7 @@ Production ChatGPT connectors use OAuth, not `MCP_AUTH_TOKEN`. See [mcp-testing.
 
 ## References
 
-- [oauth-client-identification.md](oauth-client-identification.md) — client identification modes (predefined client, future CIMD, unsupported DCR)
+- [oauth-client-identification.md](specs/oauth-client-identification.md) — client identification modes (predefined client, future CIMD, unsupported DCR)
 - [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md) — end-to-end ChatGPT connector smoke runbook
 - [OpenAI — Connect from ChatGPT](https://developers.openai.com/apps-sdk/deploy/connect-chatgpt)
 - [OpenAI — Authentication](https://developers.openai.com/apps-sdk/build/auth)
