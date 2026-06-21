@@ -3,7 +3,7 @@
 set -euo pipefail
 
 WORKER_URL="${1:-https://aws-mcp-gateway.rafaondjango.workers.dev}"
-AUTH0_DOMAIN="${2:-rafa.auth0.com}"
+AUTH0_DOMAIN="${2:-dev-e11vv5o0nhbqsq70.us.auth0.com}"
 
 fail() {
   echo "FAIL: $*" >&2

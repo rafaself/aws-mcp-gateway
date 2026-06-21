@@ -14,9 +14,9 @@
 		"AWS_ALLOWED_REGIONS": "us-east-1,sa-east-1",
 		"AUTH_MODE": "oauth",
 		"MCP_RESOURCE_URL": "https://aws-mcp-gateway.rafaondjango.workers.dev",
-		"OAUTH_ISSUER": "https://rafa.auth0.com/",
+		"OAUTH_ISSUER": "https://dev-e11vv5o0nhbqsq70.us.auth0.com/",
 		"OAUTH_AUDIENCE": "https://aws-mcp-gateway.rafaondjango.workers.dev",
-		"OAUTH_JWKS_URI": "https://rafa.auth0.com/.well-known/jwks.json",
+		"OAUTH_JWKS_URI": "https://dev-e11vv5o0nhbqsq70.us.auth0.com/.well-known/jwks.json",
 		"OAUTH_REQUIRED_SCOPES": "aws:read"
 	},
 	"kv_namespaces": [

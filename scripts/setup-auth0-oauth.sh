@@ -32,7 +32,48 @@ AUTH0_DOMAIN="${AWS_MCP_GATEWAY_AUTH0_DOMAIN}"
 WORKER_URL="${AWS_MCP_GATEWAY_WORKER_URL:-https://aws-mcp-gateway.rafaondjango.workers.dev}"
 CHATGPT_CALLBACK="${AWS_MCP_GATEWAY_CHATGPT_REDIRECT_URI:-}"
 API_NAME="${AWS_MCP_GATEWAY_AUTH0_API_NAME:-aws-mcp-gateway}"
-APP_NAME="${AWS_MCP_GATEWAY_AUTH0_APP_NAME:-aws-mcp-gateway-chatgpt}"
+APP_NAME="${AWS_MCP_GATEWAY_AUTH0_APP_NAME:-aws-mcp-gateway}"
+
+build_chatgpt_callbacks_json() {
+  local primary="${1:-}"
+  local extras="${AWS_MCP_GATEWAY_CHATGPT_REDIRECT_URIS:-}"
+  local -a urls=()
+
+  if [[ -n "$primary" ]]; then
+    urls+=("$primary")
+    if [[ "$primary" == *chatgpt.com/connector/oauth/* ]]; then
+      urls+=("${primary/chatgpt.com/chat.openai.com}")
+      urls+=("https://chatgpt.com/connector_platform_oauth_redirect")
+      urls+=("https://chat.openai.com/connector_platform_oauth_redirect")
+    fi
+  fi
+
+  if [[ -n "$extras" ]]; then
+    local part
+    IFS=',' read -ra parts <<< "$extras"
+    for part in "${parts[@]}"; do
+      part="$(echo "$part" | xargs)"
+      [[ -n "$part" ]] && urls+=("$part")
+    done
+  fi
+
+  local -a unique=()
+  local url seen
+  for url in "${urls[@]}"; do
+    seen=false
+    for existing in "${unique[@]:-}"; do
+      if [[ "$existing" == "$url" ]]; then
+        seen=true
+        break
+      fi
+    done
+    if [[ "$seen" == false ]]; then
+      unique+=("$url")
+    fi
+  done
+
+  jq -n --argjson callbacks "$(printf '%s\n' "${unique[@]}" | jq -R . | jq -s .)" '$callbacks'
+}
 
 mgmt_api() {
   local method="$1"
@@ -51,7 +92,7 @@ mgmt_api() {
 }
 
 echo "Requesting Auth0 Management API token..."
-MGMT_TOKEN="$(
+TOKEN_RESPONSE="$(
   curl -sS -X POST "https://${AUTH0_DOMAIN}/oauth/token" \
     -H "Content-Type: application/json" \
     -d "$(jq -n \
@@ -63,11 +104,25 @@ MGMT_TOKEN="$(
         client_secret: $client_secret,
         audience: $audience,
         grant_type: "client_credentials"
-      }')" | jq -r '.access_token // empty'
+      }')"
 )"
+MGMT_TOKEN="$(echo "$TOKEN_RESPONSE" | jq -r '.access_token // empty')"
 
 if [[ -z "$MGMT_TOKEN" ]]; then
-  echo "Failed to obtain Management API token. Check Auth0 M2M client credentials." >&2
+  echo "Failed to obtain Management API token." >&2
+  echo "$TOKEN_RESPONSE" | jq -r '
+    if .error then
+      "Auth0 error: \(.error)\nDescription: \(.error_description // "none")"
+    else
+      "Unexpected Auth0 response (no access_token)."
+    end
+  ' >&2
+  echo "" >&2
+  echo "Checklist:" >&2
+  echo "  1. Application type must be Machine to Machine (not Regular Web / SPA)." >&2
+  echo "  2. Authorize it for 'Auth0 Management API' in the app's APIs tab." >&2
+  echo "  3. Copy Client ID and Client Secret from that M2M app (rotate secret if unsure)." >&2
+  echo "  4. AWS_MCP_GATEWAY_AUTH0_DOMAIN should match your tenant (currently: ${AUTH0_DOMAIN})." >&2
   exit 1
 fi
 
@@ -99,24 +154,27 @@ fi
 echo "Ensuring ChatGPT OAuth application (${APP_NAME})..."
 EXISTING_CLIENT="$(mgmt_api GET "/clients?fields=client_id,name&include_fields=true&per_page=100" | jq -r --arg name "$APP_NAME" '.[] | select(.name == $name) | .client_id' | head -1)"
 
+CLIENT_CALLBACKS_JSON="$(build_chatgpt_callbacks_json "$CHATGPT_CALLBACK")"
+
 CLIENT_PAYLOAD="$(jq -n \
   --arg name "$APP_NAME" \
-  --arg callback "$CHATGPT_CALLBACK" \
+  --argjson callbacks "$CLIENT_CALLBACKS_JSON" \
   '{
     name: $name,
     app_type: "regular_web",
     oidc_conformant: true,
-    grant_types: ["authorization_code", "refresh_token"],
+    grant_types: ["authorization_code", "refresh_token", "client_credentials"],
     is_first_party: true,
-    callbacks: (if $callback == "" then [] else [$callback] end),
+    callbacks: $callbacks,
     allowed_logout_urls: [],
+    token_endpoint_auth_method: "client_secret_basic",
     jwt_configuration: { alg: "RS256" }
   }')"
 
 if [[ -n "$EXISTING_CLIENT" ]]; then
   echo "Updating existing client ${EXISTING_CLIENT}..."
-  if [[ -n "$CHATGPT_CALLBACK" ]]; then
-    mgmt_api PATCH "/clients/${EXISTING_CLIENT}" "$CLIENT_PAYLOAD" | jq '{client_id, name, callbacks}'
+  if [[ "$(echo "$CLIENT_CALLBACKS_JSON" | jq 'length')" -gt 0 ]]; then
+    mgmt_api PATCH "/clients/${EXISTING_CLIENT}" "$CLIENT_PAYLOAD" | jq '{client_id, name, app_type, grant_types, callbacks, token_endpoint_auth_method}'
   else
     echo "No AWS_MCP_GATEWAY_CHATGPT_REDIRECT_URI set — skipping callback update."
     echo "Add https://chatgpt.com/connector/oauth/{callback_id} in Auth0 dashboard when creating the ChatGPT connector."
@@ -152,8 +210,17 @@ fi
 echo ""
 echo "Auth0 OAuth setup complete."
 echo "  API audience: ${WORKER_URL}"
+echo "  ChatGPT app: ${APP_NAME}"
 echo "  ChatGPT client_id: ${CLIENT_ID}"
+if [[ -n "$CHATGPT_CALLBACK" ]]; then
+  echo "  Callback URLs:"
+  echo "$CLIENT_CALLBACKS_JSON" | jq -r '.[]' | sed 's/^/    - /'
+else
+  echo "  Callback URL: (not set — add AWS_MCP_GATEWAY_CHATGPT_REDIRECT_URI and re-run)"
+fi
 echo "  Issuer (use in wrangler): https://${AUTH0_DOMAIN%/}/"
+echo ""
+echo "In Auth0 Dashboard, open application '${APP_NAME}' (client_id used by ChatGPT OAuth)."
 echo ""
 echo "Validate JWKS:"
 echo "  curl -fsS https://${AUTH0_DOMAIN}/.well-known/jwks.json | jq '.keys | length'"
