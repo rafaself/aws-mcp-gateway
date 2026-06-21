@@ -2,11 +2,12 @@
 
 Manual end-to-end validation for a deployed AWS MCP Gateway used as a **ChatGPT custom app connector** with `AUTH_MODE=oauth`.
 
-This runbook proves the full path from HTTP health checks through OAuth login, authenticated `tools/list` validation, tool discovery in the Actions UI, and bounded read-only AWS tool invocation inside the real ChatGPT connector UI.
+**Start with the production acceptance gate:** [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) (`pnpm run verify:connector-contract` locally, then the 18-step deployed and ChatGPT checklist). This runbook provides detailed expected responses for each HTTP and UI step.
 
 **Related documentation:**
 
 - [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md) — Auth0 OAuth setup
+- [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) — production acceptance checklist (start here)
 - [chatgpt-connector.md](chatgpt-connector.md) — connector overview and discovery model
 - [mcp-testing.md](mcp-testing.md) — curl smoke tests (legacy bearer and failure modes)
 

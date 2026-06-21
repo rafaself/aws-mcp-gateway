@@ -4,6 +4,8 @@ This gateway is designed for use as a **ChatGPT custom app connector**. ChatGPT 
 
 For OAuth setup with Auth0, see [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md). For authorization contract details, see [specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md). For client identification modes (predefined client vs future CIMD), see [specs/oauth-client-identification.md](specs/oauth-client-identification.md).
 
+**Production acceptance:** Run `pnpm run verify:connector-contract` locally, then complete [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) before treating a deployment as ChatGPT-ready.
+
 ## Final connector contract
 
 Use these values consistently when configuring ChatGPT and Worker OAuth vars:
@@ -176,6 +178,7 @@ Production ChatGPT connectors use OAuth, not `MCP_AUTH_TOKEN`. See [mcp-testing.
 ## References
 
 - [oauth-client-identification.md](specs/oauth-client-identification.md) — client identification modes (predefined client, future CIMD, unsupported DCR)
+- [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) — final production acceptance checklist
 - [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md) — end-to-end ChatGPT connector smoke runbook
 - [OpenAI — Connect from ChatGPT](https://developers.openai.com/apps-sdk/deploy/connect-chatgpt)
 - [OpenAI — Authentication](https://developers.openai.com/apps-sdk/build/auth)

@@ -294,6 +294,8 @@ Use **OAuth** authentication in production (`AUTH_MODE=oauth`). ChatGPT discover
 
 **Setup and troubleshooting:** [docs/chatgpt-connector.md](docs/chatgpt-connector.md)  
 **Auth0 OAuth configuration:** [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md)  
+**Production acceptance checklist:** [docs/chatgpt-connector-production-acceptance.md](docs/chatgpt-connector-production-acceptance.md)  
+**Local pre-deploy gate:** `pnpm run verify:connector-contract`  
 **End-to-end ChatGPT smoke validation:** [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md)
 
 See [docs/mcp-testing.md](docs/mcp-testing.md) for curl smoke tests and expected failure modes.

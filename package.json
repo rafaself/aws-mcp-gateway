@@ -14,6 +14,7 @@
     "deploy:configured": "bash scripts/deploy-with-env.sh",
     "setup:auth0": "bash scripts/setup-auth0-oauth.sh",
     "verify:oauth": "bash scripts/verify-oauth-deployment.sh",
+    "verify:connector-contract": "bash scripts/verify-connector-contract.sh",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
