@@ -28,6 +28,10 @@ describe("extractScopes", () => {
     ).toEqual(["openid", "aws:read", "profile"]);
   });
 
+  it("ignores non-string entries in permissions arrays", () => {
+    expect(extractScopes({ permissions: ["aws:read", 42, null, ""] })).toEqual(["aws:read"]);
+  });
+
   it("returns an empty array when scope claims are absent", () => {
     expect(extractScopes({})).toEqual([]);
   });
@@ -37,6 +41,7 @@ describe("hasRequiredScopes", () => {
   it("requires every configured scope", () => {
     expect(hasRequiredScopes(["aws:read", "openid"], ["aws:read"])).toBe(true);
     expect(hasRequiredScopes(["openid"], ["aws:read"])).toBe(false);
+    expect(hasRequiredScopes([], ["aws:read"])).toBe(false);
     expect(hasRequiredScopes(extractScopes({ permissions: ["openid"] }), ["aws:read"])).toBe(false);
   });
 });
