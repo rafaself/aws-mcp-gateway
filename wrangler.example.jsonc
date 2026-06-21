@@ -13,8 +13,11 @@
 		"AWS_REGION": "us-east-1",
 		"AWS_ALLOWED_REGIONS": "us-east-1,sa-east-1",
 		"AUTH_MODE": "oauth",
+		// OAuth resource identity — origin only; do NOT append /mcp.
+		// ChatGPT Connector Server URL = MCP_RESOURCE_URL + "/mcp"
 		"MCP_RESOURCE_URL": "https://<your-worker-host>",
 		"OAUTH_ISSUER": "https://<your-auth0-tenant>/",
+		// Must equal MCP_RESOURCE_URL (origin only — do not append /mcp)
 		"OAUTH_AUDIENCE": "https://<your-worker-host>",
 		"OAUTH_JWKS_URI": "https://<your-auth0-tenant>/.well-known/jwks.json",
 		"OAUTH_REQUIRED_SCOPES": "aws:read"

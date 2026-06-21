@@ -122,9 +122,17 @@ For your own deployment, copy [`wrangler.example.jsonc`](wrangler.example.jsonc)
 
 **Replace before your own deploy:**
 
-- Worker hostname in `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE`
+- Worker hostname in `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE` (origin only — **do not** append `/mcp`)
 - Auth0 (or OIDC) tenant in `OAUTH_ISSUER` and `OAUTH_JWKS_URI`
 - KV namespace `id` in `kv_namespaces`
+
+**ChatGPT connector URL model:**
+
+```text
+ChatGPT Connector Server URL: https://<your-worker-domain>/mcp
+MCP_RESOURCE_URL and OAUTH_AUDIENCE: https://<your-worker-domain> (origin only — do not append /mcp)
+Protected resource metadata: https://<your-worker-domain>/.well-known/oauth-protected-resource
+```
 
 ```jsonc
 {
@@ -267,8 +275,10 @@ A custom domain can be added later, but it is not required for the MVP.
 The primary use case for this gateway is a **ChatGPT custom app connector** pointing at the deployed HTTPS MCP endpoint:
 
 ```text
-https://<your-worker-domain>/mcp
+ChatGPT Connector Server URL: https://<your-worker-domain>/mcp
 ```
+
+Configure `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE` as the Worker **origin** without `/mcp` (for example `https://<your-worker-domain>`). Protected resource metadata is served at `https://<your-worker-domain>/.well-known/oauth-protected-resource`.
 
 Use **OAuth** authentication in production (`AUTH_MODE=oauth`). ChatGPT discovers AWS tools through the `search` and `fetch` MCP tools, then calls read-only AWS tools after OAuth.
 

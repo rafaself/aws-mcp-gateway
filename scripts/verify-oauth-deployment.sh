@@ -2,21 +2,51 @@
 # Verify deployed OAuth metadata, WWW-Authenticate challenge, and optional JWKS.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=lib/oauth-url-checks.sh
+source "${SCRIPT_DIR}/lib/oauth-url-checks.sh"
+
+ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 WORKER_URL="${1:-https://aws-mcp-gateway.rafaondjango.workers.dev}"
 AUTH0_DOMAIN="${2:-dev-e11vv5o0nhbqsq70.us.auth0.com}"
+WRANGLER_FILE="${ROOT}/wrangler.jsonc"
 
-fail() {
-  echo "FAIL: $*" >&2
-  exit 1
-}
+WORKER_URL="$(validate_oauth_origin_url "WORKER_URL" "$WORKER_URL")"
+
+if [[ -f "$WRANGLER_FILE" ]] && command -v jq >/dev/null 2>&1; then
+  MCP_RESOURCE_URL="$(jq -r '.vars.MCP_RESOURCE_URL // empty' "$WRANGLER_FILE")"
+  OAUTH_AUDIENCE="$(jq -r '.vars.OAUTH_AUDIENCE // empty' "$WRANGLER_FILE")"
+
+  if [[ -n "$MCP_RESOURCE_URL" && "$MCP_RESOURCE_URL" != "https://<your-worker-host>" ]]; then
+    MCP_RESOURCE_URL="$(validate_oauth_origin_url "MCP_RESOURCE_URL (wrangler.jsonc)" "$MCP_RESOURCE_URL")"
+    if [[ "$MCP_RESOURCE_URL" != "$WORKER_URL" ]]; then
+      oauth_url_fail "wrangler.jsonc MCP_RESOURCE_URL (${MCP_RESOURCE_URL}) does not match WORKER_URL (${WORKER_URL})"
+    fi
+  fi
+
+  if [[ -n "$OAUTH_AUDIENCE" && "$OAUTH_AUDIENCE" != "https://<your-worker-host>" ]]; then
+    OAUTH_AUDIENCE="$(validate_oauth_origin_url "OAUTH_AUDIENCE (wrangler.jsonc)" "$OAUTH_AUDIENCE")"
+    if [[ -n "$MCP_RESOURCE_URL" && "$MCP_RESOURCE_URL" != "https://<your-worker-host>" ]]; then
+      assert_audience_matches_resource "$MCP_RESOURCE_URL" "$OAUTH_AUDIENCE"
+    elif [[ "$OAUTH_AUDIENCE" != "$WORKER_URL" ]]; then
+      oauth_url_fail "wrangler.jsonc OAUTH_AUDIENCE (${OAUTH_AUDIENCE}) does not match WORKER_URL (${WORKER_URL})"
+    fi
+  fi
+fi
 
 pass() {
   echo "PASS: $*"
 }
 
+echo "OAuth URL model:"
+print_chatgpt_connector_url "$WORKER_URL"
+echo "  MCP_RESOURCE_URL / OAUTH_AUDIENCE: ${WORKER_URL}"
+echo "  Protected resource metadata: ${WORKER_URL}/.well-known/oauth-protected-resource"
+echo ""
+
 echo "Checking JWKS at https://${AUTH0_DOMAIN}/.well-known/jwks.json ..."
 JWKS_COUNT="$(curl -fsS "https://${AUTH0_DOMAIN}/.well-known/jwks.json" | jq '.keys | length')"
-[[ "$JWKS_COUNT" -ge 1 ]] || fail "JWKS has no keys"
+[[ "$JWKS_COUNT" -ge 1 ]] || oauth_url_fail "JWKS has no keys"
 pass "JWKS reachable (${JWKS_COUNT} keys)"
 
 echo "Checking protected resource metadata ..."
@@ -24,15 +54,15 @@ METADATA="$(curl -fsS "${WORKER_URL}/.well-known/oauth-protected-resource")"
 echo "$METADATA" | jq .
 
 RESOURCE="$(echo "$METADATA" | jq -r '.resource')"
-[[ "$RESOURCE" == "$WORKER_URL" ]] || fail "resource mismatch: ${RESOURCE}"
+[[ "$RESOURCE" == "$WORKER_URL" ]] || oauth_url_fail "resource mismatch: ${RESOURCE}"
 pass "resource matches worker URL"
 
 echo "$METADATA" | jq -e '.scopes_supported | index("aws:read")' >/dev/null \
-  || fail "scopes_supported missing aws:read"
+  || oauth_url_fail "scopes_supported missing aws:read"
 pass "scopes_supported includes aws:read"
 
 echo "$METADATA" | jq -e '.authorization_servers | length > 0' >/dev/null \
-  || fail "authorization_servers empty"
+  || oauth_url_fail "authorization_servers empty"
 pass "authorization_servers present"
 
 echo "Checking /mcp WWW-Authenticate challenge ..."
@@ -42,15 +72,15 @@ HEADERS="$(curl -si -X POST "${WORKER_URL}/mcp" \
 
 echo "$HEADERS" | head -20
 
-echo "$HEADERS" | grep -qi '^HTTP/.* 401' || fail "expected HTTP 401"
+echo "$HEADERS" | grep -qi '^HTTP/.* 401' || oauth_url_fail "expected HTTP 401"
 pass "unauthenticated /mcp returns 401"
 
 echo "$HEADERS" | grep -qi 'www-authenticate:.*resource_metadata=' \
-  || fail "WWW-Authenticate missing resource_metadata"
+  || oauth_url_fail "WWW-Authenticate missing resource_metadata"
 pass "WWW-Authenticate includes resource_metadata"
 
 echo "$HEADERS" | grep -qi 'scope="aws:read"' \
-  || fail "WWW-Authenticate missing aws:read scope"
+  || oauth_url_fail "WWW-Authenticate missing aws:read scope"
 pass "WWW-Authenticate includes aws:read scope"
 
 echo ""

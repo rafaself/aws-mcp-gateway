@@ -6,7 +6,10 @@
 # Requires a Machine-to-Machine app authorized for the Auth0 Management API.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=lib/oauth-url-checks.sh
+source "${SCRIPT_DIR}/lib/oauth-url-checks.sh"
 ENV_FILE="${1:-$ROOT/.env.deploy.local}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -32,7 +35,8 @@ require_var AWS_MCP_GATEWAY_AUTH0_MGMT_CLIENT_ID
 require_var AWS_MCP_GATEWAY_AUTH0_MGMT_CLIENT_SECRET
 
 AUTH0_DOMAIN="${AWS_MCP_GATEWAY_AUTH0_DOMAIN}"
-WORKER_URL="${AWS_MCP_GATEWAY_WORKER_URL:-https://aws-mcp-gateway.rafaondjango.workers.dev}"
+WORKER_URL="$(validate_oauth_origin_url "AWS_MCP_GATEWAY_WORKER_URL" \
+  "${AWS_MCP_GATEWAY_WORKER_URL:-https://aws-mcp-gateway.rafaondjango.workers.dev}")"
 CHATGPT_CALLBACK="${AWS_MCP_GATEWAY_CHATGPT_REDIRECT_URI:-}"
 API_NAME="${AWS_MCP_GATEWAY_AUTH0_API_NAME:-aws-mcp-gateway}"
 APP_NAME="${AWS_MCP_GATEWAY_AUTH0_APP_NAME:-aws-mcp-gateway}"
@@ -212,7 +216,8 @@ fi
 
 echo ""
 echo "Auth0 OAuth setup complete."
-echo "  API audience: ${WORKER_URL}"
+echo "  API audience (MCP_RESOURCE_URL / OAUTH_AUDIENCE): ${WORKER_URL}"
+print_chatgpt_connector_url "$WORKER_URL"
 echo "  ChatGPT app: ${APP_NAME}"
 echo "  ChatGPT client_id: ${CLIENT_ID}"
 if [[ -n "$CHATGPT_CALLBACK" ]]; then

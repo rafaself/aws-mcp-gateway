@@ -28,6 +28,16 @@ describe("oauth URL validation", () => {
     );
   });
 
+  it("rejects query strings and fragments on resource URLs", () => {
+    const errors: string[] = [];
+    expect(validateOAuthResourceUrl("https://example.workers.dev?x=1", errors)).toBeNull();
+    expect(errors).toContain("MCP_RESOURCE_URL (must not include query or fragment)");
+
+    errors.length = 0;
+    expect(validateOAuthResourceUrl("https://example.workers.dev#x", errors)).toBeNull();
+    expect(errors).toContain("MCP_RESOURCE_URL (must not include query or fragment)");
+  });
+
   it("normalizes issuer trailing slash", () => {
     const errors: string[] = [];
     expect(validateOAuthIssuerUrl("https://auth.example.com", errors)).toBe(

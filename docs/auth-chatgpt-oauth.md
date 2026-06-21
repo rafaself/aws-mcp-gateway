@@ -18,6 +18,16 @@ For the authorization contract and security model, see [docs/specs/oauth-chatgpt
 - OAuth protects who may call the gateway; IAM still limits what the gateway can read from AWS.
 - OAuth does not permit write tools or generic AWS API access.
 
+## URL model
+
+```text
+ChatGPT Connector Server URL: https://<worker-host>/mcp
+MCP_RESOURCE_URL and OAUTH_AUDIENCE: https://<worker-host> (origin only — do not append /mcp)
+Protected resource metadata: https://<worker-host>/.well-known/oauth-protected-resource
+```
+
+Use `https://<worker-host>/mcp` in the ChatGPT Connector **Server URL** field. Set `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE` to `https://<worker-host>` without `/mcp`.
+
 ## Setup steps
 
 ### 1. Create an Auth0 API (resource)
