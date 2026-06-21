@@ -14,6 +14,18 @@ This runbook proves the full path from HTTP health checks through OAuth login, t
 
 Replace `<worker-host>` with your deployed Worker hostname (for example `aws-mcp-gateway.example.workers.dev`). Do not paste real OAuth access tokens, AWS keys, Auth0 client secrets, account IDs, or private callback identifiers into issues, docs, or terminal history.
 
+## URL model
+
+Before running smoke checks, confirm this split:
+
+```text
+ChatGPT Connector Server URL: https://<worker-host>/mcp
+MCP_RESOURCE_URL and OAUTH_AUDIENCE: https://<worker-host> (origin only — do not append /mcp)
+Protected resource metadata: https://<worker-host>/.well-known/oauth-protected-resource
+```
+
+`pnpm run verify:oauth` prints the ChatGPT Connector Server URL and validates deployed metadata.
+
 ---
 
 ## Prerequisites

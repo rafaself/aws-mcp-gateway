@@ -4,6 +4,18 @@ This gateway is designed for use as a **ChatGPT custom app connector**. ChatGPT 
 
 For OAuth setup with Auth0, see [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md). For authorization contract details, see [specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md). For client identification modes (predefined client vs future CIMD), see [specs/oauth-client-identification.md](specs/oauth-client-identification.md).
 
+## URL model
+
+Use these URLs consistently when configuring ChatGPT and Worker OAuth vars:
+
+```text
+ChatGPT Connector Server URL: https://<worker-host>/mcp
+MCP_RESOURCE_URL and OAUTH_AUDIENCE: https://<worker-host> (origin only — do not append /mcp)
+Protected resource metadata: https://<worker-host>/.well-known/oauth-protected-resource
+```
+
+Do not set `MCP_RESOURCE_URL` or `OAUTH_AUDIENCE` to `https://<worker-host>/mcp`. The OAuth resource identity is the Worker origin; the MCP transport endpoint is `/mcp`.
+
 ## What ChatGPT expects
 
 ChatGPT connectors require:

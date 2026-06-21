@@ -164,6 +164,27 @@ describe("validateEnv", () => {
     expect(config.MCP_AUTH_TOKEN).toBe("bearer-token");
   });
 
+  it("accepts matching origin-level MCP_RESOURCE_URL and OAUTH_AUDIENCE", () => {
+    const env = {
+      AUTH_MODE: "oauth",
+      MCP_RESOURCE_URL: "https://example.workers.dev",
+      OAUTH_ISSUER: "https://auth.example.com/",
+      OAUTH_AUDIENCE: "https://example.workers.dev",
+      OAUTH_JWKS_URI: "https://auth.example.com/.well-known/jwks.json",
+      OAUTH_REQUIRED_SCOPES: "aws:read",
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+    };
+
+    const result = validateEnv(env) as EnvValidationSuccess;
+
+    expect(result.valid).toBe(true);
+    expect(result.config.oauth?.MCP_RESOURCE_URL).toBe("https://example.workers.dev");
+    expect(result.config.oauth?.OAUTH_AUDIENCE).toBe("https://example.workers.dev");
+  });
+
   it("does not require MCP_AUTH_TOKEN in oauth mode", () => {
     const env = {
       AUTH_MODE: "oauth",
