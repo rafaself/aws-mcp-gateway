@@ -12,6 +12,8 @@
     "deploy": "wrangler deploy",
     "sync-secrets": "bash scripts/sync-secrets.sh",
     "deploy:configured": "bash scripts/deploy-with-env.sh",
+    "setup:auth0": "bash scripts/setup-auth0-oauth.sh",
+    "verify:oauth": "bash scripts/verify-oauth-deployment.sh",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

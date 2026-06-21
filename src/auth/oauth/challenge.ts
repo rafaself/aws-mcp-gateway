@@ -23,16 +23,3 @@ export function buildOAuthChallenge(
 
   return `Bearer ${parts.join(", ")}`;
 }
-
-export function buildMcpWwwAuthenticateMeta(
-  config: ValidatedOAuthConfig,
-  options: OAuthChallengeOptions = {},
-): Record<string, unknown> {
-  return {
-    scheme: "Bearer",
-    scope: config.OAUTH_REQUIRED_SCOPES.join(" "),
-    resource_metadata: protectedResourceMetadataUrl(config),
-    ...(options.error ? { error: options.error } : {}),
-    ...(options.errorDescription ? { error_description: options.errorDescription } : {}),
-  };
-}

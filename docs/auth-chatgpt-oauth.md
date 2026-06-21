@@ -63,6 +63,14 @@ OAUTH_REQUIRED_SCOPES=aws:read
 
 Do **not** set `MCP_AUTH_TOKEN` in OAuth mode.
 
+To create the Auth0 API, `aws:read` scope, and ChatGPT application automatically, add Management API credentials to `.env.deploy.local` (see `.env.deploy.example`) and run:
+
+```bash
+pnpm run setup:auth0
+```
+
+After creating the ChatGPT connector, set `AWS_MCP_GATEWAY_CHATGPT_REDIRECT_URI` in `.env.deploy.local` and run `pnpm run setup:auth0` again to update the callback URL.
+
 ### 6. Configure AWS secrets separately
 
 ```bash
@@ -81,6 +89,8 @@ pnpm deploy
 ### 8. Verify protected-resource metadata
 
 ```bash
+pnpm run verify:oauth
+# or manually:
 curl https://<worker-host>/.well-known/oauth-protected-resource
 ```
 

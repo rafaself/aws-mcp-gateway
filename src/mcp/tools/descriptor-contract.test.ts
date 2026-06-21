@@ -37,10 +37,7 @@ describe("MCP tool descriptor contract", () => {
       expect((tool._meta as { securitySchemes: unknown }).securitySchemes).toEqual([
         { type: "oauth2", scopes: ["aws:read"] },
       ]);
-      expect((tool._meta as Record<string, unknown>)["mcp/www_authenticate"]).toMatchObject({
-        scheme: "Bearer",
-        scope: "aws:read",
-      });
+      expect((tool._meta as Record<string, unknown>)["mcp/www_authenticate"]).toBeUndefined();
     });
 
     it(`${toolName} declares read-only annotations`, () => {
@@ -82,5 +79,12 @@ describe("MCP tool descriptor contract", () => {
     expect(serialized).not.toContain("AKIA");
     expect(serialized).not.toContain("secret");
     expect(serialized).not.toContain("execution");
+  });
+
+  it("does not embed hardcoded OAuth discovery URLs in tool descriptors", () => {
+    const serialized = JSON.stringify(tools);
+
+    expect(serialized).not.toContain("gateway.example.com");
+    expect(serialized).not.toContain("auth.example.com");
   });
 });
