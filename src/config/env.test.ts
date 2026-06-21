@@ -163,6 +163,92 @@ describe("validateEnv", () => {
     expect(config.AWS_ALLOWED_REGIONS).toBe("eu-west-1,us-east-1");
     expect(config.MCP_AUTH_TOKEN).toBe("bearer-token");
   });
+
+  it("does not require MCP_AUTH_TOKEN in oauth mode", () => {
+    const env = {
+      AUTH_MODE: "oauth",
+      MCP_RESOURCE_URL: "https://gateway.example.com",
+      OAUTH_ISSUER: "https://auth.example.com/",
+      OAUTH_AUDIENCE: "https://gateway.example.com",
+      OAUTH_JWKS_URI: "https://auth.example.com/.well-known/jwks.json",
+      OAUTH_REQUIRED_SCOPES: "aws:read",
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+    };
+
+    const result = validateEnv(env) as EnvValidationSuccess;
+
+    expect(result.valid).toBe(true);
+    expect(result.config.authMode).toBe("oauth");
+    expect(result.config.MCP_AUTH_TOKEN).toBeUndefined();
+    expect(result.config.oauth?.OAUTH_REQUIRED_SCOPES).toEqual(["aws:read"]);
+  });
+
+  it("defaults to legacy-bearer when AUTH_MODE is absent", () => {
+    const env = {
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+      MCP_AUTH_TOKEN: "token",
+    };
+
+    const result = validateEnv(env) as EnvValidationSuccess;
+
+    expect(result.config.authMode).toBe("legacy-bearer");
+  });
+
+  it("rejects invalid AUTH_MODE values", () => {
+    const result = validateEnv({
+      AUTH_MODE: "open",
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+      MCP_AUTH_TOKEN: "token",
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("AUTH_MODE (must be legacy-bearer or oauth)");
+  });
+
+  it("rejects non-https OAuth URLs in oauth mode", () => {
+    const result = validateEnv({
+      AUTH_MODE: "oauth",
+      MCP_RESOURCE_URL: "http://gateway.example.com",
+      OAUTH_ISSUER: "https://auth.example.com/",
+      OAUTH_AUDIENCE: "https://gateway.example.com",
+      OAUTH_JWKS_URI: "https://auth.example.com/.well-known/jwks.json",
+      OAUTH_REQUIRED_SCOPES: "aws:read",
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("MCP_RESOURCE_URL (must be an https URL)");
+  });
+
+  it("requires OAUTH_AUDIENCE to equal MCP_RESOURCE_URL", () => {
+    const result = validateEnv({
+      AUTH_MODE: "oauth",
+      MCP_RESOURCE_URL: "https://gateway.example.com",
+      OAUTH_ISSUER: "https://auth.example.com/",
+      OAUTH_AUDIENCE: "https://other.example.com",
+      OAUTH_JWKS_URI: "https://auth.example.com/.well-known/jwks.json",
+      OAUTH_REQUIRED_SCOPES: "aws:read",
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("OAUTH_AUDIENCE (must equal MCP_RESOURCE_URL)");
+  });
 });
 
 describe("envErrorResponse", () => {

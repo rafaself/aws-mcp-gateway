@@ -6,12 +6,14 @@ import { VALID_ALARM_STATES } from "../../aws/cloudwatch/index.js";
 import { resolveRegions } from "../../security/regions.js";
 import { summarizeRegionListInput } from "../audit/tool-input.js";
 import { safeMcpHandler } from "./response.js";
+import { cloudwatchAlarmsOutputSchema, readOnlyAwsToolDescriptor } from "./descriptor.js";
 
 export function registerGetCloudwatchAlarmsTool(server: McpServer, ctx: GatewayContext): void {
   server.registerTool(
     "get_cloudwatch_alarms",
-    {
+    readOnlyAwsToolDescriptor({
       description: "Lists CloudWatch alarms across regions with optional state and region filtering.",
+      outputSchema: cloudwatchAlarmsOutputSchema,
       inputSchema: z.object({
         regions: z
           .array(z.string())
@@ -22,7 +24,7 @@ export function registerGetCloudwatchAlarmsTool(server: McpServer, ctx: GatewayC
           .optional()
           .describe("Filter by alarm states."),
       }),
-    },
+    }),
     safeMcpHandler(
       {
         toolName: "get_cloudwatch_alarms",

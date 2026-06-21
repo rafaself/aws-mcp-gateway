@@ -32,7 +32,8 @@ require_var() {
 
 require_var AWS_MCP_GATEWAY_AWS_ACCESS_KEY_ID
 require_var AWS_MCP_GATEWAY_AWS_SECRET_ACCESS_KEY
-require_var AWS_MCP_GATEWAY_MCP_AUTH_TOKEN
+
+AUTH_MODE="${AWS_MCP_GATEWAY_AUTH_MODE:-legacy-bearer}"
 
 cd "$ROOT"
 
@@ -44,6 +45,12 @@ put_secret() {
 
 put_secret AWS_ACCESS_KEY_ID "$AWS_MCP_GATEWAY_AWS_ACCESS_KEY_ID"
 put_secret AWS_SECRET_ACCESS_KEY "$AWS_MCP_GATEWAY_AWS_SECRET_ACCESS_KEY"
-put_secret MCP_AUTH_TOKEN "$AWS_MCP_GATEWAY_MCP_AUTH_TOKEN"
+
+if [[ "$AUTH_MODE" != "oauth" ]]; then
+  require_var AWS_MCP_GATEWAY_MCP_AUTH_TOKEN
+  put_secret MCP_AUTH_TOKEN "$AWS_MCP_GATEWAY_MCP_AUTH_TOKEN"
+else
+  echo "AUTH_MODE=oauth — skipping MCP_AUTH_TOKEN secret sync."
+fi
 
 echo "Worker secrets synced for aws-mcp-gateway."

@@ -7,12 +7,14 @@ import { LOGS_MAX_HOURS, LOGS_MAX_EVENTS } from "../../security/limits.js";
 import { validateRegion } from "../../security/regions.js";
 import { summarizeLogErrorsInput } from "../audit/tool-input.js";
 import { safeMcpHandler } from "./response.js";
+import { recentLogErrorsOutputSchema, readOnlyAwsToolDescriptor } from "./descriptor.js";
 
 export function registerGetRecentLogErrorsTool(server: McpServer, ctx: GatewayContext): void {
   server.registerTool(
     "get_recent_log_errors",
-    {
+    readOnlyAwsToolDescriptor({
       description: "Returns recent error, exception, and warning log events from a CloudWatch log group.",
+      outputSchema: recentLogErrorsOutputSchema,
       inputSchema: z.object({
         region: z
           .string()
@@ -35,7 +37,7 @@ export function registerGetRecentLogErrorsTool(server: McpServer, ctx: GatewayCo
           .default(20)
           .describe("Maximum number of events to return (1–50, default 20)."),
       }),
-    },
+    }),
     safeMcpHandler(
       {
         toolName: "get_recent_log_errors",

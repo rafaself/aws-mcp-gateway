@@ -47,7 +47,9 @@ The Worker acts as a policy and translation layer. ChatGPT calls strongly typed 
 
 ## Security model
 
-The MVP must remain read-only. Post-MVP expansion (write operations, OAuth, broader inventory) is governed by [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md).
+The MVP must remain read-only. Post-MVP expansion (write operations, broader inventory) is governed by [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md).
+
+ChatGPT connector OAuth is specified in [docs/specs/oauth-chatgpt-connector.md](docs/specs/oauth-chatgpt-connector.md). For production ChatGPT setup, see [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md).
 
 For a verifiable pre-deployment and pre-merge checklist, see [SECURITY.md](SECURITY.md).
 
@@ -101,12 +103,17 @@ Management tools may be added later; see [docs/post-mvp-boundaries.md](docs/post
 
 Use `.env.example` for documentation only. Real values must be configured with Wrangler.
 
+### Auth modes
+
+- **Local legacy** (`AUTH_MODE=legacy-bearer`, default): requires `MCP_AUTH_TOKEN` secret. See [docs/mcp-testing.md](docs/mcp-testing.md).
+- **ChatGPT OAuth** (`AUTH_MODE=oauth`): requires OAuth vars in `[vars]`; `MCP_AUTH_TOKEN` is not used. See [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md).
+
 ### Required secrets (configure with `wrangler secret put`)
 
 ```text
 AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
-MCP_AUTH_TOKEN
+MCP_AUTH_TOKEN          # legacy-bearer mode only
 ```
 
 ### Required configuration (configure in `wrangler.jsonc` `[vars]`)

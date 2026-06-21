@@ -1,5 +1,6 @@
 export type GatewayErrorCode =
   | "unauthorized"
+  | "forbidden"
   | "configuration_error"
   | "validation_error"
   | "aws_request_failed"
@@ -32,8 +33,12 @@ export class GatewayError extends Error {
   }
 }
 
-export function errorResponse(error: GatewayError, status: number): Response {
-  return Response.json({ error: error.toJSON() }, { status });
+export function errorResponse(
+  error: GatewayError,
+  status: number,
+  headers?: Record<string, string>,
+): Response {
+  return Response.json({ error: error.toJSON() }, { status, headers });
 }
 
 export function mcpErrorResult(error: GatewayError): {

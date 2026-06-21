@@ -1,0 +1,216 @@
+# Spec: ChatGPT OAuth connector authorization
+
+## Goal
+
+Define the OAuth contract required to connect the deployed AWS MCP Gateway to ChatGPT's custom app connector using the **OAuth** authentication option, while preserving the existing read-only, allowlisted AWS tool security model.
+
+The current MVP uses a single static bearer token (`MCP_AUTH_TOKEN`). ChatGPT's connector UI supports only **OAuth** or **No auth**. `No auth` is not acceptable for this gateway because it would expose account-specific AWS cost, EC2, CloudWatch, and CloudWatch Logs data without authentication.
+
+## Non-goals
+
+- Do not implement a custom OAuth authorization server in this repository.
+- Do not implement Dynamic Client Registration or Client ID Metadata Documents in the first phase.
+- Do not remove legacy bearer support (`AUTH_MODE=legacy-bearer`).
+- Do not allow unauthenticated `/mcp` in any production mode.
+- Do not implement a generic OAuth provider, user database, password flow, refresh-token storage, or session store.
+- Do not add write-capable AWS permissions or tools.
+- Do not change public MCP tool names, inputs, outputs, AWS request semantics, cache semantics, or IAM policy.
+- Do not expose AWS credentials, bearer tokens, OAuth access tokens, JWT claims, signed headers, raw AWS responses, or stack traces.
+
+## Architecture decision
+
+Use the Worker as an **OAuth resource server only**. Use an external OIDC/OAuth provider, with Auth0 as the documented first provider.
+
+```text
+ChatGPT connector
+  -> OAuth authorization-code + PKCE with Auth0-compatible provider
+  -> receives access token (JWT)
+  -> calls Cloudflare Worker /mcp with Authorization: Bearer <oauth_access_token>
+  -> Worker validates JWT signature, issuer, audience, expiry, and scope
+  -> Worker executes existing read-only MCP tools
+```
+
+### Chosen MVP OAuth mode
+
+Predefined OAuth client in the external identity provider (no Dynamic Client Registration).
+
+```text
+Authorization server: external Auth0-compatible OIDC provider
+OAuth flow: authorization code + PKCE
+Token type accepted by Worker: JWT access token
+Token endpoint auth: public client / none, unless provider configuration requires otherwise
+Required application scope: aws:read
+Worker role: protected resource / resource server
+```
+
+## Configuration
+
+### Auth modes
+
+| Variable | Mode | Required | Secret |
+|----------|------|----------|--------|
+| `AUTH_MODE` | both | yes (defaults to `legacy-bearer` when absent) | no |
+| `MCP_AUTH_TOKEN` | `legacy-bearer` only | yes | yes (Cloudflare secret) |
+| `MCP_RESOURCE_URL` | `oauth` only | yes | no |
+| `OAUTH_ISSUER` | `oauth` only | yes | no |
+| `OAUTH_AUDIENCE` | `oauth` only | yes | no |
+| `OAUTH_JWKS_URI` | `oauth` only | yes | no |
+| `OAUTH_REQUIRED_SCOPES` | `oauth` only | yes | no |
+
+AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) remain Cloudflare secrets in both modes and are unrelated to OAuth user tokens.
+
+### Legacy local mode
+
+```text
+AUTH_MODE=legacy-bearer
+MCP_AUTH_TOKEN=<local-only-token>
+```
+
+### Production ChatGPT OAuth mode
+
+```text
+AUTH_MODE=oauth
+MCP_RESOURCE_URL=https://<worker-host>
+OAUTH_ISSUER=https://<auth-provider-domain>/
+OAUTH_AUDIENCE=https://<worker-host>
+OAUTH_JWKS_URI=https://<auth-provider-domain>/.well-known/jwks.json
+OAUTH_REQUIRED_SCOPES=aws:read
+```
+
+**Migration rule:** production deployments intended for ChatGPT must use `AUTH_MODE=oauth`.
+
+## Behavior
+
+### Public routes
+
+| Route | Auth | Purpose |
+|-------|------|---------|
+| `GET /health` | none | Liveness check |
+| `GET /.well-known/oauth-protected-resource` | none | OAuth discovery metadata (oauth mode only) |
+| `POST /mcp` | required | MCP endpoint |
+
+OAuth metadata discovery must work even when AWS secrets are missing — it is part of auth setup and does not expose AWS data.
+
+### Protected resource metadata
+
+`GET /.well-known/oauth-protected-resource` returns:
+
+```json
+{
+  "resource": "https://<worker-host>",
+  "authorization_servers": ["https://<auth-provider-domain>/"],
+  "scopes_supported": ["aws:read"],
+  "resource_documentation": "https://github.com/rafaself/aws-mcp-gateway"
+}
+```
+
+### WWW-Authenticate challenge
+
+Unauthenticated `/mcp` requests in `AUTH_MODE=oauth` return:
+
+```http
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer resource_metadata="https://<worker-host>/.well-known/oauth-protected-resource", scope="aws:read"
+```
+
+Response body (normalized public error):
+
+```json
+{
+  "error": {
+    "code": "unauthorized",
+    "message": "Authentication is required.",
+    "retryable": false
+  }
+}
+```
+
+### Token validation (oauth mode)
+
+When `AUTH_MODE=oauth`, `/mcp` accepts only valid OAuth JWT access tokens. Validation requires:
+
+- `Authorization` header exists
+- Scheme is `Bearer`
+- JWT signature verifies against configured JWKS (`OAUTH_JWKS_URI`)
+- `iss` equals `OAUTH_ISSUER`
+- `aud` equals `OAUTH_AUDIENCE`
+- `exp` is valid
+- `nbf` is valid when present
+- `scope` (space-delimited string) or `scp` (array) includes every configured required scope (`aws:read`)
+
+Invalid, missing, expired, malformed, wrong-issuer, wrong-audience, wrong-signature, and insufficient-scope tokens must not reach MCP server creation or AWS calls.
+
+### Staged `/mcp` request flow
+
+```text
+1. Identify auth mode from env
+2. Validate mode-specific public auth config
+3. Authenticate request
+4. On auth failure: return 401/403 with normalized error and OAuth challenge where appropriate
+5. Only after auth succeeds: validate full gateway config including AWS credentials
+6. Build GatewayContext
+7. Create MCP server and handle request
+```
+
+### Tool descriptor metadata
+
+Every public MCP tool must declare:
+
+```ts
+securitySchemes: [{ type: "oauth2", scopes: ["aws:read"] }],
+_meta: { securitySchemes: [{ type: "oauth2", scopes: ["aws:read"] }] },
+annotations: {
+  readOnlyHint: true,
+  destructiveHint: false,
+  openWorldHint: true, // false for get_gateway_status
+}
+```
+
+Tools returning `structuredContent` must include `outputSchema` matching `docs/mcp-tools.md`.
+
+## Security and safety
+
+- **No auth is rejected** for production AWS account data.
+- OAuth protects who may call the gateway; IAM still limits what the gateway can read from AWS.
+- OAuth does not permit write tools or generic AWS API access.
+- Auth failures must never leak tokens, JWT claims, JWKS contents, AWS secrets, or provider error bodies.
+- Unauthenticated callers must not receive detailed AWS configuration error messages.
+
+## Implementation sequence
+
+| Issue | Scope |
+|-------|-------|
+| #76 | Protected-resource metadata route, `WWW-Authenticate` challenge, `AUTH_MODE` config split |
+| #77 | OAuth JWT validation on `/mcp`, staged auth flow, `jose` dependency |
+| #78 | Tool descriptor OAuth security schemes and read-only annotations |
+| #79 | End-to-end Auth0 + ChatGPT setup documentation |
+
+## Acceptance criteria
+
+- [ ] Spec defines external-provider resource-server architecture
+- [ ] Spec explicitly rejects `No auth` for AWS account data
+- [ ] Spec defines all OAuth config variables and secrets vs non-secrets
+- [ ] Spec defines `aws:read` as the initial required scope
+- [ ] Spec states `MCP_AUTH_TOKEN` is only required in `legacy-bearer` mode
+- [ ] Spec defines implementation sequence for #76–#79
+- [ ] Spec preserves read-only, allowlisted, no-generic-AWS-proxy contract
+
+## Test plan
+
+| Area | Tests |
+|------|-------|
+| Metadata route | Returns 200 with expected fields in oauth mode; no AWS credentials required |
+| OAuth challenge | 401 on unauthenticated `/mcp` includes `WWW-Authenticate` with `resource_metadata` |
+| JWT validation | Offline tests with fixture JWKS: valid/invalid/expired/wrong-iss/wrong-aud/missing-scope |
+| Legacy bearer | Existing bearer path unchanged when `AUTH_MODE=legacy-bearer` |
+| Tool descriptors | Contract tests via `tools/list`: securitySchemes, annotations, outputSchema |
+| Secret safety | No tokens, claims, or credentials in responses or logs |
+
+All unit tests must remain offline and deterministic — no live Auth0, JWKS, Cloudflare, or AWS calls.
+
+## References
+
+- [OpenAI Apps SDK authentication guide](https://developers.openai.com/apps-sdk/build/auth)
+- [OpenAI Apps SDK reference](https://developers.openai.com/apps-sdk/reference)
+- [MCP authorization spec](https://modelcontextprotocol.io/specification)
+- [RFC 9728 protected resource metadata](https://datatracker.ietf.org/doc/rfc9728/)
