@@ -50,7 +50,7 @@ Replace `{callback_id}` with the value from ChatGPT when you create the connecto
 
 ### 5. Configure Worker OAuth vars
 
-Set these non-secret vars in `wrangler.jsonc` `[vars]` or via the Cloudflare dashboard:
+Copy [`wrangler.example.jsonc`](../wrangler.example.jsonc) for a portable template, or set these non-secret vars in `wrangler.jsonc` `[vars]` or via the Cloudflare dashboard:
 
 ```text
 AUTH_MODE=oauth

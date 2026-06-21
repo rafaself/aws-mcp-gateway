@@ -1,0 +1,29 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "aws-mcp-gateway",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"dev": {
+		"ip": "127.0.0.1"
+	},
+	"vars": {
+		"AWS_REGION": "us-east-1",
+		"AWS_ALLOWED_REGIONS": "us-east-1,sa-east-1",
+		"AUTH_MODE": "oauth",
+		"MCP_RESOURCE_URL": "https://<your-worker-host>",
+		"OAUTH_ISSUER": "https://<your-auth0-tenant>/",
+		"OAUTH_AUDIENCE": "https://<your-worker-host>",
+		"OAUTH_JWKS_URI": "https://<your-auth0-tenant>/.well-known/jwks.json",
+		"OAUTH_REQUIRED_SCOPES": "aws:read"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "AWS_MCP_CACHE",
+			"id": "<your-kv-namespace-id>",
+			"remote": true
+		}
+	]
+}

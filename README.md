@@ -118,6 +118,14 @@ MCP_AUTH_TOKEN          # legacy-bearer mode only
 
 ### Required configuration (configure in `wrangler.jsonc` `[vars]`)
 
+For your own deployment, copy [`wrangler.example.jsonc`](wrangler.example.jsonc) and replace placeholder values before deploying. The active [`wrangler.jsonc`](wrangler.jsonc) in this repository may contain maintainer-specific non-secret deployment values and must not be replaced with placeholders if that would break `pnpm deploy` for the maintainer.
+
+**Replace before your own deploy:**
+
+- Worker hostname in `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE`
+- Auth0 (or OIDC) tenant in `OAUTH_ISSUER` and `OAUTH_JWKS_URI`
+- KV namespace `id` in `kv_namespaces`
+
 ```jsonc
 {
   "vars": {
@@ -291,6 +299,7 @@ Never commit:
 - Bearer tokens
 - `.env`
 - `.dev.vars`
+- `.env.deploy.local`
 - `.wrangler/`
 
 ## Roadmap

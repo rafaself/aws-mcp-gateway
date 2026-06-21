@@ -38,6 +38,25 @@ All three should pass before deploying.
 
 The Worker requires a mix of Cloudflare-managed secrets and non-secret configuration variables.
 
+### Wrangler config template
+
+| File | Purpose |
+|------|---------|
+| [`wrangler.example.jsonc`](../wrangler.example.jsonc) | Reusable template with placeholders — copy for your own deployment |
+| [`wrangler.jsonc`](../wrangler.jsonc) | Active deployment config for this repository (may contain maintainer non-secret values) |
+
+Before deploying your own connector, copy `wrangler.example.jsonc` to `wrangler.jsonc` (or merge into your existing config) and replace:
+
+- `<your-worker-host>` — your Cloudflare Worker URL host
+- `<your-auth0-tenant>` — Auth0 domain (or compatible OIDC issuer host)
+- `<your-kv-namespace-id>` — KV namespace id from `wrangler kv:namespace create`
+
+**Secrets vs non-secrets:**
+
+- **Secrets** (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `MCP_AUTH_TOKEN` in legacy mode) belong in Cloudflare secrets via `wrangler secret put` — never in Git or `[vars]`.
+- **OAuth vars** (`MCP_RESOURCE_URL`, `OAUTH_ISSUER`, etc.) are deployment-specific but not secret — they belong in `[vars]` or the Cloudflare dashboard.
+- **Local helper files** (`.dev.vars`, `.env`, `.env.deploy.local`) and Cloudflare API tokens must never be committed.
+
 ### Required secrets (configure with `wrangler secret put`)
 
 These values are sensitive and must be stored in Cloudflare's encrypted secrets store. They are never written to `wrangler.jsonc` or committed to Git.
@@ -80,7 +99,7 @@ OAuth vars (non-secret, safe in `wrangler.jsonc` or dashboard):
 }
 ```
 
-Keep committed `wrangler.jsonc` production-neutral if you prefer — document OAuth placeholders here and set values in the Cloudflare dashboard per environment.
+Keep committed `wrangler.jsonc` production-neutral if you prefer — use [`wrangler.example.jsonc`](../wrangler.example.jsonc) as the reusable template and set values in the Cloudflare dashboard per environment.
 
 ### Required configuration (configure in `wrangler.jsonc` `[vars]`)
 
