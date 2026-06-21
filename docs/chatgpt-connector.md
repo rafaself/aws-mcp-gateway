@@ -2,7 +2,7 @@
 
 This gateway is designed for use as a **ChatGPT custom app connector**. ChatGPT discovers AWS read-only tools through the OpenAI MCP `search` and `fetch` tools, then calls the underlying MCP tools (`get_aws_cost_summary`, `list_ec2_instances`, and others) after OAuth authentication.
 
-For OAuth setup with Auth0, see [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md). For authorization contract details, see [specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md).
+For OAuth setup with Auth0, see [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md). For authorization contract details, see [specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md). For client identification modes (predefined client vs future CIMD), see [specs/oauth-client-identification.md](specs/oauth-client-identification.md).
 
 ## What ChatGPT expects
 
@@ -111,10 +111,15 @@ Production ChatGPT connectors use OAuth, not `MCP_AUTH_TOKEN`. See [mcp-testing.
 | OAuth fails / callback error | Redirect URI mismatch | Add ChatGPT callback URL in Auth0; run `pnpm run setup:auth0` |
 | OAuth works, no Actions | Missing `search`/`fetch` or stale connector | Deploy latest gateway; **Refresh** connector in ChatGPT |
 | Tools fail with `unauthorized` | Token missing `aws:read` | Ensure Auth0 API grants `aws:read` to the ChatGPT application |
+| Tools fail with `forbidden` | Valid token but insufficient scope | Ensure access token includes every configured required scope |
 | AWS tools return errors | IAM permissions | See [aws-iam-setup.md](aws-iam-setup.md) |
+| ChatGPT sees old descriptors | Cached connector metadata | Refresh connector after deployment |
+| Provider rejects ChatGPT client identification | Provider/client registration mismatch | Use predefined client setup first; evaluate CIMD only if provider supports it |
+| OAuth works but token audience wrong | Auth0 API audience mismatch | Set API audience equal to `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE` |
 
 ## References
 
+- [oauth-client-identification.md](oauth-client-identification.md) — client identification modes (predefined client, future CIMD, unsupported DCR)
 - [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md) — end-to-end ChatGPT connector smoke runbook
 - [OpenAI — Connect from ChatGPT](https://developers.openai.com/apps-sdk/deploy/connect-chatgpt)
 - [OpenAI — Authentication](https://developers.openai.com/apps-sdk/build/auth)

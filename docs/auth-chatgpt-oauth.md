@@ -2,7 +2,7 @@
 
 This guide walks through connecting the deployed AWS MCP Gateway to ChatGPT using the **OAuth** authentication option with an Auth0-compatible identity provider.
 
-For the authorization contract and security model, see [docs/specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md).
+For the authorization contract and security model, see [docs/specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md). For client identification modes (predefined client vs future CIMD), see [docs/specs/oauth-client-identification.md](specs/oauth-client-identification.md).
 
 ## Prerequisites
 
@@ -132,6 +132,14 @@ Authentication happens **before** MCP server creation. Invalid or insufficient-s
 After OAuth setup, run the end-to-end smoke runbook: [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md).
 
 Regression tests for these contracts live in `src/index.oauth.test.ts` and `src/auth/oauth/`.
+
+## Client identification mode
+
+- **Currently supported:** predefined OAuth client in Auth0 (or compatible OIDC provider). See setup steps below and [oauth-client-identification.md](specs/oauth-client-identification.md).
+- **Future compatibility:** CIMD-compatible client identification at the authorization server when the provider supports it. The Worker validation path does not change unless token claims change.
+- **Not supported in this gateway:** custom DCR or OAuth authorization server implementation inside the Worker.
+
+If the ChatGPT connector works with the current Auth0 predefined client flow, no CIMD migration is needed for MVP. Do not attempt to implement DCR or OAuth server behavior in this repository.
 
 ## Full connector guide
 

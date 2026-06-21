@@ -9,7 +9,7 @@ The current MVP uses a single static bearer token (`MCP_AUTH_TOKEN`). ChatGPT's 
 ## Non-goals
 
 - Do not implement a custom OAuth authorization server in this repository.
-- Do not implement Dynamic Client Registration or Client ID Metadata Documents in the first phase.
+- Do not implement Dynamic Client Registration or Client ID Metadata Documents in the first phase. For the post-MVP CIMD readiness path, see [oauth-client-identification.md](oauth-client-identification.md).
 - Do not remove legacy bearer support (`AUTH_MODE=legacy-bearer`).
 - Do not allow unauthenticated `/mcp` in any production mode.
 - Do not implement a generic OAuth provider, user database, password flow, refresh-token storage, or session store.
