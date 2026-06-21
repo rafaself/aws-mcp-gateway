@@ -47,6 +47,8 @@ describe("createServer", () => {
     };
 
     const toolNames = server.tools.map((t) => t.name);
+    expect(toolNames).toContain("search");
+    expect(toolNames).toContain("fetch");
     expect(toolNames).toContain("get_gateway_status");
     expect(toolNames).toContain("get_aws_cost_summary");
     expect(toolNames).toContain("get_aws_cost_by_service");

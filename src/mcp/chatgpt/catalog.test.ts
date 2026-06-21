@@ -1,16 +1,26 @@
 import { describe, expect, it } from "vitest";
+import type { GatewayContext } from "../../config/context.js";
 import {
   catalogCitationUrl,
   catalogEntryId,
   fetchCatalogEntry,
   searchCatalog,
 } from "./catalog.js";
+import { createToolRegistry, getChatGptCatalogEntries } from "../tools/registry.js";
 
 const RESOURCE_URL = "https://aws-mcp-gateway.example.workers.dev";
 
+const testContext: GatewayContext = {
+  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
+  region: "us-east-1",
+  allowedRegions: ["us-east-1", "us-west-2"],
+};
+
+const catalogEntries = getChatGptCatalogEntries(createToolRegistry(testContext));
+
 describe("ChatGPT catalog", () => {
   it("returns ranked search results for cost queries", () => {
-    const { results } = searchCatalog("cost summary total", RESOURCE_URL);
+    const { results } = searchCatalog("cost summary total", RESOURCE_URL, catalogEntries);
 
     expect(results.length).toBeGreaterThan(0);
     expect(results[0]?.id).toBe(catalogEntryId("get_aws_cost_summary"));
@@ -20,12 +30,16 @@ describe("ChatGPT catalog", () => {
   });
 
   it("returns the full catalog when the query is empty", () => {
-    const { results } = searchCatalog("", RESOURCE_URL);
+    const { results } = searchCatalog("", RESOURCE_URL, catalogEntries);
     expect(results).toHaveLength(6);
   });
 
   it("fetches catalog documents by id", () => {
-    const doc = fetchCatalogEntry(catalogEntryId("list_ec2_instances"), RESOURCE_URL);
+    const doc = fetchCatalogEntry(
+      catalogEntryId("list_ec2_instances"),
+      RESOURCE_URL,
+      catalogEntries,
+    );
 
     expect(doc).toMatchObject({
       id: "tool/list_ec2_instances",
@@ -41,13 +55,18 @@ describe("ChatGPT catalog", () => {
   });
 
   it("returns null for unknown ids", () => {
-    expect(fetchCatalogEntry("tool/unknown_tool", RESOURCE_URL)).toBeNull();
-    expect(fetchCatalogEntry("not-a-catalog-id", RESOURCE_URL)).toBeNull();
+    expect(fetchCatalogEntry("tool/unknown_tool", RESOURCE_URL, catalogEntries)).toBeNull();
+    expect(fetchCatalogEntry("not-a-catalog-id", RESOURCE_URL, catalogEntries)).toBeNull();
   });
 
   it("includes live gateway status when provided for get_gateway_status", () => {
     const liveStatus = { service: "aws-mcp-gateway", status: "ok" };
-    const doc = fetchCatalogEntry(catalogEntryId("get_gateway_status"), RESOURCE_URL, liveStatus);
+    const doc = fetchCatalogEntry(
+      catalogEntryId("get_gateway_status"),
+      RESOURCE_URL,
+      catalogEntries,
+      liveStatus,
+    );
 
     expect(doc?.text).toContain("Live gateway status");
     expect(doc?.text).toContain('"status": "ok"');

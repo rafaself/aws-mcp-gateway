@@ -3,7 +3,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
 import type { GatewayContext } from "../../config/context.js";
 import { createServer } from "../server.js";
-import { PUBLIC_TOOL_LIST_FIELDS } from "../list-compat.js";
+import { PUBLIC_TOOL_LIST_FIELDS } from "./public-list.js";
 import { LinkedMcpTransport } from "../../test/mcp-linked-transport.js";
 
 const testContext: GatewayContext = {

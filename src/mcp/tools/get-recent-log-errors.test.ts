@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GatewayContext } from "../../config/context.js";
-import { registerGetRecentLogErrorsTool } from "./get-recent-log-errors.js";
+import { registerToolByName } from "./index.js";
 import { logsFilterEventsResponse } from "../../test/fixtures.js";
 
 const { mockFetch } = vi.hoisted(() => {
@@ -90,7 +90,7 @@ beforeEach(() => {
 describe("registerGetRecentLogErrorsTool", () => {
   it("registers get_recent_log_errors tool", () => {
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors");
     expect(tool).toBeDefined();
     expect(tool!.name).toBe("get_recent_log_errors");
@@ -98,7 +98,7 @@ describe("registerGetRecentLogErrorsTool", () => {
 
   it("includes description about CloudWatch log errors", () => {
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     const cfg = tool.config as { description?: string };
     expect(cfg.description).toContain("error");
@@ -110,7 +110,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    registerToolByName(mock.server, singleRegionContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     const result = await tool.handler({
       region: "us-east-1",
@@ -145,7 +145,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    registerToolByName(mock.server, singleRegionContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     const result = await tool.handler({
       region: "us-east-1",
@@ -166,7 +166,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    registerToolByName(mock.server, singleRegionContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     await tool.handler({
       region: "us-east-1",
@@ -189,7 +189,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    registerToolByName(mock.server, singleRegionContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     await tool.handler({
       region: "us-east-1",
@@ -210,7 +210,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     const result = await tool.handler({
       region: "eu-central-1",
@@ -229,7 +229,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     const result = await tool.handler({
       region: "us-east-1",
@@ -248,7 +248,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    registerToolByName(mock.server, singleRegionContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     const result = await tool.handler({
       region: "us-east-1",
@@ -262,7 +262,7 @@ describe("registerGetRecentLogErrorsTool", () => {
 
   it("does not call AWS when validation fails", async () => {
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
 
     await tool.handler({
@@ -279,7 +279,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    registerToolByName(mock.server, singleRegionContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     const result = await tool.handler({
       region: "us-east-1",
@@ -297,7 +297,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    registerToolByName(mock.server, singleRegionContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     const result = await tool.handler({
       region: "us-east-1",
@@ -318,7 +318,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    registerToolByName(mock.server, singleRegionContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     const result = await tool.handler({
       region: "us-east-1",
@@ -339,7 +339,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    registerToolByName(mock.server, singleRegionContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     const result = await tool.handler({
       region: "us-east-1",
@@ -357,7 +357,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    registerToolByName(mock.server, singleRegionContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     const result = await tool.handler({
       region: "us-east-1",
@@ -378,7 +378,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, singleRegionContext);
+    registerToolByName(mock.server, singleRegionContext, "get_recent_log_errors");
     const tool = mock.getTool("get_recent_log_errors")!;
     const result = await tool.handler({
       region: "us-east-1",

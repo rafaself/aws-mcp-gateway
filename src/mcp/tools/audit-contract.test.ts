@@ -2,12 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GatewayContext } from "../../config/context.js";
 import { GatewayError } from "../../errors/public-error.js";
-import { registerStatusTool } from "./status.js";
-import { registerCostSummaryTool } from "./cost-summary.js";
-import { registerCostByServiceTool } from "./cost-by-service.js";
-import { registerListEc2InstancesTool } from "./list-ec2-instances.js";
-import { registerGetCloudwatchAlarmsTool } from "./get-cloudwatch-alarms.js";
-import { registerGetRecentLogErrorsTool } from "./get-recent-log-errors.js";
+import { registerToolByName } from "./index.js";
 
 const {
   getCostSummaryMock,
@@ -119,7 +114,7 @@ describe("public tool audit contract", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const mock = makeMockServer();
-    registerStatusTool(mock.server);
+    registerToolByName(mock.server, testContext, "get_gateway_status");
 
     await mock.getTool("get_gateway_status")!.handler({});
 
@@ -146,7 +141,7 @@ describe("public tool audit contract", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
 
     await mock.getTool("get_aws_cost_summary")!.handler({
       startDate: "2025-01-01",
@@ -182,7 +177,7 @@ describe("public tool audit contract", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const mock = makeMockServer();
-    registerCostByServiceTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
 
     await mock.getTool("get_aws_cost_by_service")!.handler({
       startDate: "2025-01-01",
@@ -222,7 +217,7 @@ describe("public tool audit contract", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const mock = makeMockServer();
-    registerListEc2InstancesTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "list_ec2_instances");
 
     await mock.getTool("list_ec2_instances")!.handler({
       regions: ["us-east-1", "us-west-2"],
@@ -259,7 +254,7 @@ describe("public tool audit contract", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const mock = makeMockServer();
-    registerGetCloudwatchAlarmsTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_cloudwatch_alarms");
 
     await mock.getTool("get_cloudwatch_alarms")!.handler({
       regions: ["us-east-1", "us-west-2"],
@@ -286,7 +281,7 @@ describe("public tool audit contract", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_recent_log_errors");
 
     await mock.getTool("get_recent_log_errors")!.handler({
       region: "us-east-1",
@@ -327,7 +322,7 @@ describe("public tool audit contract", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const mock = makeMockServer();
-    registerGetRecentLogErrorsTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_recent_log_errors");
 
     await mock.getTool("get_recent_log_errors")!.handler({
       region: "us-east-1",

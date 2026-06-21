@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { GatewayContext } from "../../config/context.js";
-import { createServer, listToolsSnapshot } from "../server.js";
+import { createToolRegistry, PUBLIC_TOOL_NAMES } from "./registry.js";
+import { buildPublicToolList } from "./public-list.js";
 
 const testContext: GatewayContext = {
   credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
@@ -28,14 +29,35 @@ const OAUTH_ONLY_TOOLS = ["fetch", "get_gateway_status", ...AWS_BACKED_TOOLS] as
 
 const PUBLIC_TOOLS = [...CHATGPT_CONNECTOR_TOOLS, "get_gateway_status", ...AWS_BACKED_TOOLS] as const;
 
+describe("MCP tool registry", () => {
+  const registry = createToolRegistry(testContext);
+
+  it("contains exactly the expected public tools", () => {
+    expect(registry.map((tool) => tool.name).sort()).toEqual([...PUBLIC_TOOL_NAMES].sort());
+  });
+});
+
 describe("MCP tool descriptor contract", () => {
-  const server = createServer(testContext);
-  const { tools } = listToolsSnapshot(server);
+  const registry = createToolRegistry(testContext);
+  const { tools } = buildPublicToolList(registry);
   const toolsByName = Object.fromEntries(tools.map((tool) => [tool.name, tool]));
 
   it("lists every public tool", () => {
     expect(tools.map((tool) => tool.name).sort()).toEqual([...PUBLIC_TOOLS].sort());
   });
+
+  for (const toolName of PUBLIC_TOOLS) {
+    it(`${toolName} has non-empty name, title, and description`, () => {
+      const tool = toolsByName[toolName];
+      expect(tool.name.length).toBeGreaterThan(0);
+      expect(tool.title?.length).toBeGreaterThan(0);
+      expect(tool.description?.length).toBeGreaterThan(0);
+    });
+
+    it(`${toolName} has an inputSchema object`, () => {
+      expect(toolsByName[toolName].inputSchema).toMatchObject({ type: "object" });
+    });
+  }
 
   it("search advertises noauth and oauth2 for ChatGPT discovery", () => {
     const tool = toolsByName.search;

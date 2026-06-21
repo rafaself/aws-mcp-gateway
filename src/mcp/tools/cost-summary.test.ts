@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GatewayContext } from "../../config/context.js";
-import { registerCostSummaryTool } from "./cost-summary.js";
+import { registerToolByName } from "./index.js";
 import { ceResponse, makeDayTotal } from "../../test/fixtures.js";
 
 const { mockFetch } = vi.hoisted(() => {
@@ -72,7 +72,7 @@ beforeEach(() => {
 describe("registerCostSummaryTool", () => {
   it("registers get_aws_cost_summary tool", () => {
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary");
     expect(tool).toBeDefined();
     expect(tool!.name).toBe("get_aws_cost_summary");
@@ -80,7 +80,7 @@ describe("registerCostSummaryTool", () => {
 
   it("includes description about AWS cost", () => {
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     const cfg = tool.config as { description?: string };
     expect(cfg.description).toContain("AWS cost");
@@ -92,7 +92,7 @@ describe("registerCostSummaryTool", () => {
     );
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     const result = await tool.handler({
       startDate: "2025-01-01",
@@ -120,7 +120,7 @@ describe("registerCostSummaryTool", () => {
     );
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     const result = await tool.handler({
       startDate: "2025-01-01",
@@ -137,7 +137,7 @@ describe("registerCostSummaryTool", () => {
     );
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     const result = await tool.handler({
       startDate: "01-01-2025",
@@ -157,7 +157,7 @@ describe("registerCostSummaryTool", () => {
     );
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     const result = await tool.handler({
       startDate: "2025-01-01",
@@ -177,7 +177,7 @@ describe("registerCostSummaryTool", () => {
     );
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     const result = await tool.handler({
       startDate: "2025-02-01",
@@ -197,7 +197,7 @@ describe("registerCostSummaryTool", () => {
     );
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     await tool.handler({
       startDate: "2025-01-01",
@@ -214,7 +214,7 @@ describe("registerCostSummaryTool", () => {
     );
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     await tool.handler({
       startDate: "invalid",
@@ -231,7 +231,7 @@ describe("registerCostSummaryTool", () => {
     );
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     await tool.handler({
       startDate: "2030-01-01",
@@ -258,7 +258,7 @@ describe("registerCostSummaryTool", () => {
     };
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, ctxWithCache);
+    registerToolByName(mock.server, ctxWithCache, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     const result = await tool.handler({
       startDate: "2025-01-01",
@@ -276,7 +276,7 @@ describe("registerCostSummaryTool", () => {
     );
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     const result = await tool.handler({
       startDate: "2025-01-01",
@@ -302,7 +302,7 @@ describe("registerCostSummaryTool", () => {
     );
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     const result = await tool.handler({
       startDate: "2025-01-01",
@@ -323,7 +323,7 @@ describe("registerCostSummaryTool", () => {
     );
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     const result = await tool.handler({
       startDate: "2025-01-01",
@@ -341,7 +341,7 @@ describe("registerCostSummaryTool", () => {
     mockFetch.mockRejectedValue(new Error("Network failure"));
 
     const mock = makeMockServer();
-    registerCostSummaryTool(mock.server, testContext);
+    registerToolByName(mock.server, testContext, "get_aws_cost_summary");
     const tool = mock.getTool("get_aws_cost_summary")!;
     const result = await tool.handler({
       startDate: "2025-01-01",

@@ -22,13 +22,13 @@ type OAuthToolMetadata = {
   annotations: ToolAnnotations;
 };
 
-const AWS_READ_ONLY_ANNOTATIONS: ToolAnnotations = {
+export const AWS_READ_ONLY_ANNOTATIONS: ToolAnnotations = {
   readOnlyHint: true,
   destructiveHint: false,
   openWorldHint: true,
 };
 
-const STATUS_ANNOTATIONS: ToolAnnotations = {
+export const STATUS_ANNOTATIONS: ToolAnnotations = {
   readOnlyHint: true,
   destructiveHint: false,
   openWorldHint: false,
@@ -108,7 +108,7 @@ function withChatGptToolMetadata<T extends Record<string, unknown>>(
   };
 }
 
-const CHATGPT_DISCOVERY_ANNOTATIONS: ToolAnnotations = {
+export const CHATGPT_DISCOVERY_ANNOTATIONS: ToolAnnotations = {
   readOnlyHint: true,
   destructiveHint: false,
   openWorldHint: false,

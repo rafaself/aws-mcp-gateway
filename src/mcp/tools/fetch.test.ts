@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GatewayContext } from "../../config/context.js";
-import { registerFetchTool } from "./fetch.js";
+import { registerToolByName } from "./index.js";
 
 const testContext: GatewayContext = {
   credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
@@ -32,7 +32,7 @@ describe("registerFetchTool", () => {
     capturedName = undefined;
     capturedConfig = undefined;
     capturedHandler = undefined;
-    registerFetchTool(mockServer, testContext);
+    registerToolByName(mockServer, testContext, "fetch");
   });
 
   it("registers the fetch tool with oauth security", () => {
