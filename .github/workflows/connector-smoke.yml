@@ -33,11 +33,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Skip when smoke secrets are absent
-        if: ${{ secrets.AWS_MCP_GATEWAY_WORKER_URL == '' || secrets.AWS_MCP_GATEWAY_OAUTH_TOKEN_URL == '' || secrets.AWS_MCP_GATEWAY_OAUTH_CLIENT_ID == '' || secrets.AWS_MCP_GATEWAY_OAUTH_CLIENT_SECRET == '' }}
-        run: echo "Skipping deployed connector smoke check because required secrets are not configured."
-      - name: Run deployed connector smoke
-        if: ${{ secrets.AWS_MCP_GATEWAY_WORKER_URL != '' && secrets.AWS_MCP_GATEWAY_OAUTH_TOKEN_URL != '' && secrets.AWS_MCP_GATEWAY_OAUTH_CLIENT_ID != '' && secrets.AWS_MCP_GATEWAY_OAUTH_CLIENT_SECRET != '' }}
+      - name: Deployed connector smoke (optional)
         env:
           AWS_MCP_GATEWAY_WORKER_URL: ${{ secrets.AWS_MCP_GATEWAY_WORKER_URL }}
           AWS_MCP_GATEWAY_OAUTH_TOKEN_URL: ${{ secrets.AWS_MCP_GATEWAY_OAUTH_TOKEN_URL }}
@@ -46,4 +42,9 @@ jobs:
           AWS_MCP_GATEWAY_OAUTH_AUDIENCE: ${{ secrets.AWS_MCP_GATEWAY_OAUTH_AUDIENCE }}
           AWS_MCP_GATEWAY_OAUTH_SCOPE: ${{ secrets.AWS_MCP_GATEWAY_OAUTH_SCOPE }}
           AWS_MCP_GATEWAY_SMOKE_REGION: ${{ secrets.AWS_MCP_GATEWAY_SMOKE_REGION }}
-        run: pnpm run verify:oauth:authenticated
+        run: |
+          if [[ -z "${AWS_MCP_GATEWAY_WORKER_URL}" || -z "${AWS_MCP_GATEWAY_OAUTH_TOKEN_URL}" || -z "${AWS_MCP_GATEWAY_OAUTH_CLIENT_ID}" || -z "${AWS_MCP_GATEWAY_OAUTH_CLIENT_SECRET}" ]]; then
+            echo "Skipping deployed connector smoke check because required secrets are not configured."
+            exit 0
+          fi
+          pnpm run verify:oauth:authenticated
