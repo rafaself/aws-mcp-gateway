@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GatewayContext } from "../../config/context.js";
-import { registerToolByName } from "./index.js";
+import { registerMcpToolForTest } from "../../test/register-mcp-tool-for-test.js";
 
 const testContext: GatewayContext = {
   credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
@@ -31,7 +31,7 @@ describe("registerStatusTool", () => {
     capturedName = undefined;
     capturedConfig = undefined;
     capturedHandler = undefined;
-    registerToolByName(mockServer, testContext, "get_gateway_status");
+    registerMcpToolForTest(mockServer, testContext, "get_gateway_status");
   });
 
   it("registers get_gateway_status tool", () => {

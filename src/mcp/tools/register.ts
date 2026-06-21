@@ -1,7 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GatewayContext } from "../../config/context.js";
 import type { GatewayToolDefinition } from "./registry.js";
-import { createToolRegistry, findToolDefinition } from "./registry.js";
 
 function toRegisterToolConfig(tool: GatewayToolDefinition): Record<string, unknown> {
   const config: Record<string, unknown> = {
@@ -39,17 +37,4 @@ export function registerToolsFromRegistry(
       registerToolOnServer(server, tool);
     }
   }
-}
-
-export function registerToolByName(
-  server: McpServer,
-  ctx: GatewayContext,
-  name: string,
-): void {
-  const registry = createToolRegistry(ctx);
-  const tool = findToolDefinition(registry, name);
-  if (!tool) {
-    throw new Error(`Unknown tool: ${name}`);
-  }
-  registerToolOnServer(server, tool);
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GatewayContext } from "../../config/context.js";
-import { registerToolByName } from "./index.js";
+import { registerMcpToolForTest } from "../../test/register-mcp-tool-for-test.js";
 import {
   ec2XmlResponse,
   describeInstancesXml,
@@ -82,7 +82,7 @@ beforeEach(() => {
 describe("registerListEc2InstancesTool", () => {
   it("registers list_ec2_instances tool", () => {
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "list_ec2_instances");
+    registerMcpToolForTest(mock.server, testContext, "list_ec2_instances");
     const tool = mock.getTool("list_ec2_instances");
     expect(tool).toBeDefined();
     expect(tool!.name).toBe("list_ec2_instances");
@@ -90,7 +90,7 @@ describe("registerListEc2InstancesTool", () => {
 
   it("includes description about EC2 instances", () => {
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "list_ec2_instances");
+    registerMcpToolForTest(mock.server, testContext, "list_ec2_instances");
     const tool = mock.getTool("list_ec2_instances")!;
     const cfg = tool.config as { description?: string };
     expect(cfg.description).toContain("EC2 instances");
@@ -108,7 +108,7 @@ describe("registerListEc2InstancesTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, singleRegionContext, "list_ec2_instances");
+    registerMcpToolForTest(mock.server, singleRegionContext, "list_ec2_instances");
     const tool = mock.getTool("list_ec2_instances")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
@@ -160,7 +160,7 @@ describe("registerListEc2InstancesTool", () => {
     });
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "list_ec2_instances");
+    registerMcpToolForTest(mock.server, testContext, "list_ec2_instances");
     const tool = mock.getTool("list_ec2_instances")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
@@ -183,7 +183,7 @@ describe("registerListEc2InstancesTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, singleRegionContext, "list_ec2_instances");
+    registerMcpToolForTest(mock.server, singleRegionContext, "list_ec2_instances");
     const tool = mock.getTool("list_ec2_instances")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
@@ -203,7 +203,7 @@ describe("registerListEc2InstancesTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "list_ec2_instances");
+    registerMcpToolForTest(mock.server, testContext, "list_ec2_instances");
     const tool = mock.getTool("list_ec2_instances")!;
     await tool.handler({ regions: ["us-east-1"] }) as Record<string, unknown>;
 
@@ -218,7 +218,7 @@ describe("registerListEc2InstancesTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, singleRegionContext, "list_ec2_instances");
+    registerMcpToolForTest(mock.server, singleRegionContext, "list_ec2_instances");
     const tool = mock.getTool("list_ec2_instances")!;
     await tool.handler({ states: ["running"] }) as Record<string, unknown>;
 
@@ -234,7 +234,7 @@ describe("registerListEc2InstancesTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "list_ec2_instances");
+    registerMcpToolForTest(mock.server, testContext, "list_ec2_instances");
     const tool = mock.getTool("list_ec2_instances")!;
     const result = await tool.handler({ states: ["INVALID"] }) as Record<string, unknown>;
 
@@ -250,7 +250,7 @@ describe("registerListEc2InstancesTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "list_ec2_instances");
+    registerMcpToolForTest(mock.server, testContext, "list_ec2_instances");
     const tool = mock.getTool("list_ec2_instances")!;
     const result = await tool.handler({ regions: ["eu-central-1"] }) as Record<string, unknown>;
 
@@ -272,7 +272,7 @@ describe("registerListEc2InstancesTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, singleRegionContext, "list_ec2_instances");
+    registerMcpToolForTest(mock.server, singleRegionContext, "list_ec2_instances");
     const tool = mock.getTool("list_ec2_instances")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
@@ -308,7 +308,7 @@ describe("registerListEc2InstancesTool", () => {
     });
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "list_ec2_instances");
+    registerMcpToolForTest(mock.server, testContext, "list_ec2_instances");
     const tool = mock.getTool("list_ec2_instances")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
@@ -326,7 +326,7 @@ describe("registerListEc2InstancesTool", () => {
     mockFetch.mockRejectedValue(new Error("EC2 service down"));
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, singleRegionContext, "list_ec2_instances");
+    registerMcpToolForTest(mock.server, singleRegionContext, "list_ec2_instances");
     const tool = mock.getTool("list_ec2_instances")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GatewayContext } from "../../config/context.js";
-import { registerToolByName } from "./index.js";
+import { registerMcpToolForTest } from "../../test/register-mcp-tool-for-test.js";
 import { ceResponse, makeDayTotal, makeDayWithGroups } from "../../test/fixtures.js";
 
 const { mockFetch } = vi.hoisted(() => {
@@ -84,14 +84,14 @@ beforeEach(() => {
 describe("registerCostByServiceTool", () => {
   it("registers get_aws_cost_by_service tool", () => {
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     expect(mock.capturedName).toBe("get_aws_cost_by_service");
     expect(mock.capturedHandler).toBeDefined();
   });
 
   it("includes description about cost broken down by service", () => {
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const cfg = mock.capturedConfig as { description?: string };
     expect(cfg.description).toContain("broken down by service");
   });
@@ -107,7 +107,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
 
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
@@ -146,7 +146,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-01-02",
@@ -166,7 +166,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",
@@ -189,7 +189,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",
@@ -214,7 +214,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",
@@ -238,7 +238,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",
@@ -256,7 +256,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "01-01-2025",
       endDate: "2025-02-01",
@@ -275,7 +275,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-05-01",
@@ -294,7 +294,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "2025-02-01",
       endDate: "2025-01-01",
@@ -313,7 +313,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     await mock.capturedHandler!({
       startDate: "invalid",
       endDate: "2025-02-01",
@@ -333,7 +333,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",
@@ -366,7 +366,7 @@ describe("registerCostByServiceTool", () => {
     };
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, ctxWithCache, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, ctxWithCache, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",
@@ -387,7 +387,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-04-01",
@@ -417,7 +417,7 @@ describe("registerCostByServiceTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-04-02",
@@ -435,7 +435,7 @@ describe("registerCostByServiceTool", () => {
     mockFetch.mockRejectedValue(new Error("Network failure"));
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_aws_cost_by_service");
+    registerMcpToolForTest(mock.server, testContext, "get_aws_cost_by_service");
     const result = await mock.capturedHandler!({
       startDate: "2025-01-01",
       endDate: "2025-02-01",

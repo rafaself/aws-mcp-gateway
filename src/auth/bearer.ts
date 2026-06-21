@@ -26,6 +26,3 @@ export function authenticateLegacyBearerRequest(
 
   return null;
 }
-
-/** @deprecated Use authenticateLegacyBearerRequest or authenticateRequest from auth/index */
-export const authenticateRequest = authenticateLegacyBearerRequest;

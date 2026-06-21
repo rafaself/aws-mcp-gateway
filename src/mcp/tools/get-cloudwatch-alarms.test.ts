@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GatewayContext } from "../../config/context.js";
-import { registerToolByName } from "./index.js";
+import { registerMcpToolForTest } from "../../test/register-mcp-tool-for-test.js";
 import { cwAlarmsResponse } from "../../test/fixtures.js";
 
 const { mockFetch } = vi.hoisted(() => {
@@ -94,7 +94,7 @@ beforeEach(() => {
 describe("registerGetCloudwatchAlarmsTool", () => {
   it("registers get_cloudwatch_alarms tool", () => {
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_cloudwatch_alarms");
+    registerMcpToolForTest(mock.server, testContext, "get_cloudwatch_alarms");
     const tool = mock.getTool("get_cloudwatch_alarms");
     expect(tool).toBeDefined();
     expect(tool!.name).toBe("get_cloudwatch_alarms");
@@ -102,7 +102,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
 
   it("includes description about CloudWatch alarms", () => {
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_cloudwatch_alarms");
+    registerMcpToolForTest(mock.server, testContext, "get_cloudwatch_alarms");
     const tool = mock.getTool("get_cloudwatch_alarms")!;
     const cfg = tool.config as { description?: string };
     expect(cfg.description).toContain("CloudWatch alarms");
@@ -114,7 +114,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, singleRegionContext, "get_cloudwatch_alarms");
+    registerMcpToolForTest(mock.server, singleRegionContext, "get_cloudwatch_alarms");
     const tool = mock.getTool("get_cloudwatch_alarms")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
@@ -152,7 +152,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     });
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_cloudwatch_alarms");
+    registerMcpToolForTest(mock.server, testContext, "get_cloudwatch_alarms");
     const tool = mock.getTool("get_cloudwatch_alarms")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
@@ -175,7 +175,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, singleRegionContext, "get_cloudwatch_alarms");
+    registerMcpToolForTest(mock.server, singleRegionContext, "get_cloudwatch_alarms");
     const tool = mock.getTool("get_cloudwatch_alarms")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
@@ -195,7 +195,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_cloudwatch_alarms");
+    registerMcpToolForTest(mock.server, testContext, "get_cloudwatch_alarms");
     const tool = mock.getTool("get_cloudwatch_alarms")!;
     await tool.handler({ regions: ["us-east-1"] }) as Record<string, unknown>;
 
@@ -210,7 +210,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, singleRegionContext, "get_cloudwatch_alarms");
+    registerMcpToolForTest(mock.server, singleRegionContext, "get_cloudwatch_alarms");
     const tool = mock.getTool("get_cloudwatch_alarms")!;
     await tool.handler({ states: ["ALARM"] }) as Record<string, unknown>;
 
@@ -226,7 +226,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_cloudwatch_alarms");
+    registerMcpToolForTest(mock.server, testContext, "get_cloudwatch_alarms");
     const tool = mock.getTool("get_cloudwatch_alarms")!;
     const result = await tool.handler({ states: ["INVALID"] }) as Record<string, unknown>;
 
@@ -242,7 +242,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, testContext, "get_cloudwatch_alarms");
+    registerMcpToolForTest(mock.server, testContext, "get_cloudwatch_alarms");
     const tool = mock.getTool("get_cloudwatch_alarms")!;
     const result = await tool.handler({ regions: ["eu-central-1"] }) as Record<string, unknown>;
 
@@ -258,7 +258,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, singleRegionContext, "get_cloudwatch_alarms");
+    registerMcpToolForTest(mock.server, singleRegionContext, "get_cloudwatch_alarms");
     const tool = mock.getTool("get_cloudwatch_alarms")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
@@ -283,7 +283,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     );
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, singleRegionContext, "get_cloudwatch_alarms");
+    registerMcpToolForTest(mock.server, singleRegionContext, "get_cloudwatch_alarms");
     const tool = mock.getTool("get_cloudwatch_alarms")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
@@ -310,7 +310,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     mockFetch.mockRejectedValue(new Error("CloudWatch down"));
 
     const mock = makeMockServer();
-    registerToolByName(mock.server, singleRegionContext, "get_cloudwatch_alarms");
+    registerMcpToolForTest(mock.server, singleRegionContext, "get_cloudwatch_alarms");
     const tool = mock.getTool("get_cloudwatch_alarms")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
