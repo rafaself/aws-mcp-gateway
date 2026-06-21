@@ -51,7 +51,7 @@ error behavior, caching, region handling, and safety boundaries.
   "results": [
     {
       "id": "tool/list_ec2_instances",
-      "title": "EC2 instances",
+      "title": "List EC2 Instances",
       "url": "https://<worker-host>/mcp#tool=list_ec2_instances"
     }
   ]
@@ -60,7 +60,7 @@ error behavior, caching, region handling, and safety boundaries.
 
 ### Security
 
-- `securitySchemes`: `noauth` and `oauth2` (`aws:read`) — required for ChatGPT Actions discovery.
+- `securitySchemes`: `oauth2` (`aws:read`) only — matches global `/mcp` authentication.
 - `readOnlyHint`: true; `openWorldHint`: false.
 
 ---
@@ -80,7 +80,7 @@ error behavior, caching, region handling, and safety boundaries.
 ```json
 {
   "id": "tool/get_aws_cost_summary",
-  "title": "AWS cost summary",
+  "title": "Get AWS Cost Summary",
   "text": "# AWS cost summary\n\n...",
   "url": "https://<worker-host>/mcp#tool=get_aws_cost_summary",
   "metadata": {
@@ -119,19 +119,21 @@ No parameters.
 - Makes no AWS calls.
 - Always succeeds when invoked with valid MCP authentication.
 
-### Output
+### Output (`structuredContent`)
 
-```typescript
+```json
 {
-  content: [
-    {
-      type: "text",
-      text: string, // JSON: {"service":"aws-mcp-gateway","status":"ok","mode":"read-only"}
-    }
-  ]
-  // No structuredContent field
+  "service": "aws-mcp-gateway",
+  "status": "ok",
+  "mode": "read-only"
 }
 ```
+
+Human-readable `content[0].text` mirrors the same JSON payload.
+
+### Output schema
+
+The tool descriptor declares `outputSchema` matching the `structuredContent` shape above (`service`, `status`, `mode` strings).
 
 ### Error codes
 

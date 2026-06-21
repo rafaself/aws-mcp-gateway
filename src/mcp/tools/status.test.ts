@@ -44,25 +44,27 @@ describe("registerStatusTool", () => {
     expect(cfg.description).toContain("gateway status");
   });
 
-  it("returns stable content with service, status, and mode keys", async () => {
-    const result = await capturedHandler!({}) as { content: Array<{ type: string; text: string }> };
-
-    expect(result).toEqual({
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify({
-            service: "aws-mcp-gateway",
-            status: "ok",
-            mode: "read-only",
-          }),
-        },
-      ],
-    });
+  it("declares outputSchema", () => {
+    const cfg = capturedConfig as { outputSchema?: unknown };
+    expect(cfg.outputSchema).toBeDefined();
   });
 
-  it("does not include structuredContent", async () => {
-    const result = await capturedHandler!({}) as Record<string, unknown>;
-    expect(result).not.toHaveProperty("structuredContent");
+  it("returns stable structured content with service, status, and mode keys", async () => {
+    const result = (await capturedHandler!({})) as {
+      content: Array<{ type: string; text: string }>;
+      structuredContent: Record<string, string>;
+    };
+
+    expect(result.structuredContent).toEqual({
+      service: "aws-mcp-gateway",
+      status: "ok",
+      mode: "read-only",
+    });
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: JSON.stringify(result.structuredContent),
+      },
+    ]);
   });
 });

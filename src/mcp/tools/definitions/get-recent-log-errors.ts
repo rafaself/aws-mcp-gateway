@@ -6,9 +6,9 @@ import { validateRegion } from "../../../security/regions.js";
 import { summarizeLogErrorsInput } from "../../audit/tool-input.js";
 import { safeMcpHandler } from "../response.js";
 import {
-  AWS_READ_ONLY_ANNOTATIONS,
+  PUBLIC_TOOL_TITLES,
   recentLogErrorsOutputSchema,
-  OAUTH_SECURITY_SCHEMES,
+  readOnlyAwsToolDescriptor,
 } from "../descriptor.js";
 import type { GatewayToolDefinition } from "../registry.js";
 
@@ -36,18 +36,13 @@ type RecentLogErrorsInput = z.infer<typeof recentLogErrorsInputSchema>;
 export function createGetRecentLogErrorsToolDefinition(
   ctx: GatewayContext,
 ): GatewayToolDefinition {
-  const securitySchemes = [...OAUTH_SECURITY_SCHEMES];
-
-  return {
+  return readOnlyAwsToolDescriptor({
     name: "get_recent_log_errors",
-    title: "Recent CloudWatch log errors",
+    title: PUBLIC_TOOL_TITLES.get_recent_log_errors,
     description:
       "Returns recent error, exception, and warning log events from a CloudWatch log group.",
     inputSchema: recentLogErrorsInputSchema,
     outputSchema: recentLogErrorsOutputSchema,
-    annotations: AWS_READ_ONLY_ANNOTATIONS,
-    securitySchemes,
-    _meta: { securitySchemes },
     visibility: { mcp: true, chatgpt: true },
     catalog: {
       keywords: ["logs", "cloudwatch logs", "errors", "log group", "debug"],
@@ -110,5 +105,5 @@ export function createGetRecentLogErrorsToolDefinition(
         };
       },
     ),
-  };
+  });
 }

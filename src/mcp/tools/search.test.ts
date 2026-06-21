@@ -35,16 +35,13 @@ describe("registerSearchTool", () => {
     registerToolByName(mockServer, testContext, "search");
   });
 
-  it("registers the search tool with mixed security schemes", () => {
+  it("registers the search tool with OAuth security schemes", () => {
     expect(capturedName).toBe("search");
     const cfg = capturedConfig as {
       securitySchemes: Array<{ type: string }>;
       outputSchema: unknown;
     };
-    expect(cfg.securitySchemes).toEqual([
-      { type: "noauth" },
-      { type: "oauth2", scopes: ["aws:read"] },
-    ]);
+    expect(cfg.securitySchemes).toEqual([{ type: "oauth2", scopes: ["aws:read"] }]);
     expect(cfg.outputSchema).toBeDefined();
   });
 

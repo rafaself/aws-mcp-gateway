@@ -5,9 +5,9 @@ import { resolveRegions } from "../../../security/regions.js";
 import { summarizeRegionListInput } from "../../audit/tool-input.js";
 import { safeMcpHandler } from "../response.js";
 import {
-  AWS_READ_ONLY_ANNOTATIONS,
   cloudwatchAlarmsOutputSchema,
-  OAUTH_SECURITY_SCHEMES,
+  PUBLIC_TOOL_TITLES,
+  readOnlyAwsToolDescriptor,
 } from "../descriptor.js";
 import type { GatewayToolDefinition } from "../registry.js";
 
@@ -27,18 +27,13 @@ type CloudwatchAlarmsInput = z.infer<typeof cloudwatchAlarmsInputSchema>;
 export function createGetCloudwatchAlarmsToolDefinition(
   ctx: GatewayContext,
 ): GatewayToolDefinition {
-  const securitySchemes = [...OAUTH_SECURITY_SCHEMES];
-
-  return {
+  return readOnlyAwsToolDescriptor({
     name: "get_cloudwatch_alarms",
-    title: "CloudWatch alarms",
+    title: PUBLIC_TOOL_TITLES.get_cloudwatch_alarms,
     description:
       "Lists CloudWatch alarms across regions with optional state and region filtering.",
     inputSchema: cloudwatchAlarmsInputSchema,
     outputSchema: cloudwatchAlarmsOutputSchema,
-    annotations: AWS_READ_ONLY_ANNOTATIONS,
-    securitySchemes,
-    _meta: { securitySchemes },
     visibility: { mcp: true, chatgpt: true },
     catalog: {
       keywords: ["cloudwatch", "alarms", "monitoring", "alert", "metrics"],
@@ -115,5 +110,5 @@ export function createGetCloudwatchAlarmsToolDefinition(
         };
       },
     ),
-  };
+  });
 }

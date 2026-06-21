@@ -43,7 +43,7 @@ describe("ChatGPT catalog", () => {
 
     expect(doc).toMatchObject({
       id: "tool/list_ec2_instances",
-      title: "EC2 instances",
+      title: "List EC2 Instances",
       url: catalogCitationUrl(RESOURCE_URL, "list_ec2_instances"),
       metadata: {
         mcpTool: "list_ec2_instances",

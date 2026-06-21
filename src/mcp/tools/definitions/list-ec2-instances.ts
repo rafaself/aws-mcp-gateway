@@ -8,9 +8,9 @@ import {
 import { summarizeRegionListInput } from "../../audit/tool-input.js";
 import { safeMcpHandler } from "../response.js";
 import {
-  AWS_READ_ONLY_ANNOTATIONS,
   listEc2InstancesOutputSchema,
-  OAUTH_SECURITY_SCHEMES,
+  PUBLIC_TOOL_TITLES,
+  readOnlyAwsToolDescriptor,
 } from "../descriptor.js";
 import type { GatewayToolDefinition } from "../registry.js";
 
@@ -28,17 +28,12 @@ const listEc2InstancesInputSchema = z.object({
 type ListEc2InstancesInput = z.infer<typeof listEc2InstancesInputSchema>;
 
 export function createListEc2InstancesToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
-  const securitySchemes = [...OAUTH_SECURITY_SCHEMES];
-
-  return {
+  return readOnlyAwsToolDescriptor({
     name: "list_ec2_instances",
-    title: "EC2 instances",
+    title: PUBLIC_TOOL_TITLES.list_ec2_instances,
     description: "Lists EC2 instances across regions with optional state and region filtering.",
     inputSchema: listEc2InstancesInputSchema,
     outputSchema: listEc2InstancesOutputSchema,
-    annotations: AWS_READ_ONLY_ANNOTATIONS,
-    securitySchemes,
-    _meta: { securitySchemes },
     visibility: { mcp: true, chatgpt: true },
     catalog: {
       keywords: ["ec2", "instances", "compute", "servers", "inventory", "vms"],
@@ -107,5 +102,5 @@ export function createListEc2InstancesToolDefinition(ctx: GatewayContext): Gatew
         };
       },
     ),
-  };
+  });
 }
