@@ -12,6 +12,11 @@ import {
 import { buildGatewayContext } from "./config/context.js";
 import { GatewayError, errorResponse } from "./errors/public-error.js";
 import { AuthRateLimitDurableObject, enforceRateLimit } from "./security/rate-limit.js";
+import {
+  buildRequestDiagnostics,
+  logInfo,
+  logWarn,
+} from "./observability/logging.js";
 
 export default {
   async fetch(request: Request, env: unknown, ctx: ExecutionContext): Promise<Response> {
@@ -45,8 +50,12 @@ export default {
     }
 
     if (url.pathname === "/mcp") {
+      const reqDiag = buildRequestDiagnostics(request);
+      logInfo({ ...reqDiag, phase: "mcp_request_received" });
+
       const rateLimitResult = validateRateLimitConfig(env);
       if (!rateLimitResult.valid) {
+        logWarn({ ...reqDiag, phase: "mcp_rate_limit_config_invalid", status: 503 });
         return envErrorResponse(
           { valid: false, config: null, errors: rateLimitResult.errors },
           false,
@@ -55,16 +64,23 @@ export default {
 
       const rateLimitResponse = await enforceRateLimit(request, rateLimitResult.config);
       if (rateLimitResponse) {
+        logWarn({ ...reqDiag, phase: "mcp_rate_limited", status: 429 });
         return rateLimitResponse;
       }
 
       const authResponse = await authenticateRequest(request, env);
       if (authResponse) {
+        logWarn({
+          ...reqDiag,
+          phase: "mcp_auth_failed",
+          status: authResponse.status,
+        });
         return authResponse;
       }
 
       const envResult = validateEnv(env);
       if (!envResult.valid) {
+        logWarn({ ...reqDiag, phase: "mcp_env_invalid", status: 503 });
         return envErrorResponse(envResult, true);
       }
 
@@ -72,7 +88,15 @@ export default {
       const handler = createStreamableHttpMcpHandler({
         createServer: () => createServer(gatewayCtx),
       });
-      return handler(request);
+      logInfo({ ...reqDiag, phase: "mcp_handler_start" });
+      const response = await handler(request);
+      logInfo({
+        ...reqDiag,
+        phase: "mcp_handler_response",
+        status: response.status,
+        responseContentType: response.headers.get("content-type") ?? "",
+      });
+      return response;
     }
 
     return errorResponse(new GatewayError("not_found", "Not Found"), 404);

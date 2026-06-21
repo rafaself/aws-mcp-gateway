@@ -107,6 +107,7 @@ describe("authenticateOAuthRequest", () => {
   });
 
   it("returns 403 when required scope is missing", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const fixture = await createTestOAuthFixture();
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
     const token = await fixture.signAccessToken({ scope: "openid profile" });
@@ -117,6 +118,27 @@ describe("authenticateOAuthRequest", () => {
     const body = await response!.json() as { error: { code: string } };
     expect(body.error.code).toBe("forbidden");
     expect(response?.headers.get("WWW-Authenticate")).toContain('error="insufficient_scope"');
+
+    const scopeDeniedLog = warnSpy.mock.calls
+      .map((call) => call[0] as Record<string, unknown>)
+      .find((event) => event.phase === "oauth_scope_denied");
+    expect(scopeDeniedLog).toBeDefined();
+    expect(scopeDeniedLog?.requiredScopes).toEqual(["aws:read"]);
+    expect(scopeDeniedLog?.extractedScopes).toEqual(["openid", "profile"]);
+    expect(scopeDeniedLog?.hasScopeClaim).toBe(true);
+    expect(scopeDeniedLog?.hasScpClaim).toBe(false);
+    expect(scopeDeniedLog?.hasPermissionsClaim).toBe(false);
+    expect(Array.isArray(scopeDeniedLog?.claimKeys)).toBe(true);
+
+    const serializedLogs = JSON.stringify(warnSpy.mock.calls);
+    expect(serializedLogs).not.toContain(token);
+    expect(serializedLogs).not.toContain("eyJ");
+    expect(serializedLogs.toLowerCase()).not.toContain("authorization");
+    expect(serializedLogs.toLowerCase()).not.toContain("cookie");
+    expect(serializedLogs).not.toContain("client_secret");
+    expect(serializedLogs).not.toContain("AKIA");
+
+    warnSpy.mockRestore();
   });
 
   it("accepts valid scope string containing aws:read", async () => {

@@ -2,6 +2,8 @@ import { extractScopes, hasRequiredScopes } from "./scopes.js";
 import { hasExpectedAudience, hasValidTokenTimes } from "./token-claims.js";
 import { oauthForbiddenResponse, oauthUnauthorizedResponse } from "./errors.js";
 import type { ValidatedOAuthConfig } from "./types.js";
+import { buildClaimDiagnostics, buildScopeDiagnostics } from "./diagnostics.js";
+import { logWarn } from "../../observability/logging.js";
 
 function buildBasicAuthHeader(clientId: string, clientSecret: string): string {
   return `Basic ${btoa(`${clientId}:${clientSecret}`)}`;
@@ -47,15 +49,32 @@ export async function authenticateViaIntrospection(
   }
 
   if (!hasExpectedAudience(payload, config.OAUTH_AUDIENCE)) {
+    logWarn({
+      phase: "oauth_audience_denied",
+      validationMode: "introspection",
+      audienceValidated: false,
+      ...buildClaimDiagnostics(payload),
+    });
     return oauthUnauthorizedResponse(config);
   }
 
   if (!hasValidTokenTimes(payload)) {
+    logWarn({
+      phase: "oauth_time_denied",
+      validationMode: "introspection",
+      timeValidated: false,
+      ...buildClaimDiagnostics(payload),
+    });
     return oauthUnauthorizedResponse(config);
   }
 
   const scopes = extractScopes(payload);
   if (!hasRequiredScopes(scopes, config.OAUTH_REQUIRED_SCOPES)) {
+    logWarn({
+      phase: "oauth_scope_denied",
+      validationMode: "introspection",
+      ...buildScopeDiagnostics(payload, config.OAUTH_REQUIRED_SCOPES),
+    });
     return oauthForbiddenResponse(config);
   }
 

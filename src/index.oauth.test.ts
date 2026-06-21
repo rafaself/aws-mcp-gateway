@@ -74,7 +74,25 @@ beforeEach(() => {
   createServerMock.mockClear();
   createStreamableHttpMcpHandlerMock.mockClear();
   streamableHttpHandlerMock.mockClear();
+  vi.restoreAllMocks();
 });
+
+function collectStructuredLogs(
+  infoSpy: ReturnType<typeof vi.spyOn>,
+  warnSpy: ReturnType<typeof vi.spyOn>,
+): Record<string, unknown>[] {
+  return [...infoSpy.mock.calls, ...warnSpy.mock.calls].map(
+    (call) => call[0] as Record<string, unknown>,
+  );
+}
+
+function assertLogsSafe(serialized: string): void {
+  expect(serialized).not.toContain("eyJ");
+  expect(serialized.toLowerCase()).not.toContain("authorization");
+  expect(serialized.toLowerCase()).not.toContain("cookie");
+  expect(serialized).not.toContain("client_secret");
+  expect(serialized).not.toContain("AKIA");
+}
 
 describe("oauth protected-resource metadata route", () => {
   it("returns 200 with expected fields in oauth mode", async () => {
@@ -170,6 +188,8 @@ describe("oauth protected-resource metadata route", () => {
 
 describe("oauth /mcp challenge", () => {
   it("returns 401 with WWW-Authenticate for unauthenticated requests", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const fixture = await createTestOAuthFixture();
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
 
@@ -197,6 +217,17 @@ describe("oauth /mcp challenge", () => {
     expect(body.error.code).toBe("unauthorized");
     expect(body.error.message).toBe("Authentication is required.");
     expect(createStreamableHttpMcpHandlerMock).not.toHaveBeenCalled();
+
+    const logs = collectStructuredLogs(infoSpy, warnSpy);
+    expect(logs.some((event) => event.phase === "mcp_request_received")).toBe(true);
+    expect(logs.some((event) => event.phase === "oauth_token_missing")).toBe(true);
+    expect(logs.some((event) => event.phase === "mcp_auth_failed" && event.status === 401)).toBe(
+      true,
+    );
+    assertLogsSafe(JSON.stringify(logs));
+
+    infoSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 
   it("accepts valid OAuth JWT without MCP_AUTH_TOKEN", async () => {
@@ -277,6 +308,8 @@ describe("oauth /mcp challenge", () => {
   });
 
   it("does not create MCP server for insufficient-scope OAuth tokens", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const fixture = await createTestOAuthFixture();
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
     const token = await fixture.signAccessToken({ scope: "openid profile" });
@@ -300,6 +333,17 @@ describe("oauth /mcp challenge", () => {
     const body = await response.json() as { error: { code: string } };
     expect(body.error.code).toBe("forbidden");
     expect(createStreamableHttpMcpHandlerMock).not.toHaveBeenCalled();
+
+    const logs = collectStructuredLogs(infoSpy, warnSpy);
+    expect(logs.some((event) => event.phase === "oauth_scope_denied")).toBe(true);
+    expect(logs.some((event) => event.phase === "mcp_auth_failed" && event.status === 403)).toBe(
+      true,
+    );
+    assertLogsSafe(JSON.stringify(logs));
+    expect(JSON.stringify(logs)).not.toContain(token);
+
+    infoSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 
   it("does not expose AWS config details to unauthenticated callers", async () => {

@@ -9,6 +9,8 @@ import {
   hasValidTokenTimes,
   isLikelyJwt,
 } from "./token-claims.js";
+import { buildClaimDiagnostics, buildScopeDiagnostics } from "./diagnostics.js";
+import { logInfo, logWarn } from "../../observability/logging.js";
 
 async function authenticateViaJwks(
   token: string,
@@ -24,18 +26,47 @@ async function authenticateViaJwks(
   });
   const claims = payload as Record<string, unknown>;
 
+  logInfo({
+    phase: "oauth_jwt_verified",
+    validationMode: config.OAUTH_TOKEN_VALIDATION_MODE,
+    ...buildClaimDiagnostics(claims),
+  });
+
   if (!hasExpectedAudience(claims, config.OAUTH_AUDIENCE)) {
+    logWarn({
+      phase: "oauth_audience_denied",
+      validationMode: config.OAUTH_TOKEN_VALIDATION_MODE,
+      audienceValidated: false,
+      ...buildClaimDiagnostics(claims),
+    });
     return oauthUnauthorizedResponse(config);
   }
 
   if (!hasValidTokenTimes(claims)) {
+    logWarn({
+      phase: "oauth_time_denied",
+      validationMode: config.OAUTH_TOKEN_VALIDATION_MODE,
+      timeValidated: false,
+      ...buildClaimDiagnostics(claims),
+    });
     return oauthUnauthorizedResponse(config);
   }
 
   const scopes = extractScopes(claims);
   if (!hasRequiredScopes(scopes, config.OAUTH_REQUIRED_SCOPES)) {
+    logWarn({
+      phase: "oauth_scope_denied",
+      validationMode: config.OAUTH_TOKEN_VALIDATION_MODE,
+      ...buildScopeDiagnostics(claims, config.OAUTH_REQUIRED_SCOPES),
+    });
     return oauthForbiddenResponse(config);
   }
+
+  logInfo({
+    phase: "oauth_scope_accepted",
+    validationMode: config.OAUTH_TOKEN_VALIDATION_MODE,
+    ...buildScopeDiagnostics(claims, config.OAUTH_REQUIRED_SCOPES),
+  });
 
   return null;
 }
@@ -47,11 +78,13 @@ export async function authenticateOAuthRequest(
   const authHeader = request.headers.get("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    logWarn({ phase: "oauth_token_missing" });
     return oauthUnauthorizedResponse(config);
   }
 
   const token = authHeader.slice(7).trim();
   if (token.length === 0) {
+    logWarn({ phase: "oauth_token_empty" });
     return oauthUnauthorizedResponse(config);
   }
 
@@ -66,6 +99,11 @@ export async function authenticateOAuthRequest(
 
     return await authenticateViaJwks(token, config);
   } catch {
+    logWarn({
+      phase: "oauth_jwt_verify_failed",
+      validationMode: config.OAUTH_TOKEN_VALIDATION_MODE,
+    });
+
     if (config.OAUTH_TOKEN_VALIDATION_MODE === "hybrid") {
       try {
         return await authenticateViaIntrospection(token, config);
