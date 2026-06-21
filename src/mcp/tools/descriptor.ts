@@ -1,7 +1,5 @@
 import { z } from "zod";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
-import type { ValidatedOAuthConfig } from "../../auth/oauth/types.js";
-import { buildMcpWwwAuthenticateMeta } from "../../auth/oauth/challenge.js";
 
 export const OAUTH_REQUIRED_SCOPE = "aws:read";
 
@@ -30,18 +28,9 @@ const STATUS_ANNOTATIONS: ToolAnnotations = {
   idempotentHint: true,
 };
 
-const DEFAULT_OAUTH_CONFIG: ValidatedOAuthConfig = {
-  MCP_RESOURCE_URL: "https://gateway.example.com",
-  OAUTH_ISSUER: "https://auth.example.com/",
-  OAUTH_AUDIENCE: "https://gateway.example.com",
-  OAUTH_JWKS_URI: "https://auth.example.com/.well-known/jwks.json",
-  OAUTH_REQUIRED_SCOPES: [OAUTH_REQUIRED_SCOPE],
-};
-
 function oauthDescriptorMeta(): Record<string, unknown> {
   return {
     securitySchemes: [...OAUTH_SECURITY_SCHEMES],
-    "mcp/www_authenticate": buildMcpWwwAuthenticateMeta(DEFAULT_OAUTH_CONFIG),
   };
 }
 
