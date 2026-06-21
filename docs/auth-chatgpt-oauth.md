@@ -120,13 +120,14 @@ Complete the OAuth flow in the ChatGPT UI. Do not copy access tokens manually.
 
 ### 10. Confirm tools work
 
-From ChatGPT:
+Validate discovery before relying on the ChatGPT Actions UI:
 
-1. Open the connector and click **Refresh** so ChatGPT reloads `tools/list`.
-2. Confirm **Actions** lists AWS tools (not “No app actions available yet”).
-3. Verify `get_gateway_status` or ask ChatGPT to search for a tool (for example “EC2 instances”).
+1. Run authenticated `tools/list` against `/mcp` and confirm all **8** public tools are returned with valid descriptors (see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md)).
+2. Open the connector and click **Refresh** so ChatGPT reloads `tools/list`.
+3. Confirm **Actions** lists all 8 tools (not “No app actions available yet”).
+4. Call `get_gateway_status` first, then optionally use `search`/`fetch` or invoke an AWS tool directly.
 
-The gateway exposes `search` and `fetch` for ChatGPT connector discovery, plus six read-only AWS tools. See [chatgpt-connector.md](chatgpt-connector.md).
+Actions appear only when `tools/list` returns valid OAuth-backed descriptors. `search` and `fetch` are catalog helpers — they do not replace `tools/list` action discovery. See [chatgpt-connector.md](chatgpt-connector.md).
 
 Do not paste OAuth access tokens into docs or terminal history.
 
@@ -151,9 +152,21 @@ Regression tests for these contracts live in `src/index.oauth.test.ts` and `src/
 
 If the ChatGPT connector works with the current Auth0 predefined client flow, no CIMD migration is needed for MVP. Do not attempt to implement DCR or OAuth server behavior in this repository.
 
+## Discovery model
+
+```text
+ChatGPT links via OAuth
+  -> ChatGPT calls /mcp
+  -> ChatGPT discovers public actions through tools/list
+  -> search/fetch remain catalog and knowledge helper tools
+  -> ChatGPT calls AWS read-only MCP tools directly after discovery
+```
+
+OAuth can succeed while actions remain invisible if `tools/list` is empty or descriptors are invalid. Always validate authenticated `tools/list` before troubleshooting in the ChatGPT UI.
+
 ## Full connector guide
 
-See [chatgpt-connector.md](chatgpt-connector.md) for discovery flow, tool surface, troubleshooting, and curl smoke tests.
+See [chatgpt-connector.md](chatgpt-connector.md) for the connector contract, layered architecture, tool surface, troubleshooting, and curl smoke tests.
 
 ## Local development (legacy bearer)
 

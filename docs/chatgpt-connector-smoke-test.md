@@ -2,7 +2,7 @@
 
 Manual end-to-end validation for a deployed AWS MCP Gateway used as a **ChatGPT custom app connector** with `AUTH_MODE=oauth`.
 
-This runbook proves the full path from HTTP health checks through OAuth login, tool discovery, and bounded read-only AWS tool invocation inside the real ChatGPT connector UI.
+This runbook proves the full path from HTTP health checks through OAuth login, authenticated `tools/list` validation, tool discovery in the Actions UI, and bounded read-only AWS tool invocation inside the real ChatGPT connector UI.
 
 **Related documentation:**
 
@@ -93,7 +93,46 @@ Unauthenticated requests must never reach MCP tool execution.
 
 ---
 
-## Step 4 — Create or refresh the ChatGPT custom app connector
+## Step 4 — Validate authenticated `tools/list`
+
+Before relying on the ChatGPT Actions UI, confirm the deployed gateway returns all public tools with valid descriptors.
+
+Obtain an OAuth access token through the ChatGPT connector flow (or your OIDC provider's token endpoint for staging). Do **not** paste tokens into docs, issues, or terminal history.
+
+```bash
+curl -X POST https://<worker-host>/mcp \
+  -H "Authorization: Bearer <oauth-access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+```
+
+Example JSON-RPC payload (no token required in the body):
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}
+```
+
+**Expected:**
+
+- HTTP `200`
+- `result.tools` includes all **8** public tools:
+  - `search`
+  - `fetch`
+  - `get_gateway_status`
+  - `get_aws_cost_summary`
+  - `get_aws_cost_by_service`
+  - `list_ec2_instances`
+  - `get_cloudwatch_alarms`
+  - `get_recent_log_errors`
+- Each tool descriptor includes `name`, `title`, `description`, `inputSchema`, OAuth `securitySchemes`, and read-only annotations.
+
+If `tools/list` is empty or descriptors are missing required fields, OAuth may still succeed while ChatGPT shows **“No app actions available yet”**. Fix descriptors and redeploy before troubleshooting in the ChatGPT UI.
+
+For local `AUTH_MODE=legacy-bearer` smoke tests, replace the bearer token with `MCP_AUTH_TOKEN`. See [mcp-testing.md](mcp-testing.md).
+
+---
+
+## Step 5 — Create or refresh the ChatGPT custom app connector
 
 1. In ChatGPT → **Settings → Apps → Create** (or edit an existing connector).
 2. Set **Server URL** to `https://<worker-host>/mcp`.
@@ -104,7 +143,7 @@ Full Auth0 setup: [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
 
 ---
 
-## Step 5 — Complete OAuth login in ChatGPT
+## Step 6 — Complete OAuth login in ChatGPT
 
 1. Start the connector OAuth flow in ChatGPT.
 2. Log in with your Auth0 (or OIDC) user — not your ChatGPT account credentials.
@@ -114,17 +153,17 @@ Full Auth0 setup: [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
 
 ---
 
-## Step 6 — Confirm ChatGPT Actions are visible
+## Step 7 — Confirm ChatGPT Actions are visible
 
 After OAuth succeeds, open the connector and confirm **Actions** lists AWS tools.
 
 **Expected:** Tools such as `search`, `fetch`, `get_gateway_status`, and AWS read-only tools appear. You should **not** see “No app actions available yet” if the deployed gateway returns valid OAuth-backed `tools/list` descriptors for all public tools.
 
-If Actions are empty, refresh the connector (Step 4) and verify the deployed commit includes valid tool descriptors (titles, schemas, annotations, and OAuth `securitySchemes` on every public tool).
+If Actions are empty but Step 4 passed, refresh the connector (Step 5) and verify ChatGPT is not serving a stale connector cache.
 
 ---
 
-## Step 7 — Call `get_gateway_status` (first live connector call)
+## Step 8 — Call `get_gateway_status` (first live connector call)
 
 Ask ChatGPT to check gateway status, or invoke `get_gateway_status` through the connector.
 
@@ -137,7 +176,7 @@ Use this as the **first** live connector call because it validates OAuth and MCP
 
 ---
 
-## Step 8 — Use `search` for an AWS capability
+## Step 9 — Use `search` for an AWS capability
 
 Ask ChatGPT to find a tool, for example: “search for EC2 instances” or “find cost tools.”
 
@@ -148,9 +187,9 @@ Ask ChatGPT to find a tool, for example: “search for EC2 instances” or “fi
 
 ---
 
-## Step 9 — Use `fetch` for one returned catalog id
+## Step 10 — Use `fetch` for one returned catalog id
 
-Ask ChatGPT to fetch details for one id from Step 8 (for example `tool/list_ec2_instances`).
+Ask ChatGPT to fetch details for one id from Step 9 (for example `tool/list_ec2_instances`).
 
 **Expected:**
 
@@ -159,7 +198,7 @@ Ask ChatGPT to fetch details for one id from Step 8 (for example `tool/list_ec2_
 
 ---
 
-## Step 10 — Call one bounded read-only AWS tool
+## Step 11 — Call one bounded read-only AWS tool
 
 Ask ChatGPT to list EC2 instances in **one allowed region** from your `AWS_ALLOWED_REGIONS` configuration.
 
@@ -174,7 +213,7 @@ Do **not** use CloudWatch Logs as the first AWS smoke test — log groups are ac
 
 ---
 
-## Step 11 — Verify safe failure behavior
+## Step 12 — Verify safe failure behavior
 
 Confirm failures are normalized and do not leak secrets:
 
@@ -193,10 +232,12 @@ Never paste OAuth access tokens into troubleshooting notes or GitHub issues.
 | Symptom | Likely cause | Required fix |
 |---------|--------------|--------------|
 | OAuth callback fails | Redirect URI mismatch | Copy the exact ChatGPT callback URI into Auth0 and rerun setup |
-| OAuth succeeds but Actions are empty | Stale connector or missing `search`/`fetch` in `tools/list` | Refresh connector; verify deployed commit includes discovery tools |
-| Tools return `unauthorized` | Missing `aws:read` scope | Fix Auth0 API/client scope grant |
-| Tools return `forbidden` | Token valid but insufficient scope | Ensure access token includes every configured required scope |
-| AWS tools fail after connector works | IAM or AWS vars issue | Verify AWS secrets, IAM policy, and `AWS_ALLOWED_REGIONS` |
+| OAuth succeeds but no actions are visible | `tools/list` empty, invalid descriptors, stale connector cache, or wrong deployed commit | Run `/mcp` `tools/list` check, refresh/recreate connector, verify deploy |
+| OAuth works but tool calls fail unauthorized | Missing/invalid access token | Re-link connector and verify OAuth challenge metadata |
+| Tool calls fail forbidden | Token lacks `aws:read` | Fix Auth0 API/client scope grant |
+| ChatGPT connector setup fails | Server URL does not include `/mcp` | Use `https://<worker-host>/mcp` in ChatGPT |
+| Metadata discovery fails | `MCP_RESOURCE_URL` incorrectly includes `/mcp` | Use origin only for `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE` |
+| AWS tool fails after actions appear | IAM, region allowlist, or AWS secret issue | Verify AWS config and use `get_gateway_status` first |
 | ChatGPT sees old tool descriptors | Cached connector metadata | Refresh connector after deployment |
 
 ---
