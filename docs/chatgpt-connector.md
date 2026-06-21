@@ -18,6 +18,19 @@ ChatGPT connectors require:
 
 Without `search` and `fetch`, OAuth may succeed but ChatGPT shows **“No app actions available yet”** because the connector cannot discover tools.
 
+## OAuth linking and discovery
+
+ChatGPT discovers how to authorize against this gateway through two public HTTP surfaces:
+
+1. **Protected resource metadata** — `GET /.well-known/oauth-protected-resource` (OAuth mode only) returns `resource`, `authorization_servers`, `scopes_supported`, and `resource_documentation`.
+2. **HTTP `WWW-Authenticate` challenge** — unauthenticated `POST /mcp` returns `401` with a `Bearer` challenge containing `resource_metadata`, `scope`, and `error="invalid_token"`.
+
+The gateway **authenticates before MCP server creation**. Unauthenticated, invalid-token, and insufficient-scope requests never reach tool execution.
+
+Tool descriptors advertise OAuth security metadata (`securitySchemes`, `_meta.securitySchemes`, read-only annotations). Tool-level `_meta["mcp/www_authenticate"]` is **not** used for unauthenticated `/mcp` requests because those requests never reach tools. If a future ChatGPT behavior requires tool-result OAuth metadata, that must be implemented only after a failing real connector smoke test proves the HTTP challenge path is insufficient.
+
+Contract regression tests: `src/index.oauth.test.ts`, `src/auth/oauth/`, `src/mcp/tools/descriptor-contract.test.ts`.
+
 ## Connector setup (summary)
 
 1. Deploy the Worker with `AUTH_MODE=oauth` and OAuth vars configured (see [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md)).

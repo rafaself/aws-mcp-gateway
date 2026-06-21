@@ -37,4 +37,20 @@ describe("buildOAuthChallenge", () => {
     expect(challenge).toContain('error="invalid_token"');
     expect(challenge).toContain('error_description="Authentication is required."');
   });
+
+  it("does not include sensitive material in challenge output", () => {
+    const challenge = buildOAuthChallenge(testConfig, {
+      error: "invalid_token",
+      errorDescription: "Authentication is required.",
+    });
+
+    expect(challenge).toContain("Bearer");
+    expect(challenge).toContain("resource_metadata=");
+    expect(challenge).toContain("scope=");
+    expect(challenge).not.toContain("AKIA");
+    expect(challenge).not.toContain("client_secret");
+    expect(challenge).not.toContain("BEGIN PUBLIC KEY");
+    expect(challenge).not.toContain("eyJ");
+    expect(challenge).not.toContain("refresh_token");
+  });
 });

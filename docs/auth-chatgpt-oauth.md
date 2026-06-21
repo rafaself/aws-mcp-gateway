@@ -120,6 +120,19 @@ The gateway exposes `search` and `fetch` for ChatGPT connector discovery, plus s
 
 Do not paste OAuth access tokens into docs or terminal history.
 
+## OAuth linking model
+
+ChatGPT connects to this gateway as an OAuth **resource server**. Authorization discovery uses:
+
+- `GET /.well-known/oauth-protected-resource` — public metadata with issuer and `aws:read` scope
+- `WWW-Authenticate` on unauthenticated `POST /mcp` — directs ChatGPT to the metadata URL and required scope
+
+Authentication happens **before** MCP server creation. Invalid or insufficient-scope tokens never reach tool handlers.
+
+After OAuth setup, run the end-to-end smoke runbook: [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md).
+
+Regression tests for these contracts live in `src/index.oauth.test.ts` and `src/auth/oauth/`.
+
 ## Full connector guide
 
 See [chatgpt-connector.md](chatgpt-connector.md) for discovery flow, tool surface, troubleshooting, and curl smoke tests.

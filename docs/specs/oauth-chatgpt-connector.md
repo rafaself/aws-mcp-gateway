@@ -208,6 +208,22 @@ Tools returning `structuredContent` must include `outputSchema` matching `docs/m
 
 All unit tests must remain offline and deterministic — no live Auth0, JWKS, Cloudflare, or AWS calls.
 
+## Connector linking regression checklist
+
+Use this checklist when changing auth, metadata, or descriptor code. Each item maps to offline contract tests.
+
+| Contract | Expected behavior | Test surface |
+|----------|-------------------|--------------|
+| Protected resource metadata | `200` with `resource`, `authorization_servers`, `scopes_supported`, `resource_documentation`; works without AWS creds; `404` outside oauth mode | `src/index.oauth.test.ts`, `src/auth/oauth/metadata.test.ts` |
+| Invalid OAuth config on metadata | Safe `503` without binding names or secrets | `src/index.oauth.test.ts` |
+| Unauthenticated `/mcp` challenge | `401` with `Bearer`, `resource_metadata`, `scope`, `invalid_token`; no MCP server creation | `src/index.oauth.test.ts`, `src/auth/oauth/challenge.test.ts` |
+| Insufficient scope | `403` with `insufficient_scope`; no MCP server creation | `src/index.oauth.test.ts`, `src/auth/oauth/verify-token.test.ts` |
+| Tool descriptors | `securitySchemes`, `_meta.securitySchemes`, read-only annotations; no write/proxy scopes | `src/mcp/tools/descriptor-contract.test.ts` |
+
+### Tool-result OAuth metadata
+
+Unauthenticated `/mcp` requests never reach tool execution, so tool-level `_meta["mcp/www_authenticate"]` is not required for the current linking model. Do **not** add tool-result OAuth metadata unless a real ChatGPT connector smoke test (see [chatgpt-connector-smoke-test.md](../chatgpt-connector-smoke-test.md)) proves the HTTP `WWW-Authenticate` challenge path fails.
+
 ## References
 
 - [OpenAI Apps SDK authentication guide](https://developers.openai.com/apps-sdk/build/auth)
