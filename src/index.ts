@@ -3,7 +3,7 @@ import { createServer } from "./mcp/server.js";
 import { authenticateRequest } from "./auth/index.js";
 import { buildProtectedResourceMetadata } from "./auth/oauth/metadata.js";
 import {
-  parseAuthMode,
+  resolveAuthMode,
   validateEnv,
   validateOAuthConfig,
   envErrorResponse,
@@ -20,7 +20,14 @@ export default {
     }
 
     if (request.method === "GET" && url.pathname === "/.well-known/oauth-protected-resource") {
-      if (parseAuthMode(env) !== "oauth") {
+      const authModeResult = resolveAuthMode(env);
+      if (!authModeResult.valid) {
+        return envErrorResponse(
+          { valid: false, config: null, errors: authModeResult.errors },
+          false,
+        );
+      }
+      if (authModeResult.mode !== "oauth") {
         return errorResponse(new GatewayError("not_found", "Not Found"), 404);
       }
 

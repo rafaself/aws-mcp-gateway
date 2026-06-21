@@ -1,6 +1,13 @@
 import { GatewayError, errorResponse } from "../errors/public-error.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
 import type { ValidatedOAuthConfig } from "../auth/oauth/types.js";
+import { resolveAuthMode } from "./auth-mode.js";
+import {
+  validateOAuthAudienceUrl,
+  validateOAuthIssuerUrl,
+  validateOAuthJwksUri,
+  validateOAuthResourceUrl,
+} from "./oauth-urls.js";
 
 export type AuthMode = "legacy-bearer" | "oauth";
 
@@ -42,17 +49,7 @@ function readRequiredString(
   return value.trim();
 }
 
-export function parseAuthMode(env: unknown): AuthMode {
-  const bindings = (env ?? {}) as Record<string, unknown>;
-  const mode = bindings.AUTH_MODE;
-  if (mode === undefined || mode === "legacy-bearer") {
-    return "legacy-bearer";
-  }
-  if (mode === "oauth") {
-    return "oauth";
-  }
-  return "legacy-bearer";
-}
+export { resolveAuthMode } from "./auth-mode.js";
 
 export function validateOAuthConfig(env: unknown): {
   valid: boolean;
@@ -62,11 +59,22 @@ export function validateOAuthConfig(env: unknown): {
   const bindings = (env ?? {}) as Record<string, unknown>;
   const errors: string[] = [];
 
-  const resourceUrl = readRequiredString(bindings, "MCP_RESOURCE_URL", errors);
-  const issuer = readRequiredString(bindings, "OAUTH_ISSUER", errors);
-  const audience = readRequiredString(bindings, "OAUTH_AUDIENCE", errors);
-  const jwksUri = readRequiredString(bindings, "OAUTH_JWKS_URI", errors);
+  const resourceUrlRaw = readRequiredString(bindings, "MCP_RESOURCE_URL", errors);
+  const issuerRaw = readRequiredString(bindings, "OAUTH_ISSUER", errors);
+  const audienceRaw = readRequiredString(bindings, "OAUTH_AUDIENCE", errors);
+  const jwksUriRaw = readRequiredString(bindings, "OAUTH_JWKS_URI", errors);
   const scopesRaw = readRequiredString(bindings, "OAUTH_REQUIRED_SCOPES", errors);
+
+  const resourceUrl =
+    resourceUrlRaw === null ? null : validateOAuthResourceUrl(resourceUrlRaw, errors);
+  const issuer = issuerRaw === null ? null : validateOAuthIssuerUrl(issuerRaw, errors);
+  const audience =
+    audienceRaw === null ? null : validateOAuthAudienceUrl(audienceRaw, errors);
+  const jwksUri = jwksUriRaw === null ? null : validateOAuthJwksUri(jwksUriRaw, errors);
+
+  if (resourceUrl !== null && audience !== null && resourceUrl !== audience) {
+    errors.push("OAUTH_AUDIENCE (must equal MCP_RESOURCE_URL)");
+  }
 
   if (errors.length > 0) {
     return { valid: false, config: null, errors };
@@ -101,7 +109,12 @@ export function validateOAuthConfig(env: unknown): {
 export function validateEnv(env: unknown): EnvValidationResult {
   const bindings = (env ?? {}) as Record<string, unknown>;
   const errors: string[] = [];
-  const authMode = parseAuthMode(env);
+
+  const authModeResult = resolveAuthMode(env);
+  if (!authModeResult.valid) {
+    return { valid: false as const, config: null, errors: authModeResult.errors };
+  }
+  const authMode = authModeResult.mode;
 
   const accessKeyId = readRequiredString(bindings, "AWS_ACCESS_KEY_ID", errors);
   const secretAccessKey = readRequiredString(bindings, "AWS_SECRET_ACCESS_KEY", errors);

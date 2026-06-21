@@ -7,12 +7,17 @@ import {
   TEST_OAUTH_JWKS_URI,
 } from "./test/fixtures/oauth-jwks.js";
 
+const createServerMock = vi.fn((_ctx?: unknown) => ({}));
+
 vi.mock("agents/mcp", () => ({
   createMcpHandler: () => async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
 }));
 
 vi.mock("./mcp/server.js", () => ({
-  createServer: () => ({}),
+  createServer: (ctx: unknown) => {
+    createServerMock(ctx);
+    return {};
+  },
 }));
 
 const { default: worker } = await import("./index.js");
@@ -41,6 +46,7 @@ const legacyEnv = {
 
 beforeEach(() => {
   resetJwksCache();
+  createServerMock.mockClear();
 });
 
 describe("oauth protected-resource metadata route", () => {
@@ -87,6 +93,16 @@ describe("oauth protected-resource metadata route", () => {
 
     expect(response.status).toBe(404);
   });
+
+  it("returns 503 for invalid AUTH_MODE", async () => {
+    const response = await worker.fetch(
+      new Request("https://gateway.example.com/.well-known/oauth-protected-resource"),
+      { ...oauthEnvBase, AUTH_MODE: "open" },
+      {} as ExecutionContext,
+    );
+
+    expect(response.status).toBe(503);
+  });
 });
 
 describe("oauth /mcp challenge", () => {
@@ -108,9 +124,11 @@ describe("oauth /mcp challenge", () => {
     const wwwAuth = response.headers.get("WWW-Authenticate");
     expect(wwwAuth).toContain("resource_metadata=");
     expect(wwwAuth).toContain("scope=");
+    expect(wwwAuth).toContain('error="invalid_token"');
     const body = await response.json() as { error: { code: string; message: string } };
     expect(body.error.code).toBe("unauthorized");
     expect(body.error.message).toBe("Authentication is required.");
+    expect(createServerMock).not.toHaveBeenCalled();
   });
 
   it("accepts valid OAuth JWT without MCP_AUTH_TOKEN", async () => {
@@ -132,6 +150,28 @@ describe("oauth /mcp challenge", () => {
     );
 
     expect(response.status).toBe(200);
+    expect(createServerMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not create MCP server for invalid OAuth tokens", async () => {
+    const fixture = await createTestOAuthFixture();
+    setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
+
+    const response = await worker.fetch(
+      new Request("https://gateway.example.com/mcp", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer not-a-jwt",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+      }),
+      oauthEnvBase,
+      {} as ExecutionContext,
+    );
+
+    expect(response.status).toBe(401);
+    expect(createServerMock).not.toHaveBeenCalled();
   });
 
   it("does not expose AWS config details to unauthenticated callers", async () => {
@@ -151,6 +191,7 @@ describe("oauth /mcp challenge", () => {
     expect(response.status).toBe(401);
     const body = await response.json() as { error: { message: string } };
     expect(body.error.message).not.toContain("AWS_ACCESS_KEY_ID");
+    expect(createServerMock).not.toHaveBeenCalled();
   });
 });
 
@@ -180,6 +221,7 @@ describe("legacy bearer mode", () => {
 
     expect(response.status).toBe(401);
     expect(response.headers.get("WWW-Authenticate")).toBeNull();
+    expect(createServerMock).not.toHaveBeenCalled();
   });
 
   it("still accepts valid MCP_AUTH_TOKEN", async () => {
@@ -197,5 +239,6 @@ describe("legacy bearer mode", () => {
     );
 
     expect(response.status).not.toBe(401);
+    expect(createServerMock).toHaveBeenCalledTimes(1);
   });
 });

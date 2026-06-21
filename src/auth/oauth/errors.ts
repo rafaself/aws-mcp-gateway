@@ -6,7 +6,12 @@ export function oauthUnauthorizedResponse(config: ValidatedOAuthConfig): Respons
   return errorResponse(
     new GatewayError("unauthorized", "Authentication is required."),
     401,
-    { "WWW-Authenticate": buildOAuthChallenge(config) },
+    {
+      "WWW-Authenticate": buildOAuthChallenge(config, {
+        error: "invalid_token",
+        errorDescription: "Authentication is required.",
+      }),
+    },
   );
 }
 
@@ -14,6 +19,11 @@ export function oauthForbiddenResponse(config: ValidatedOAuthConfig): Response {
   return errorResponse(
     new GatewayError("forbidden", "Insufficient scope for this resource."),
     403,
-    { "WWW-Authenticate": buildOAuthChallenge(config) },
+    {
+      "WWW-Authenticate": buildOAuthChallenge(config, {
+        error: "insufficient_scope",
+        errorDescription: "Insufficient scope for this resource.",
+      }),
+    },
   );
 }

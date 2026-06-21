@@ -27,4 +27,14 @@ describe("buildOAuthChallenge", () => {
 
     expect(challenge).toContain('scope="aws:read openid"');
   });
+
+  it("includes error parameters when provided", () => {
+    const challenge = buildOAuthChallenge(testConfig, {
+      error: "invalid_token",
+      errorDescription: "Authentication is required.",
+    });
+
+    expect(challenge).toContain('error="invalid_token"');
+    expect(challenge).toContain('error_description="Authentication is required."');
+  });
 });

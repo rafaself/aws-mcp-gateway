@@ -41,10 +41,10 @@ No parameters.
 
 ### Behavior
 
-- Does not require authentication to invoke (the tool is registered before the
-  per-request auth check, and the handler is stateless).
+- Requires a valid MCP session on `/mcp` (legacy bearer token or OAuth access token with `aws:read` scope).
+- Advertises OAuth `securitySchemes` and read-only annotations in the tool descriptor.
 - Makes no AWS calls.
-- Always succeeds.
+- Always succeeds when invoked with valid MCP authentication.
 
 ### Output
 

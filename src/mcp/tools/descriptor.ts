@@ -1,15 +1,19 @@
 import { z } from "zod";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
+import type { ValidatedOAuthConfig } from "../../auth/oauth/types.js";
+import { buildMcpWwwAuthenticateMeta } from "../../auth/oauth/challenge.js";
+
+export const OAUTH_REQUIRED_SCOPE = "aws:read";
 
 export const OAUTH_SECURITY_SCHEMES = [
-  { type: "oauth2" as const, scopes: ["aws:read"] },
+  { type: "oauth2" as const, scopes: [OAUTH_REQUIRED_SCOPE] },
 ] as const;
 
 export type OAuthSecurityScheme = (typeof OAUTH_SECURITY_SCHEMES)[number];
 
 type OAuthToolMetadata = {
   securitySchemes: OAuthSecurityScheme[];
-  _meta: { securitySchemes: OAuthSecurityScheme[] };
+  _meta: { securitySchemes: OAuthSecurityScheme[]; [key: string]: unknown };
   annotations: ToolAnnotations;
 };
 
@@ -26,14 +30,37 @@ const STATUS_ANNOTATIONS: ToolAnnotations = {
   idempotentHint: true,
 };
 
+const DEFAULT_OAUTH_CONFIG: ValidatedOAuthConfig = {
+  MCP_RESOURCE_URL: "https://gateway.example.com",
+  OAUTH_ISSUER: "https://auth.example.com/",
+  OAUTH_AUDIENCE: "https://gateway.example.com",
+  OAUTH_JWKS_URI: "https://auth.example.com/.well-known/jwks.json",
+  OAUTH_REQUIRED_SCOPES: [OAUTH_REQUIRED_SCOPE],
+};
+
+function oauthDescriptorMeta(): Record<string, unknown> {
+  return {
+    securitySchemes: [...OAUTH_SECURITY_SCHEMES],
+    "mcp/www_authenticate": buildMcpWwwAuthenticateMeta(DEFAULT_OAUTH_CONFIG),
+  };
+}
+
 export function withOAuthToolMetadata<T extends Record<string, unknown>>(
   descriptor: T,
   annotations: ToolAnnotations,
 ): T & OAuthToolMetadata {
+  const meta: OAuthToolMetadata["_meta"] = {
+    ...oauthDescriptorMeta(),
+    ...(typeof descriptor._meta === "object" && descriptor._meta !== null
+      ? (descriptor._meta as Record<string, unknown>)
+      : {}),
+    securitySchemes: [...OAUTH_SECURITY_SCHEMES],
+  };
+
   return {
     ...descriptor,
     securitySchemes: [...OAUTH_SECURITY_SCHEMES],
-    _meta: { securitySchemes: [...OAUTH_SECURITY_SCHEMES] },
+    _meta: meta,
     annotations,
   };
 }

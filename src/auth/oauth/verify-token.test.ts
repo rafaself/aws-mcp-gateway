@@ -91,6 +91,18 @@ describe("authenticateOAuthRequest", () => {
     const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
 
     expect(response?.status).toBe(401);
+    expect(response?.headers.get("WWW-Authenticate")).toContain('error="invalid_token"');
+  });
+
+  it("returns 401 for wrong JWT signature", async () => {
+    const signingFixture = await createTestOAuthFixture();
+    const verifyingFixture = await createTestOAuthFixture();
+    setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, verifyingFixture.jwksResolver);
+    const token = await signingFixture.signAccessToken();
+
+    const response = await authenticateOAuthRequest(makeRequest(token), verifyingFixture.config);
+
+    expect(response?.status).toBe(401);
   });
 
   it("returns 403 when required scope is missing", async () => {
@@ -103,6 +115,7 @@ describe("authenticateOAuthRequest", () => {
     expect(response?.status).toBe(403);
     const body = await response!.json() as { error: { code: string } };
     expect(body.error.code).toBe("forbidden");
+    expect(response?.headers.get("WWW-Authenticate")).toContain('error="insufficient_scope"');
   });
 
   it("accepts valid scope string containing aws:read", async () => {

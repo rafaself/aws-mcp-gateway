@@ -1,8 +1,38 @@
 import { protectedResourceMetadataUrl } from "./metadata.js";
 import type { ValidatedOAuthConfig } from "./types.js";
 
-export function buildOAuthChallenge(config: ValidatedOAuthConfig): string {
+export type OAuthChallengeOptions = {
+  error?: string;
+  errorDescription?: string;
+};
+
+export function buildOAuthChallenge(
+  config: ValidatedOAuthConfig,
+  options: OAuthChallengeOptions = {},
+): string {
   const resourceMetadata = protectedResourceMetadataUrl(config);
   const scope = config.OAUTH_REQUIRED_SCOPES.join(" ");
-  return `Bearer resource_metadata="${resourceMetadata}", scope="${scope}"`;
+  const parts = [`resource_metadata="${resourceMetadata}"`, `scope="${scope}"`];
+
+  if (options.error) {
+    parts.push(`error="${options.error}"`);
+  }
+  if (options.errorDescription) {
+    parts.push(`error_description="${options.errorDescription}"`);
+  }
+
+  return `Bearer ${parts.join(", ")}`;
+}
+
+export function buildMcpWwwAuthenticateMeta(
+  config: ValidatedOAuthConfig,
+  options: OAuthChallengeOptions = {},
+): Record<string, unknown> {
+  return {
+    scheme: "Bearer",
+    scope: config.OAUTH_REQUIRED_SCOPES.join(" "),
+    resource_metadata: protectedResourceMetadataUrl(config),
+    ...(options.error ? { error: options.error } : {}),
+    ...(options.errorDescription ? { error_description: options.errorDescription } : {}),
+  };
 }
