@@ -2,7 +2,7 @@
 
 This guide walks through connecting the deployed AWS MCP Gateway to ChatGPT using the **OAuth** authentication option with an Auth0-compatible identity provider.
 
-For the authorization contract and security model, see [docs/specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md).
+For the authorization contract and security model, see [docs/specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md). For client identification modes (predefined client vs future CIMD), see [docs/specs/oauth-client-identification.md](specs/oauth-client-identification.md).
 
 ## Prerequisites
 
@@ -50,7 +50,7 @@ Replace `{callback_id}` with the value from ChatGPT when you create the connecto
 
 ### 5. Configure Worker OAuth vars
 
-Set these non-secret vars in `wrangler.jsonc` `[vars]` or via the Cloudflare dashboard:
+Copy [`wrangler.example.jsonc`](../wrangler.example.jsonc) for a portable template, or set these non-secret vars in `wrangler.jsonc` `[vars]` or via the Cloudflare dashboard:
 
 ```text
 AUTH_MODE=oauth
@@ -119,6 +119,27 @@ From ChatGPT:
 The gateway exposes `search` and `fetch` for ChatGPT connector discovery, plus six read-only AWS tools. See [chatgpt-connector.md](chatgpt-connector.md).
 
 Do not paste OAuth access tokens into docs or terminal history.
+
+## OAuth linking model
+
+ChatGPT connects to this gateway as an OAuth **resource server**. Authorization discovery uses:
+
+- `GET /.well-known/oauth-protected-resource` — public metadata with issuer and `aws:read` scope
+- `WWW-Authenticate` on unauthenticated `POST /mcp` — directs ChatGPT to the metadata URL and required scope
+
+Authentication happens **before** MCP server creation. Invalid or insufficient-scope tokens never reach tool handlers.
+
+After OAuth setup, run the end-to-end smoke runbook: [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md).
+
+Regression tests for these contracts live in `src/index.oauth.test.ts` and `src/auth/oauth/`.
+
+## Client identification mode
+
+- **Currently supported:** predefined OAuth client in Auth0 (or compatible OIDC provider). See setup steps below and [oauth-client-identification.md](specs/oauth-client-identification.md).
+- **Future compatibility:** CIMD-compatible client identification at the authorization server when the provider supports it. The Worker validation path does not change unless token claims change.
+- **Not supported in this gateway:** custom DCR or OAuth authorization server implementation inside the Worker.
+
+If the ChatGPT connector works with the current Auth0 predefined client flow, no CIMD migration is needed for MVP. Do not attempt to implement DCR or OAuth server behavior in this repository.
 
 ## Full connector guide
 

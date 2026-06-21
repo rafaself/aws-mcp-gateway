@@ -118,6 +118,14 @@ MCP_AUTH_TOKEN          # legacy-bearer mode only
 
 ### Required configuration (configure in `wrangler.jsonc` `[vars]`)
 
+For your own deployment, copy [`wrangler.example.jsonc`](wrangler.example.jsonc) and replace placeholder values before deploying. The active [`wrangler.jsonc`](wrangler.jsonc) in this repository may contain maintainer-specific non-secret deployment values and must not be replaced with placeholders if that would break `pnpm deploy` for the maintainer.
+
+**Replace before your own deploy:**
+
+- Worker hostname in `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE`
+- Auth0 (or OIDC) tenant in `OAUTH_ISSUER` and `OAUTH_JWKS_URI`
+- KV namespace `id` in `kv_namespaces`
+
 ```jsonc
 {
   "vars": {
@@ -265,9 +273,10 @@ https://<your-worker-domain>/mcp
 Use **OAuth** authentication in production (`AUTH_MODE=oauth`). ChatGPT discovers AWS tools through the `search` and `fetch` MCP tools, then calls read-only AWS tools after OAuth.
 
 **Setup and troubleshooting:** [docs/chatgpt-connector.md](docs/chatgpt-connector.md)  
-**Auth0 OAuth configuration:** [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md)
+**Auth0 OAuth configuration:** [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md)  
+**End-to-end ChatGPT smoke validation:** [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md)
 
-See [docs/mcp-testing.md](docs/mcp-testing.md) for smoke tests and expected failure modes.
+See [docs/mcp-testing.md](docs/mcp-testing.md) for curl smoke tests and expected failure modes.
 
 ## Repository safety
 
@@ -290,6 +299,7 @@ Never commit:
 - Bearer tokens
 - `.env`
 - `.dev.vars`
+- `.env.deploy.local`
 - `.wrangler/`
 
 ## Roadmap

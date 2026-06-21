@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # Configure Auth0 API + ChatGPT OAuth application for aws-mcp-gateway.
+# Predefined OAuth client (regular web app) only — MVP path. No CIMD automation
+# until provider APIs and ChatGPT flows are verified safe. See
+# docs/specs/oauth-client-identification.md.
 # Requires a Machine-to-Machine app authorized for the Auth0 Management API.
 set -euo pipefail
 

@@ -103,6 +103,42 @@ describe("oauth protected-resource metadata route", () => {
 
     expect(response.status).toBe(503);
   });
+
+  it("returns safe 503 for invalid OAuth config without leaking binding names", async () => {
+    const response = await worker.fetch(
+      new Request("https://gateway.example.com/.well-known/oauth-protected-resource"),
+      {
+        AUTH_MODE: "oauth",
+        MCP_RESOURCE_URL: "https://gateway.example.com",
+        OAUTH_AUDIENCE: "https://gateway.example.com",
+        OAUTH_JWKS_URI: "https://auth.example.com/.well-known/jwks.json",
+        OAUTH_REQUIRED_SCOPES: "aws:read",
+      },
+      {} as ExecutionContext,
+    );
+
+    expect(response.status).toBe(503);
+    const body = await response.text();
+    expect(body).toContain("configuration_error");
+    expect(body).not.toContain("OAUTH_ISSUER");
+    expect(body).not.toContain("AKIA");
+    expect(body).not.toContain("client_secret");
+    expect(body).not.toContain("BEGIN PUBLIC KEY");
+  });
+
+  it("does not expose secrets in metadata response body", async () => {
+    const response = await worker.fetch(
+      new Request("https://gateway.example.com/.well-known/oauth-protected-resource"),
+      oauthEnvBase,
+      {} as ExecutionContext,
+    );
+
+    const body = await response.text();
+    expect(body).not.toContain("AKIA");
+    expect(body).not.toContain("client_secret");
+    expect(body).not.toContain("BEGIN PUBLIC KEY");
+    expect(body).not.toContain("eyJ");
+  });
 });
 
 describe("oauth /mcp challenge", () => {
@@ -125,6 +161,11 @@ describe("oauth /mcp challenge", () => {
     expect(wwwAuth).toContain("resource_metadata=");
     expect(wwwAuth).toContain("scope=");
     expect(wwwAuth).toContain('error="invalid_token"');
+    expect(wwwAuth).toContain("Bearer");
+    expect(wwwAuth).not.toContain("AKIA");
+    expect(wwwAuth).not.toContain("client_secret");
+    expect(wwwAuth).not.toContain("BEGIN PUBLIC KEY");
+    expect(wwwAuth).not.toContain("eyJ");
     const body = await response.json() as { error: { code: string; message: string } };
     expect(body.error.code).toBe("unauthorized");
     expect(body.error.message).toBe("Authentication is required.");
@@ -171,6 +212,32 @@ describe("oauth /mcp challenge", () => {
     );
 
     expect(response.status).toBe(401);
+    expect(createServerMock).not.toHaveBeenCalled();
+  });
+
+  it("does not create MCP server for insufficient-scope OAuth tokens", async () => {
+    const fixture = await createTestOAuthFixture();
+    setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
+    const token = await fixture.signAccessToken({ scope: "openid profile" });
+
+    const response = await worker.fetch(
+      new Request("https://gateway.example.com/mcp", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+      }),
+      oauthEnvBase,
+      {} as ExecutionContext,
+    );
+
+    expect(response.status).toBe(403);
+    const wwwAuth = response.headers.get("WWW-Authenticate");
+    expect(wwwAuth).toContain('error="insufficient_scope"');
+    const body = await response.json() as { error: { code: string } };
+    expect(body.error.code).toBe("forbidden");
     expect(createServerMock).not.toHaveBeenCalled();
   });
 
