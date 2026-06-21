@@ -15,22 +15,26 @@ error behavior, caching, region handling, and safety boundaries.
 - Invalid input always fails before any downstream AWS call.
 - Generic AWS access (arbitrary API proxy or CLI execution) is outside scope.
 
-**ChatGPT connector:** Tools `search` and `fetch` implement the OpenAI MCP discovery schema. They catalog the AWS tools below and do not call AWS. See [chatgpt-connector.md](chatgpt-connector.md).
+**ChatGPT connector:** ChatGPT discovers public actions through authenticated `tools/list`. Tools `search` and `fetch` implement the OpenAI MCP catalog schema — they help inspect the AWS tool catalog but do not replace `tools/list` action discovery. Neither `search` nor `fetch` calls AWS directly (except `fetch` may embed live `get_gateway_status` JSON for that catalog entry). See [chatgpt-connector.md](chatgpt-connector.md).
 
 ---
 
 ## Tool index
 
-| # | Tool | Page |
-|---|------|------|
-| — | `search` | [↓](#search-chatgpt-discovery) |
-| — | `fetch` | [↓](#fetch-chatgpt-discovery) |
-| 1 | `get_gateway_status` | [↓](#1-get_gateway_status) |
-| 2 | `get_aws_cost_summary` | [↓](#2-get_aws_cost_summary) |
-| 3 | `get_aws_cost_by_service` | [↓](#3-get_aws_cost_by_service) |
-| 4 | `list_ec2_instances` | [↓](#4-list_ec2_instances) |
-| 5 | `get_cloudwatch_alarms` | [↓](#5-get_cloudwatch_alarms) |
-| 6 | `get_recent_log_errors` | [↓](#6-get_recent_log_errors) |
+| # | Tool | Role | Calls AWS | Page |
+|---|------|------|-----------|------|
+| — | `search` | Catalog search helper | No | [↓](#search-chatgpt-discovery) |
+| — | `fetch` | Catalog document helper | No* | [↓](#fetch-chatgpt-discovery) |
+| 1 | `get_gateway_status` | Health check | No | [↓](#1-get_gateway_status) |
+| 2 | `get_aws_cost_summary` | Cost total | Yes | [↓](#2-get_aws_cost_summary) |
+| 3 | `get_aws_cost_by_service` | Cost by service | Yes | [↓](#3-get_aws_cost_by_service) |
+| 4 | `list_ec2_instances` | EC2 inventory | Yes | [↓](#4-list_ec2_instances) |
+| 5 | `get_cloudwatch_alarms` | Alarm states | Yes | [↓](#5-get_cloudwatch_alarms) |
+| 6 | `get_recent_log_errors` | Recent log errors | Yes | [↓](#6-get_recent_log_errors) |
+
+\* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
+
+All public tools require OAuth (`aws:read`) or legacy bearer authentication and are read-only.
 
 ---
 
@@ -696,8 +700,7 @@ Parameters are normalized with sorted keys and type-tagged serialization.
    output. Only normalized, documented fields are included.
 6. **Credentials never leaked:** AWS access keys, bearer tokens, signed headers,
    and raw stack traces are never exposed in error payloads or MCP content.
-7. **Bearer token authentication:** The `/mcp` endpoint requires a valid
-   `MCP_AUTH_TOKEN` in the `Authorization` header.
+7. **Bearer token authentication:** The `/mcp` endpoint requires a valid legacy bearer token or OAuth access token with `aws:read` scope.
 8. **Result size limits:** Cost results are capped at 25 services, log events
    at 50, and date ranges at 90 days.
 9. **Log message truncation:** Log event messages are truncated to 1000

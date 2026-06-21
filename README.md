@@ -280,7 +280,17 @@ ChatGPT Connector Server URL: https://<your-worker-domain>/mcp
 
 Configure `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE` as the Worker **origin** without `/mcp` (for example `https://<your-worker-domain>`). Protected resource metadata is served at `https://<your-worker-domain>/.well-known/oauth-protected-resource`.
 
-Use **OAuth** authentication in production (`AUTH_MODE=oauth`). ChatGPT discovers AWS tools through the `search` and `fetch` MCP tools, then calls read-only AWS tools after OAuth.
+Use **OAuth** authentication in production (`AUTH_MODE=oauth`). ChatGPT discovers public actions through authenticated `tools/list`; `search` and `fetch` are catalog helpers that do not replace that discovery step.
+
+### Production connector setup (summary)
+
+1. Deploy Worker with `AUTH_MODE=oauth`.
+2. Set `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE` to the Worker origin without `/mcp`.
+3. Configure Auth0/API scope `aws:read`.
+4. Create ChatGPT connector with Server URL `https://<worker-host>/mcp`.
+5. Complete OAuth linking.
+6. Verify Actions list 8 public tools.
+7. Call `get_gateway_status` before AWS-backed tools.
 
 **Setup and troubleshooting:** [docs/chatgpt-connector.md](docs/chatgpt-connector.md)  
 **Auth0 OAuth configuration:** [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md)  

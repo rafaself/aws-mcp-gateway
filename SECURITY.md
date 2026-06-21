@@ -44,6 +44,7 @@ The gateway is a **read-only**, public-facing MCP endpoint for explicit AWS tool
 
 - ChatGPT connector OAuth is documented in [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md).
 - Contract: [docs/specs/oauth-chatgpt-connector.md](docs/specs/oauth-chatgpt-connector.md).
+- ChatGPT action visibility requires authenticated `tools/list` with valid descriptors for all 8 public tools; `search`/`fetch` are catalog helpers only.
 
 ---
 
@@ -98,12 +99,15 @@ The canonical read-only policy template is [`infra/aws/iam-readonly-policy.json`
 
 ## Tool allowlist checklist
 
-Tools are registered explicitly in `src/mcp/tools/index.ts`. There is no dynamic or runtime tool discovery.
+Tools are registered explicitly in `src/mcp/tools/`. There is no dynamic or runtime tool discovery. ChatGPT action visibility depends on authenticated `tools/list` returning valid descriptors for every public tool.
 
-- [ ] Only registered MCP tools are exposed — currently: `get_gateway_status`, `get_aws_cost_summary`, `get_aws_cost_by_service`, `list_ec2_instances`, `get_cloudwatch_alarms`, `get_recent_log_errors`.
+- [ ] Only registered MCP tools are exposed — currently **8** public tools: `search`, `fetch`, `get_gateway_status`, `get_aws_cost_summary`, `get_aws_cost_by_service`, `list_ec2_instances`, `get_cloudwatch_alarms`, `get_recent_log_errors`.
+- [ ] Authenticated `tools/list` returns all 8 tools with valid `title`, `description`, `inputSchema`, `outputSchema` (where applicable), read-only annotations, and OAuth `securitySchemes`.
+- [ ] `search` and `fetch` are catalog helpers — they do not replace `tools/list` for ChatGPT action discovery.
 - [ ] New tools are added only through explicit registration and documented contracts in [docs/mcp-tools.md](docs/mcp-tools.md).
 - [ ] No tool accepts arbitrary AWS service names, actions, or CLI commands as input.
 - [ ] `get_gateway_status` makes no AWS calls and reports `mode: "read-only"`.
+- [ ] `search` and `fetch` do not call AWS directly (except `fetch` may embed live `get_gateway_status` JSON for that catalog entry).
 
 ---
 
@@ -186,7 +190,7 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 - [ ] `GET /health` returns `{ "ok": true, "service": "aws-mcp-gateway" }` without authentication.
 - [ ] With valid runtime configuration, `POST /mcp` without authentication returns HTTP 401 (with `WWW-Authenticate` in `oauth` mode).
 - [ ] Authenticated MCP access works (legacy bearer token or ChatGPT OAuth flow — see [docs/mcp-testing.md](docs/mcp-testing.md)).
-- [ ] For ChatGPT production connectors, complete the end-to-end smoke runbook in [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md) (OAuth login, Actions visible, `get_gateway_status`, `search`/`fetch`, bounded AWS tool).
+- [ ] For ChatGPT production connectors, complete the end-to-end smoke runbook in [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md) — including authenticated `tools/list` validation, OAuth login, Actions visible (all 8 tools), `get_gateway_status`, optional `search`/`fetch`, and a bounded AWS tool.
 - [ ] A smoke test confirms at least one AWS-backed tool returns normalized output in an allowed region.
 
 ---
