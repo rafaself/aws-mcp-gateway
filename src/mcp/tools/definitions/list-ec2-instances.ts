@@ -12,12 +12,10 @@ import {
 } from "../descriptor.js";
 import {
   DEFAULT_AUTH_SCOPES,
-  manifestToGatewayDefinition,
   type ToolManifest,
   type AnyToolManifest,
 } from "../manifest.js";
-import { buildToolPolicyContext } from "../policy.js";
-import type { GatewayToolDefinition } from "../registry.js";
+import { manifestToGatewayDefinitionForContext, type GatewayToolDefinition } from "../registry.js";
 
 const listEc2InstancesInputSchema = z.object({
   regions: z
@@ -126,7 +124,5 @@ export function createListEc2InstancesToolManifest(
 }
 
 export function createListEc2InstancesToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
-  const manifest = createListEc2InstancesToolManifest(ctx);
-  const policyContext = buildToolPolicyContext(ctx, [manifest as AnyToolManifest]);
-  return manifestToGatewayDefinition(manifest, policyContext);
+  return manifestToGatewayDefinitionForContext(ctx, createListEc2InstancesToolManifest(ctx) as AnyToolManifest);
 }

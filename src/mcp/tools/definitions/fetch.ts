@@ -11,12 +11,10 @@ import {
 } from "../descriptor.js";
 import {
   DEFAULT_AUTH_SCOPES,
-  manifestToGatewayDefinition,
   type ToolManifest,
   type AnyToolManifest,
 } from "../manifest.js";
-import { buildToolPolicyContext } from "../policy.js";
-import { createToolRegistry, getChatGptCatalogEntries, type GatewayToolDefinition } from "../registry.js";
+import { buildToolRegistryState, getChatGptCatalogEntries, manifestToGatewayDefinitionForContext, type GatewayToolDefinition } from "../registry.js";
 
 const DEFAULT_RESOURCE_URL = "https://aws-mcp-gateway.local";
 
@@ -51,7 +49,8 @@ function gatewayStatusSnapshot(ctx: GatewayContext): Record<string, unknown> {
 }
 
 function catalogEntriesForContext(ctx: GatewayContext) {
-  return getChatGptCatalogEntries(createToolRegistry(ctx));
+  const { registry, policyContext } = buildToolRegistryState(ctx);
+  return getChatGptCatalogEntries(registry, policyContext.enabledToolNames);
 }
 
 export function createFetchToolManifest(ctx: GatewayContext): ToolManifest<FetchInput> {
@@ -90,7 +89,5 @@ export function createFetchToolManifest(ctx: GatewayContext): ToolManifest<Fetch
 }
 
 export function createFetchToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
-  const manifest = createFetchToolManifest(ctx);
-  const policyContext = buildToolPolicyContext(ctx, [manifest as AnyToolManifest]);
-  return manifestToGatewayDefinition(manifest, policyContext);
+  return manifestToGatewayDefinitionForContext(ctx, createFetchToolManifest(ctx) as AnyToolManifest);
 }

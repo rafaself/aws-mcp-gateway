@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { GatewayContext } from "../../config/context.js";
+import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
 import { OAUTH_REQUIRED_SCOPE } from "./descriptor.js";
 import { buildPublicToolList } from "./public-list.js";
 import {
@@ -34,12 +34,9 @@ vi.mock("aws4fetch", () => ({
   },
 }));
 
-const testContext: GatewayContext = {
-  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
-  region: "us-east-1",
-  allowedRegions: ["us-east-1", "us-west-2"],
+const testContext = createTestGatewayContext({
   mcpResourceUrl: "https://aws-mcp-gateway.example.workers.dev",
-};
+});
 
 const AWS_BACKED_TOOLS = [
   "get_aws_cost_summary",

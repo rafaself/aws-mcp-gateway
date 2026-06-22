@@ -2,6 +2,12 @@ import type { AwsCredentials } from "../aws/types.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
 import { parseRegions } from "../security/regions.js";
 import type { AuthMode, ValidatedGatewayConfig } from "./env.js";
+import {
+  defaultResolvedToolExposure,
+  type ValidatedToolExposureConfig,
+} from "./tool-exposure.js";
+
+export type { ValidatedToolExposureConfig };
 
 export interface GatewayContext {
   credentials: AwsCredentials;
@@ -12,6 +18,11 @@ export interface GatewayContext {
   mcpResourceUrl?: string;
   authMode?: AuthMode;
   oauthRequiredScopes?: string[];
+  toolExposure: ValidatedToolExposureConfig;
+}
+
+export function defaultGatewayToolExposure(): ValidatedToolExposureConfig {
+  return defaultResolvedToolExposure();
 }
 
 export function buildGatewayContext(config: ValidatedGatewayConfig): GatewayContext {
@@ -26,5 +37,6 @@ export function buildGatewayContext(config: ValidatedGatewayConfig): GatewayCont
     mcpResourceUrl: config.oauth?.MCP_RESOURCE_URL,
     authMode: config.authMode,
     oauthRequiredScopes: config.oauth?.OAUTH_REQUIRED_SCOPES,
+    toolExposure: config.toolExposure,
   };
 }

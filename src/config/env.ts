@@ -14,6 +14,13 @@ import {
   validateOAuthResourceUrl,
 } from "./oauth-urls.js";
 import type { ValidatedRateLimitConfig } from "../security/rate-limit.js";
+import {
+  defaultResolvedToolExposure,
+  validateToolExposureConfig,
+  type ValidatedToolExposureConfig,
+} from "./tool-exposure.js";
+
+export type { ValidatedToolExposureConfig };
 
 export type AuthMode = "local-bearer" | "oauth";
 
@@ -27,6 +34,7 @@ export interface ValidatedGatewayConfig {
   oauth?: ValidatedOAuthConfig;
   rateLimit?: ValidatedRateLimitConfig;
   AWS_MCP_CACHE?: KVNamespace;
+  toolExposure: ValidatedToolExposureConfig;
 }
 
 export interface EnvValidationSuccess {
@@ -315,6 +323,13 @@ export function validateEnv(env: unknown): EnvValidationResult {
     return { valid: false as const, config: null, errors };
   }
 
+  const toolExposure =
+    validateToolExposureConfig(bindings, errors) ?? defaultResolvedToolExposure();
+
+  if (errors.length > 0) {
+    return { valid: false as const, config: null, errors };
+  }
+
   const config: ValidatedGatewayConfig = {
     authMode,
     AWS_ACCESS_KEY_ID: accessKeyId!,
@@ -322,6 +337,7 @@ export function validateEnv(env: unknown): EnvValidationResult {
     AWS_REGION: region!,
     AWS_ALLOWED_REGIONS: allowedRegionsRaw!,
     AWS_MCP_CACHE: bindings.AWS_MCP_CACHE as KVNamespace | undefined,
+    toolExposure,
   };
 
   if (authMode === "local-bearer") {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
+import { createTestGatewayContext } from "../test/gateway-context-fixture.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GatewayContext } from "../config/context.js";
 
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => ({
   McpServer: class {
@@ -23,11 +23,7 @@ vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => ({
 
 const { createServer } = await import("./server.js");
 
-const testContext: GatewayContext = {
-  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
-  region: "us-east-1",
-  allowedRegions: ["us-east-1"],
-};
+const testContext = createTestGatewayContext({ allowedRegions: ["us-east-1"] });
 
 describe("createServer", () => {
   it("creates an McpServer with correct name and version", () => {

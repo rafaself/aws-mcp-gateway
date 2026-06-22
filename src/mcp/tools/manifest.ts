@@ -17,7 +17,7 @@ import type {
 import type { McpSuccessResult } from "./response.js";
 import type { mcpErrorResult } from "../../errors/public-error.js";
 
-export type ToolPack = "core" | "cost" | "inventory" | "observability";
+export type ToolPack = "core" | "cost" | "inventory" | "observability" | "security";
 
 export type ToolLifecycle = "stable";
 

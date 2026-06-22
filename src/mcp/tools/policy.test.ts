@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GatewayContext } from "../../config/context.js";
+import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
 import { sanitizeNoInput } from "../audit/tool-input.js";
 import {
   manifestToGatewayDefinition,
@@ -36,12 +36,7 @@ vi.mock("aws4fetch", () => ({
   },
 }));
 
-const testContext: GatewayContext = {
-  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
-  region: "us-east-1",
-  allowedRegions: ["us-east-1", "us-west-2"],
-  authMode: "local-bearer",
-};
+const testContext = createTestGatewayContext({ authMode: "local-bearer" });
 
 beforeEach(() => {
   mockFetch.mockReset();

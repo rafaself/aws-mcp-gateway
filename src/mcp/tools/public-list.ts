@@ -59,11 +59,14 @@ function toJsonOutputSchema(outputSchema: unknown): Record<string, unknown> | un
   }) as Record<string, unknown>;
 }
 
-export function buildPublicToolList(registry: GatewayToolDefinition[]): {
+export function buildPublicToolList(
+  registry: GatewayToolDefinition[],
+  enabledToolNames?: ReadonlySet<string>,
+): {
   tools: PublicToolDescriptor[];
 } {
   return {
-    tools: getPublicTools(registry).map((tool) => {
+    tools: getPublicTools(registry, enabledToolNames).map((tool) => {
       const securitySchemes = tool.securitySchemes;
       const descriptor: PublicToolDescriptor = {
         name: tool.name,
@@ -91,10 +94,13 @@ export function buildPublicToolList(registry: GatewayToolDefinition[]): {
 export function registerPublicToolsListHandler(
   server: McpServer,
   registry: GatewayToolDefinition[],
+  enabledToolNames?: ReadonlySet<string>,
 ): void {
   if (typeof server.server?.setRequestHandler !== "function") {
     return;
   }
 
-  server.server.setRequestHandler(ListToolsRequestSchema, () => buildPublicToolList(registry));
+  server.server.setRequestHandler(ListToolsRequestSchema, () =>
+    buildPublicToolList(registry, enabledToolNames),
+  );
 }

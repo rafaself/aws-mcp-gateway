@@ -89,6 +89,108 @@ describe("validateEnv", () => {
     expect(config.AWS_MCP_CACHE).toBeUndefined();
   });
 
+  it("applies default tool exposure config when vars are absent", () => {
+    const env = {
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1,us-west-2",
+      MCP_AUTH_TOKEN: "token",
+    };
+
+    const result = validateEnv(env) as EnvValidationSuccess;
+
+    expect(result.valid).toBe(true);
+    expect([...result.config.toolExposure.enabledToolPacks].sort()).toEqual(
+      ["core", "cost", "inventory", "observability"].sort(),
+    );
+    expect(result.config.toolExposure.enabledTools).toEqual([]);
+    expect(result.config.toolExposure.disabledTools.size).toBe(0);
+    expect(result.config.toolExposure.maxRiskLevel).toBe("read-only");
+  });
+
+  it("rejects unknown tool pack names", () => {
+    const env = {
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1,us-west-2",
+      MCP_AUTH_TOKEN: "token",
+      AWS_MCP_ENABLED_TOOL_PACKS: "core,unknown-pack",
+    };
+
+    const result = validateEnv(env);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("AWS_MCP_ENABLED_TOOL_PACKS (unknown pack: unknown-pack)");
+  });
+
+  it("rejects unknown enabled tool names", () => {
+    const env = {
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1,us-west-2",
+      MCP_AUTH_TOKEN: "token",
+      AWS_MCP_ENABLED_TOOLS: "search,not_a_real_tool",
+    };
+
+    const result = validateEnv(env);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("AWS_MCP_ENABLED_TOOLS (unknown tool: not_a_real_tool)");
+  });
+
+  it("rejects unknown disabled tool names", () => {
+    const env = {
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1,us-west-2",
+      MCP_AUTH_TOKEN: "token",
+      AWS_MCP_DISABLED_TOOLS: "fake_tool",
+    };
+
+    const result = validateEnv(env);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("AWS_MCP_DISABLED_TOOLS (unknown tool: fake_tool)");
+  });
+
+  it("rejects unsupported risk levels", () => {
+    const env = {
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1,us-west-2",
+      MCP_AUTH_TOKEN: "token",
+      AWS_MCP_MAX_RISK_LEVEL: "write",
+    };
+
+    const result = validateEnv(env);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("AWS_MCP_MAX_RISK_LEVEL (unsupported risk level: write)");
+  });
+
+  it("parses custom tool exposure settings", () => {
+    const env = {
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1,us-west-2",
+      MCP_AUTH_TOKEN: "token",
+      AWS_MCP_ENABLED_TOOL_PACKS: "cost",
+      AWS_MCP_DISABLED_TOOLS: "get_aws_cost_by_service",
+    };
+
+    const result = validateEnv(env) as EnvValidationSuccess;
+
+    expect(result.valid).toBe(true);
+    expect([...result.config.toolExposure.enabledToolPacks]).toEqual(["cost"]);
+    expect([...result.config.toolExposure.disabledTools]).toEqual(["get_aws_cost_by_service"]);
+  });
+
   it("includes AWS_MCP_CACHE when present in environment", () => {
     const cache = {} as never;
     const env = {

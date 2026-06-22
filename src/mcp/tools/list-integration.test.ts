@@ -1,16 +1,14 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
+import { defaultResolvedToolExposure } from "../../config/tool-exposure.js";
+import type { ToolPack } from "./manifest.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
-import type { GatewayContext } from "../../config/context.js";
 import { createServer } from "../server.js";
 import { PUBLIC_TOOL_LIST_FIELDS } from "./public-list.js";
 import { LinkedMcpTransport } from "../../test/mcp-linked-transport.js";
 
-const testContext: GatewayContext = {
-  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
-  region: "us-east-1",
-  allowedRegions: ["us-east-1", "us-west-2"],
-};
+const testContext = createTestGatewayContext();
 
 const OAUTH_SECURITY = [{ type: "oauth2" as const, scopes: ["aws:read"] }];
 
@@ -75,5 +73,62 @@ describe("tools/list MCP protocol integration", () => {
     expect((statusTool?.annotations as Record<string, unknown>)?.openWorldHint).toBe(false);
     expect((statusTool?.annotations as Record<string, unknown>)?.idempotentHint).toBe(true);
     expect(statusTool?.outputSchema).toMatchObject({ type: "object" });
+  });
+
+  it("omits disabled tools from tools/list", async () => {
+    const restrictedContext = createTestGatewayContext({
+      toolExposure: {
+        ...defaultResolvedToolExposure(),
+        disabledTools: new Set(["get_cloudwatch_alarms"]),
+      },
+    });
+    const [clientTransport, serverTransport] = LinkedMcpTransport.createLinkedPair();
+    const server = createServer(restrictedContext);
+    const client = new Client({ name: "contract-test", version: "1.0.0" });
+    clients.push(client);
+
+    const protocolMessages: JSONRPCMessage[] = [];
+    clientTransport.onmessage = (message) => {
+      protocolMessages.push(message);
+    };
+
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+    await client.listTools();
+
+    const listResult = protocolMessages.find(isToolsListResult);
+    const tools = listResult!.result.tools;
+
+    expect(tools).toHaveLength(7);
+    expect(tools.map((tool) => tool.name)).not.toContain("get_cloudwatch_alarms");
+  });
+
+  it("lists only tools from enabled packs", async () => {
+    const costOnlyContext = createTestGatewayContext({
+      toolExposure: {
+        enabledToolPacks: new Set<ToolPack>(["cost"]),
+        enabledTools: [],
+        disabledTools: new Set(),
+        maxRiskLevel: "read-only",
+      },
+    });
+    const [clientTransport, serverTransport] = LinkedMcpTransport.createLinkedPair();
+    const server = createServer(costOnlyContext);
+    const client = new Client({ name: "contract-test", version: "1.0.0" });
+    clients.push(client);
+
+    const protocolMessages: JSONRPCMessage[] = [];
+    clientTransport.onmessage = (message) => {
+      protocolMessages.push(message);
+    };
+
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+    await client.listTools();
+
+    const listResult = protocolMessages.find(isToolsListResult);
+    const toolNames = listResult!.result.tools.map((tool) => tool.name).sort();
+
+    expect(toolNames).toEqual(["get_aws_cost_by_service", "get_aws_cost_summary"]);
   });
 });
