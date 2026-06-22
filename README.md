@@ -319,9 +319,15 @@ Runtime MCP/auth dependency upgrades must be treated as protocol changes. See [`
 | [`docs/mcp-tools.md`](docs/mcp-tools.md) | Public MCP tool contracts |
 | [`docs/chatgpt-connector.md`](docs/chatgpt-connector.md) | ChatGPT connector integration guide |
 | [`docs/auth-chatgpt-oauth.md`](docs/auth-chatgpt-oauth.md) | OAuth/Auth0 setup |
+| [`docs/chatgpt-connector-production-acceptance.md`](docs/chatgpt-connector-production-acceptance.md) | Production acceptance gate |
+| [`docs/chatgpt-connector-smoke-test.md`](docs/chatgpt-connector-smoke-test.md) | Detailed connector smoke runbook |
 | [`docs/deployment.md`](docs/deployment.md) | Cloudflare deployment guide |
 | [`docs/aws-iam-setup.md`](docs/aws-iam-setup.md) | AWS IAM setup |
 | [`docs/mcp-testing.md`](docs/mcp-testing.md) | Manual MCP smoke tests |
+| [`docs/post-mvp-boundaries.md`](docs/post-mvp-boundaries.md) | Future write/management safety boundaries |
+| [`docs/dependency-upgrade-contract.md`](docs/dependency-upgrade-contract.md) | MCP/auth dependency upgrade contract |
+| [`docs/tooling-conventions.md`](docs/tooling-conventions.md) | Contributor tool conventions |
+| [`docs/specs/README.md`](docs/specs/README.md) | When implementation specs are required |
 | [`SECURITY.md`](SECURITY.md) | Security checklist and public-safe repository rules |
 
 ## Repository safety

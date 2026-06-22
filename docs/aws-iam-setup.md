@@ -39,69 +39,85 @@ The policy grants only the read/list/describe/get actions required by the gatewa
 
 > **⚠️ Security warning**
 >
-> Never commit access keys to Git. The `.env.example` file documents which variables are required, but real secrets must only be stored in Cloudflare Secrets (deployed) or `.dev.vars` (local development).
+> Never commit access keys to Git. See [`.dev.vars.example`](../.dev.vars.example) for local variable names; real secrets must only be stored in Cloudflare Secrets (deployed) or `.dev.vars` (local development).
 
 ## Step 4: Store credentials
 
-Credentials must be provided to the Worker at runtime. The method differs for local development and deployment.
+AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) are required in every deployment. MCP authentication differs by `AUTH_MODE`.
 
-### Local development
+### Local development (`AUTH_MODE=local-bearer`)
 
-Create a non-committed `.dev.vars` file in the project root:
+Create a non-committed `.dev.vars` file in the project root (see [`.dev.vars.example`](../.dev.vars.example)):
 
 ```text
 AWS_ACCESS_KEY_ID="AKIA..."
 AWS_SECRET_ACCESS_KEY="..."
+AUTH_MODE=local-bearer
 MCP_AUTH_TOKEN="..."
 ```
 
-This file is already listed in `.gitignore` so it will not be committed. Wrangler automatically reads `.dev.vars` when running `wrangler dev`.
+Wrangler automatically reads `.dev.vars` when running `pnpm dev` or `wrangler dev`.
 
-### Deployed Workers
+### Deployed Workers — OAuth production (`AUTH_MODE=oauth`)
 
-Use Wrangler secrets for deployed environments:
+Production ChatGPT connectors use OAuth. Store only AWS credentials as Cloudflare secrets:
 
 ```bash
 wrangler secret put AWS_ACCESS_KEY_ID
-# Paste the access key ID when prompted.
-
 wrangler secret put AWS_SECRET_ACCESS_KEY
-# Paste the secret access key when prompted.
-
-wrangler secret put MCP_AUTH_TOKEN
-# Set a strong random bearer token that ChatGPT will use to authenticate.
 ```
 
-These commands upload the values to Cloudflare's secure secrets store. The values are encrypted at rest and injected as environment variables at runtime. They never appear in your source code, Wrangler configuration, or Git history.
+Configure OAuth values in `wrangler.jsonc` `[vars]` and deploy. Do **not** set `MCP_AUTH_TOKEN` in OAuth mode. See [deployment.md](deployment.md) and [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
+
+Alternatively, use `pnpm run sync-secrets` with `.env.deploy.local` as described in [deployment.md](deployment.md).
+
+### Deployed Workers — local bearer (`AUTH_MODE=local-bearer`)
+
+For non-ChatGPT deployments or testing only:
+
+```bash
+wrangler secret put AWS_ACCESS_KEY_ID
+wrangler secret put AWS_SECRET_ACCESS_KEY
+wrangler secret put MCP_AUTH_TOKEN
+```
+
+These values are encrypted at rest and injected as environment variables at runtime. They never appear in source code, Wrangler configuration, or Git history.
 
 ## Verification
 
-### Local
+### Local (`AUTH_MODE=local-bearer`)
 
-Ensure `.dev.vars` exists with the three required variables, then start the dev server:
+Ensure `.dev.vars` includes AWS credentials and `MCP_AUTH_TOKEN`, then start the dev server:
 
 ```bash
-wrangler dev
+pnpm dev
 ```
 
-### Deployed
+Verify `tools/list` with curl — see [mcp-testing.md](mcp-testing.md).
 
-After configuring secrets with `wrangler secret put`, deploy the Worker:
+### Deployed — OAuth production
+
+After deploying with `AUTH_MODE=oauth`:
 
 ```bash
-wrangler deploy
+pnpm run verify:oauth
+pnpm run verify:oauth:authenticated
 ```
 
-Then verify the MCP endpoint responds with a valid tool list:
+See [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) for the full production gate.
+
+### Deployed — local bearer
+
+After configuring secrets and deploying with `AUTH_MODE=local-bearer`:
 
 ```bash
-curl -X POST http://localhost:8787/mcp \
+curl -sS -X POST "https://<worker-host>/mcp" \
   -H "Authorization: Bearer <your-mcp-auth-token>" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-A successful response returns the list of available MCP tools. An authentication error indicates the `MCP_AUTH_TOKEN` is mismatched. An access-denied error from AWS indicates the IAM credentials or policy need review.
+A successful response returns the list of available MCP tools. An authentication error indicates `MCP_AUTH_TOKEN` is mismatched. An access-denied error from AWS indicates the IAM credentials or policy need review.
 
 ## Security rationale
 

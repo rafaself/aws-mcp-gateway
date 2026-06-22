@@ -2,6 +2,12 @@
 
 This directory holds short implementation specs for non-trivial changes that affect public behavior, MCP tool contracts, AWS access, validation, caching, security, CI, testing, or deployment behavior.
 
+## Shipped specs
+
+Some files in this directory document **implemented** behavior as living contracts — for example, [`oauth-chatgpt-connector.md`](oauth-chatgpt-connector.md) defines the current OAuth authorization contract. These are maintained alongside code and tests; they are not pre-implementation planning artifacts.
+
+New non-trivial work still copies [`template.md`](template.md) before implementation.
+
 ## When to write a spec
 
 A spec is **required** before implementation when a change touches any of:
