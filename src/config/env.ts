@@ -8,7 +8,6 @@ import type {
 import { resolveAuthMode } from "./auth-mode.js";
 import {
   validateOAuthAudienceUrl,
-  validateHttpsUrl,
   validateOAuthIntrospectionUrl,
   validateOAuthIssuerUrl,
   validateOAuthJwksUri,
