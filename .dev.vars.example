@@ -11,6 +11,6 @@ AWS_SECRET_ACCESS_KEY=
 AWS_REGION=us-east-1
 AWS_ALLOWED_REGIONS=us-east-1,sa-east-1
 
-# Local legacy bearer mode (default when AUTH_MODE is absent)
-AUTH_MODE=legacy-bearer
+# Local bearer mode (default when AUTH_MODE is absent)
+AUTH_MODE=local-bearer
 MCP_AUTH_TOKEN=

@@ -12,7 +12,7 @@ For the authorization contract and security model, see [docs/specs/oauth-chatgpt
 
 ## Security notes
 
-- **No auth is not acceptable** for production deployments that expose AWS account data. Use OAuth (or legacy bearer for local-only testing).
+- **No auth is not acceptable** for production deployments that expose AWS account data. Use OAuth (or local bearer mode for local-only testing).
 - OAuth tokens must not be pasted into GitHub issues, PRs, docs, screenshots, or chat logs.
 - AWS credentials remain Cloudflare secrets and are unrelated to OAuth user tokens.
 - OAuth protects who may call the gateway; IAM still limits what the gateway can read from AWS.
@@ -173,7 +173,7 @@ Regression tests for these contracts live in `src/index.oauth.test.ts` and `src/
 - **Future compatibility:** CIMD-compatible client identification at the authorization server when the provider supports it. The Worker validation path does not change unless token claims change.
 - **Not supported in this gateway:** custom DCR or OAuth authorization server implementation inside the Worker.
 
-If the ChatGPT connector works with the current Auth0 predefined client flow, no CIMD migration is needed for MVP. Do not attempt to implement DCR or OAuth server behavior in this repository.
+If the ChatGPT connector works with the current Auth0 predefined client flow, no CIMD migration is needed. Do not attempt to implement DCR or OAuth server behavior in this repository.
 
 ## Discovery model
 
@@ -191,14 +191,16 @@ OAuth can succeed while actions remain invisible if `tools/list` is empty or des
 
 See [chatgpt-connector.md](chatgpt-connector.md) for the connector contract, layered architecture, tool surface, troubleshooting, and curl smoke tests.
 
-## Local development (legacy bearer)
+## Local development (local bearer mode)
 
-For local `pnpm dev`, use legacy bearer mode:
+For local `pnpm dev`, use local bearer mode:
 
 ```text
-AUTH_MODE=legacy-bearer
+AUTH_MODE=local-bearer
 MCP_AUTH_TOKEN=<local-only-token>
 ```
+
+`legacy-bearer` is accepted as a deprecated alias for `local-bearer`.
 
 See [mcp-testing.md](mcp-testing.md) for curl examples.
 

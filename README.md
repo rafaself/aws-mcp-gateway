@@ -26,7 +26,7 @@ The gateway is currently designed for:
 - remote MCP usage over HTTPS;
 - ChatGPT custom app connector integration;
 - OAuth-based ChatGPT connector authentication;
-- local legacy bearer-token development;
+- local bearer mode development;
 - read-only AWS cost, EC2, CloudWatch, and CloudWatch Logs inspection.
 
 Production deployments should still run the verification and acceptance checks documented in [`docs/chatgpt-connector-production-acceptance.md`](docs/chatgpt-connector-production-acceptance.md).
@@ -116,7 +116,7 @@ AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_REGION=us-east-1
 AWS_ALLOWED_REGIONS=us-east-1,sa-east-1
-AUTH_MODE=legacy-bearer
+AUTH_MODE=local-bearer
 MCP_AUTH_TOKEN=
 ```
 
@@ -140,7 +140,7 @@ The local MCP endpoint is available at:
 http://localhost:8787/mcp
 ```
 
-Local development uses `AUTH_MODE=legacy-bearer` by default. Production ChatGPT connector deployments should use OAuth.
+Local development uses `AUTH_MODE=local-bearer` by default (`legacy-bearer` is accepted as a deprecated alias). Production ChatGPT connector deployments should use OAuth.
 
 ## Configuration
 
@@ -226,7 +226,7 @@ Or deploy manually after configuring Worker secrets with Wrangler:
 ```bash
 wrangler secret put AWS_ACCESS_KEY_ID
 wrangler secret put AWS_SECRET_ACCESS_KEY
-wrangler secret put MCP_AUTH_TOKEN # legacy-bearer mode only
+wrangler secret put MCP_AUTH_TOKEN # local-bearer mode only
 pnpm deploy
 ```
 

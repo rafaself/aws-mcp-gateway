@@ -107,20 +107,20 @@ A successful response returns the list of available MCP tools. An authentication
 
 ### Why least-privilege is required
 
-The gateway is designed to be a narrow policy enforcement layer. AWS-managed policies such as `ReadOnlyAccess`, `ViewOnlyAccess`, or `AdministratorAccess` grant far more permissions than the MVP needs:
+The gateway is designed to be a narrow policy enforcement layer. AWS-managed policies such as `ReadOnlyAccess`, `ViewOnlyAccess`, or `AdministratorAccess` grant far more permissions than the current read-only scope needs:
 
 - `ReadOnlyAccess` includes thousands of read actions across every AWS service, many of which expose sensitive data (IAM users, KMS keys, Secrets Manager secrets, S3 bucket objects).
 - `AdministratorAccess` grants full write access to every AWS resource — a single misconfiguration or compromised credential could be catastrophic.
 
 The custom policy in this repository is intentionally narrow:
 
-- It lists exactly the AWS actions the MVP tools call.
+- It lists exactly the AWS actions the supported MCP tools call.
 - Blocking all mutation actions by default prevents accidental or malicious resource changes even if the MCP endpoint authentication were bypassed.
 - Every new tool requires an explicit policy expansion, creating a natural review point.
 
-### Why the MVP remains read-only
+### Why the gateway remains read-only
 
-The MVP explicitly avoids write-capable tools for three reasons:
+The current read-only scope explicitly avoids write-capable tools for three reasons:
 
 1. **IAM boundary** — The custom policy has zero `Create`, `Update`, `Delete`, `Put`, `Terminate`, `Start`, `Stop` or similar write actions. Even if a future tool attempted a mutation, the IAM policy would reject it.
 2. **Worker enforcement** — The gateway only exposes explicit, allowlisted read tools. There is no generic `run_aws_cli` or `call_any_aws_api` escape hatch.

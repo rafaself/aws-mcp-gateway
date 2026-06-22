@@ -36,7 +36,7 @@ Core AWS tool definitions
 - **Tool registry and handlers** — contract-first registration in `src/mcp/tools/`; no dynamic or arbitrary AWS proxy.
 - **MCP transport at `/mcp`** — one JSON-RPC endpoint; authentication happens before MCP server creation.
 - **ChatGPT-compatible descriptor/catalog adapter** — `tools/list` descriptors plus `search`/`fetch` catalog helpers.
-- **Optional future Apps SDK UI layer** — out of scope for the MVP; would sit above the same MCP contract.
+- **Optional future Apps SDK UI layer** — out of scope for the current read-only scope; would sit above the same MCP contract.
 
 Do not add a second MCP server, proxy another MCP endpoint, or duplicate tool runtimes for ChatGPT compatibility.
 
@@ -139,9 +139,9 @@ After OAuth succeeds:
 
 Do not paste OAuth access tokens into issues, docs, or terminal history.
 
-## Verify with curl (legacy bearer)
+## Verify with curl (local bearer mode)
 
-Local `pnpm dev` uses `AUTH_MODE=legacy-bearer`. You can smoke-test `tools/list`, `search`, and `fetch` with a bearer token:
+Local `pnpm dev` uses `AUTH_MODE=local-bearer`. You can smoke-test `tools/list`, `search`, and `fetch` with a bearer token:
 
 ```bash
 curl -X POST http://localhost:8787/mcp \

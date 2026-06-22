@@ -68,7 +68,7 @@ wrangler secret put AWS_ACCESS_KEY_ID
 wrangler secret put AWS_SECRET_ACCESS_KEY
 ```
 
-**Legacy bearer mode only** (`AUTH_MODE=legacy-bearer` or absent):
+**Local bearer mode only** (`AUTH_MODE=local-bearer` or absent; `legacy-bearer` is accepted as a deprecated alias):
 
 ```bash
 wrangler secret put MCP_AUTH_TOKEN
@@ -81,7 +81,7 @@ wrangler secret put MCP_AUTH_TOKEN
 
 | Mode | Use case | `MCP_AUTH_TOKEN` | OAuth vars |
 |------|----------|------------------|------------|
-| `legacy-bearer` (default) | Local `pnpm dev`, curl testing | Required (secret) | Not used |
+| `local-bearer` (default) | Local `pnpm dev`, curl testing | Required (secret) | Not used |
 | `oauth` | ChatGPT connector production | Not required | Required in `[vars]` plus `AUTH_RATE_LIMITER` Durable Object binding |
 
 OAuth vars (non-secret, safe in `wrangler.jsonc` or dashboard):
@@ -234,7 +234,7 @@ The health endpoint is at:
 https://aws-mcp-gateway.<your-subdomain>.workers.dev/health
 ```
 
-A custom domain can be added later through the Cloudflare dashboard, but it is not required for the MVP.
+A custom domain can be added later through the Cloudflare dashboard, but it is not required for the current read-only scope.
 
 ## Verification
 
@@ -269,7 +269,7 @@ curl -i -X POST https://<worker-host>/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-**Legacy bearer mode**: expect `401` without `WWW-Authenticate`:
+**Local bearer mode**: expect `401` without `WWW-Authenticate`:
 
 ```bash
 curl -X POST https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp \
@@ -300,7 +300,7 @@ curl -X POST https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp \
 
 ### 3. Authenticated MCP connection
 
-**Legacy bearer mode** — with a valid `MCP_AUTH_TOKEN`:
+**Local bearer mode** — with a valid `MCP_AUTH_TOKEN`:
 
 ```bash
 curl -X POST https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp \
@@ -335,9 +335,9 @@ To redeploy after a configuration change (e.g. updated secrets or vars), run `pn
 ## Security documentation contract
 
 - Sensitive runtime values (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) are configured via `wrangler secret put` outside Git.
-- `MCP_AUTH_TOKEN` is required only in `legacy-bearer` mode.
+- `MCP_AUTH_TOKEN` is required only in `local-bearer` mode.
 - OAuth production deployments use `AUTH_MODE=oauth` without `MCP_AUTH_TOKEN`.
 - `AWS_ALLOWED_REGIONS` is operational configuration, not a credential, and belongs in `wrangler.jsonc` `[vars]`.
-- The MVP is read-only. IAM permissions are explicitly scoped and do not include write or management actions.
+- The gateway is read-only in the current scope. IAM permissions are explicitly scoped and do not include write or management actions.
 - Local-only env files (`.dev.vars`) and generated platform state (`.wrangler/`) must not be committed.
 - Cost Explorer and regional tools may make live AWS calls during manual MCP testing — be aware of AWS API costs before running repeated queries.
