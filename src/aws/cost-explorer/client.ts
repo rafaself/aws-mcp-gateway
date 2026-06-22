@@ -49,6 +49,7 @@ export async function getCostSummary(
 
   const response = await awsRequest<CeResponse>(
     {
+      capability: "ce:GetCostAndUsage",
       service: "ce",
       region: signingRegion,
       method: "POST",
@@ -127,6 +128,7 @@ export async function getCostByService(
 
   const response = await awsRequest<CeResponse>(
     {
+      capability: "ce:GetCostAndUsage",
       service: "ce",
       region: signingRegion,
       method: "POST",

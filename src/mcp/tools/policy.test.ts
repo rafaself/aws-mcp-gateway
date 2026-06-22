@@ -233,6 +233,7 @@ describe("tool policy gate", () => {
       aws: {
         services: [],
         actions: [],
+        capabilities: [],
         regionMode: "none",
         readonly: true,
       },

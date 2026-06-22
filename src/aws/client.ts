@@ -1,13 +1,27 @@
 import { AwsClient } from "aws4fetch";
+import { assertAwsCapability, AwsCapabilityError, getAwsCapability } from "./capabilities.js";
 import { AwsRequestError } from "./errors.js";
 import type { AwsRequestOptions, AwsCredentials } from "./types.js";
 
+/**
+ * Internal AWS request helper. Not caller-facing and must never be exposed as an MCP tool.
+ * Every call must declare a known capability ID from the central registry.
+ */
 const DEFAULT_TIMEOUT_MS = 15_000;
 
 export async function awsRequest<T = Record<string, unknown>>(
   options: AwsRequestOptions,
   credentials: AwsCredentials,
 ): Promise<T> {
+  const capabilityId = assertAwsCapability(options.capability);
+  const capability = getAwsCapability(capabilityId);
+  const expectedService = capability.requestService ?? capability.iamService;
+  if (options.service !== expectedService) {
+    throw new AwsCapabilityError(
+      `AWS request service "${options.service}" does not match capability "${capabilityId}".`,
+    );
+  }
+
   const { service, region, method, path, query, headers, body } = options;
 
   const client = new AwsClient({

@@ -31,6 +31,7 @@ export async function describeAlarmsInRegion(
 
     const response = await awsRequest<DescribeAlarmsResponse>(
       {
+        capability: "cloudwatch:DescribeAlarms",
         service: "monitoring",
         region,
         method: "POST",

@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { AwsCapabilityId } from "../../aws/capabilities.js";
 import type { GatewayContext } from "../../config/context.js";
 import {
   chatgptDiscoveryToolDescriptor,
@@ -16,6 +17,8 @@ import type {
 } from "./registry.js";
 import type { McpSuccessResult } from "./response.js";
 import type { mcpErrorResult } from "../../errors/public-error.js";
+
+export type { AwsCapabilityId } from "../../aws/capabilities.js";
 
 export type ToolPack = "core" | "cost" | "inventory" | "observability" | "security";
 
@@ -55,6 +58,7 @@ export type ToolManifest<TInput = Record<string, unknown>> = {
   aws: {
     services: string[];
     actions: string[];
+    capabilities: AwsCapabilityId[];
     regionMode: AwsRegionMode;
     readonly: true;
   };

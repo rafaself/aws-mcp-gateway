@@ -48,3 +48,14 @@ Every AWS tool must return a response with two fields:
 - A caller may request a subset of the configured allowed regions.
 - A caller may not specify regions outside the configured allowlist — those requests must be rejected.
 - If no region is specified, the tool should use the full allowlist.
+
+## AWS capability metadata
+
+New AWS-backed tools must:
+
+- declare capability IDs from `src/aws/capabilities.ts` on the tool manifest;
+- keep manifest `aws.actions` aligned with those capabilities;
+- register a new capability entry when introducing a new AWS action;
+- update [`docs/aws-capability-matrix.md`](aws-capability-matrix.md) before merge.
+
+The capability contract tests in `src/mcp/tools/capability-contract.test.ts` fail when capability metadata is missing or unknown.

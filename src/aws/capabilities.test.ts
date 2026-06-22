@@ -1,0 +1,55 @@
+import { describe, expect, it } from "vitest";
+import {
+  AWS_CAPABILITY_IDS,
+  AWS_CAPABILITY_REGISTRY,
+  awsActionsForCapabilities,
+  awsServicesForCapabilities,
+  getAwsCapability,
+  isAwsCapabilityId,
+  isReadOnlyIamAction,
+} from "./capabilities.js";
+
+describe("aws capabilities registry", () => {
+  it("defines the four current capability IDs", () => {
+    expect(AWS_CAPABILITY_IDS.sort()).toEqual([
+      "ce:GetCostAndUsage",
+      "cloudwatch:DescribeAlarms",
+      "ec2:DescribeInstances",
+      "logs:FilterLogEvents",
+    ]);
+  });
+
+  it("maps every capability to a read-only IAM action", () => {
+    for (const id of AWS_CAPABILITY_IDS) {
+      const capability = getAwsCapability(id);
+      expect(capability.readonly).toBe(true);
+      expect(isReadOnlyIamAction(capability.iamAction)).toBe(true);
+    }
+  });
+
+  it("derives unique IAM actions and services", () => {
+    expect(awsActionsForCapabilities(AWS_CAPABILITY_IDS)).toEqual([
+      "ce:GetCostAndUsage",
+      "cloudwatch:DescribeAlarms",
+      "ec2:DescribeInstances",
+      "logs:FilterLogEvents",
+    ]);
+    expect(awsServicesForCapabilities(AWS_CAPABILITY_IDS)).toEqual([
+      "ce",
+      "cloudwatch",
+      "ec2",
+      "logs",
+    ]);
+  });
+
+  it("rejects unknown capability IDs", () => {
+    expect(isAwsCapabilityId("s3:GetObject")).toBe(false);
+  });
+
+  it("does not contain deployment-specific values", () => {
+    const serialized = JSON.stringify(AWS_CAPABILITY_REGISTRY);
+    expect(serialized).not.toMatch(/AKIA/);
+    expect(serialized).not.toMatch(/arn:aws/);
+    expect(serialized).not.toMatch(/\d{12}/);
+  });
+});

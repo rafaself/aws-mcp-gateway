@@ -5,7 +5,7 @@ import {
   PUBLIC_TOOL_TITLES,
 } from "../descriptor.js";
 import { sanitizeNoInput } from "../../audit/tool-input.js";
-import { DEFAULT_AUTH_SCOPES, type ToolManifest } from "../manifest.js";
+import { DEFAULT_AUTH_SCOPES, type ToolManifest, type AwsCapabilityId } from "../manifest.js";
 import { manifestToGatewayDefinitionForContext, type GatewayToolDefinition } from "../registry.js";
 
 const statusInputSchema = z.object({});
@@ -20,6 +20,7 @@ const CORE_SAFETY = {
 const CORE_AWS = {
   services: [] as string[],
   actions: [] as string[],
+  capabilities: [] as AwsCapabilityId[],
   regionMode: "none" as const,
   readonly: true as const,
 };

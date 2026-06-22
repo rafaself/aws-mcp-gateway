@@ -50,6 +50,7 @@ export function createCostSummaryToolManifest(ctx: GatewayContext): ToolManifest
     aws: {
       services: ["ce"],
       actions: ["ce:GetCostAndUsage"],
+      capabilities: ["ce:GetCostAndUsage"],
       regionMode: "single-region",
       readonly: true,
     },
