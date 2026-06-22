@@ -4,12 +4,15 @@ import { filterLogEvents, LogsError } from "../../../aws/logs/index.js";
 import { LOGS_MAX_HOURS, LOGS_MAX_EVENTS } from "../../../security/limits.js";
 import { validateRegion } from "../../../security/regions.js";
 import { summarizeLogErrorsInput } from "../../audit/tool-input.js";
-import { safeMcpHandler } from "../response.js";
 import {
   PUBLIC_TOOL_TITLES,
   recentLogErrorsOutputSchema,
-  readOnlyAwsToolDescriptor,
 } from "../descriptor.js";
+import {
+  DEFAULT_AUTH_SCOPES,
+  manifestToGatewayDefinition,
+  type ToolManifest,
+} from "../manifest.js";
 import type { GatewayToolDefinition } from "../registry.js";
 
 const recentLogErrorsInputSchema = z.object({
@@ -33,14 +36,16 @@ const recentLogErrorsInputSchema = z.object({
 
 type RecentLogErrorsInput = z.infer<typeof recentLogErrorsInputSchema>;
 
-export function createGetRecentLogErrorsToolDefinition(
+export function createGetRecentLogErrorsToolManifest(
   ctx: GatewayContext,
-): GatewayToolDefinition {
-  return readOnlyAwsToolDescriptor({
+): ToolManifest<RecentLogErrorsInput> {
+  return {
     name: "get_recent_log_errors",
     title: PUBLIC_TOOL_TITLES.get_recent_log_errors,
     description:
       "Returns recent error, exception, and warning log events from a CloudWatch log group.",
+    pack: "observability",
+    lifecycle: "stable",
     inputSchema: recentLogErrorsInputSchema,
     outputSchema: recentLogErrorsOutputSchema,
     visibility: { mcp: true, chatgpt: true },
@@ -50,60 +55,77 @@ export function createGetRecentLogErrorsToolDefinition(
       inputSummary: "region, logGroupName, optional limit and lookback hours.",
       awsService: "logs",
     },
-    handler: safeMcpHandler(
-      {
-        toolName: "get_recent_log_errors",
-        awsService: "logs",
-        getRegion: (args: RecentLogErrorsInput) => args.region,
-        sanitizeInput: (args) => summarizeLogErrorsInput(args),
-      },
-      async (args: RecentLogErrorsInput) => {
-        validateRegion(args.region, ctx.allowedRegions);
+    auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
+    aws: {
+      services: ["logs"],
+      actions: ["logs:FilterLogEvents"],
+      regionMode: "single-region",
+      readonly: true,
+    },
+    safety: {
+      riskLevel: "read-only",
+      cacheTtlSeconds: 300,
+      timeoutMs: 15000,
+      costClass: "cached-read",
+    },
+    audit: {
+      awsService: "logs",
+      getRegion: (args: RecentLogErrorsInput) => args.region,
+      sanitizeInput: (args) => summarizeLogErrorsInput(args),
+    },
+    descriptorKind: "aws-readonly",
+    handler: async (args: RecentLogErrorsInput) => {
+      validateRegion(args.region, ctx.allowedRegions);
 
-        if (!args.logGroupName || args.logGroupName.trim().length === 0) {
-          throw new LogsError("validation_error", "logGroupName is required.");
-        }
+      if (!args.logGroupName || args.logGroupName.trim().length === 0) {
+        throw new LogsError("validation_error", "logGroupName is required.");
+      }
 
-        const now = Date.now();
-        const startTime = now - args.hours * 60 * 60 * 1000;
+      const now = Date.now();
+      const startTime = now - args.hours * 60 * 60 * 1000;
 
-        const events = await filterLogEvents(
-          args.logGroupName,
+      const events = await filterLogEvents(
+        args.logGroupName,
+        {
+          startTime,
+          endTime: now,
+          limit: args.limit,
+        },
+        args.region,
+        ctx.credentials,
+        ctx.cache,
+      );
+
+      const count = events.length;
+
+      const eventEntries = events.map((e) => ({
+        timestamp: e.timestamp,
+        logStreamName: e.logStreamName,
+        message: e.message,
+      }));
+
+      const text = `Found ${count} error log event(s) in ${args.logGroupName} (${args.region}, last ${args.hours}h).`;
+
+      return {
+        content: [
           {
-            startTime,
-            endTime: now,
-            limit: args.limit,
+            type: "text" as const,
+            text,
           },
-          args.region,
-          ctx.credentials,
-          ctx.cache,
-        );
+        ],
+        structuredContent: {
+          region: args.region,
+          logGroupName: args.logGroupName,
+          count,
+          events: eventEntries,
+        },
+      };
+    },
+  };
+}
 
-        const count = events.length;
-
-        const eventEntries = events.map((e) => ({
-          timestamp: e.timestamp,
-          logStreamName: e.logStreamName,
-          message: e.message,
-        }));
-
-        const text = `Found ${count} error log event(s) in ${args.logGroupName} (${args.region}, last ${args.hours}h).`;
-
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text,
-            },
-          ],
-          structuredContent: {
-            region: args.region,
-            logGroupName: args.logGroupName,
-            count,
-            events: eventEntries,
-          },
-        };
-      },
-    ),
-  });
+export function createGetRecentLogErrorsToolDefinition(
+  ctx: GatewayContext,
+): GatewayToolDefinition {
+  return manifestToGatewayDefinition(createGetRecentLogErrorsToolManifest(ctx));
 }
