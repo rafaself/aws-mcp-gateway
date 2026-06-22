@@ -106,13 +106,14 @@ Follow this workflow when introducing a new public MCP tool:
 2. **Manifest registration** — Register a manifest factory in `src/mcp/tools/registry.ts` with `pack`, `lifecycle`, `descriptorKind`, `visibility`, `auth`, `aws`, `safety`, `costControl`, `audit`, and `catalog` metadata (for non-discovery tools).
 3. **Capability metadata** — Declare `aws.capabilities` from `src/aws/capabilities.ts`; add a new capability entry if introducing a new AWS action.
 4. **Capability matrix** — Update [`docs/aws-capability-matrix.md`](aws-capability-matrix.md) before merge.
-5. **IAM policy** — Extend [`infra/aws/iam-readonly-policy.json`](../infra/aws/iam-readonly-policy.json) only when a new AWS action is required.
+5. **IAM policy** — Extend [`infra/aws/iam-readonly-policy.json`](../infra/aws/iam-readonly-policy.json) only when a new AWS action is required; keep it aligned with the capability registry (`src/aws/iam-readonly-policy.test.ts` must pass).
 6. **Documentation** — Add the tool contract to [`docs/mcp-tools.md`](mcp-tools.md).
 7. **Tests** — Add or extend contract tests as applicable:
    - `src/mcp/tools/manifest-contract.test.ts`
    - `src/mcp/tools/policy.test.ts`
    - `src/mcp/tools/cost-control-policy.test.ts`
    - `src/mcp/tools/capability-contract.test.ts`
+   - `src/aws/iam-readonly-policy.test.ts`
    - `src/mcp/tools/descriptor-contract.test.ts`
    - `src/mcp/tools/exposure.test.ts`
 

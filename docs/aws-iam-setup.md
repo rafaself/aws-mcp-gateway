@@ -132,8 +132,9 @@ The gateway is designed to be a narrow policy enforcement layer. AWS-managed pol
 
 The custom policy in this repository is intentionally narrow:
 
-- It lists the read-only AWS actions required by gateway tools (see the [AWS capability matrix](aws-capability-matrix.md)).
-- The capability matrix documents the **tool-required** IAM actions for all 14 registered tools; the committed policy may include additional forward-looking read permissions not yet used by a tool.
+- It lists only the read-only AWS actions declared by manifest-backed tools (see the [AWS capability matrix](aws-capability-matrix.md)).
+- The capability matrix and capability registry in `src/aws/capabilities.ts` are authoritative for the checked-in policy — no extra forward-looking permissions.
+- Drift between the policy, registry, and matrix is caught by contract tests (`src/aws/iam-readonly-policy.test.ts`, `src/mcp/tools/capability-matrix.test.ts`).
 - Blocking all mutation actions by default prevents accidental or malicious resource changes even if the MCP endpoint authentication were bypassed.
 - Every new tool requires an explicit policy expansion, creating a natural review point.
 

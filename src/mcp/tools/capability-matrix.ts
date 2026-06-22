@@ -68,6 +68,10 @@ export function renderAwsCapabilityMatrixMarkdown(
     "New AWS-backed tools must update capability metadata and regenerate this document",
     "before merge.",
     "",
+    "The checked-in IAM policy at `infra/aws/iam-readonly-policy.json` must contain exactly",
+    "the unique IAM actions listed in this matrix. Drift is enforced by",
+    "`src/aws/iam-readonly-policy.test.ts`.",
+    "",
     "| Tool | Pack | AWS service | AWS action | Region mode | Risk level | Cache TTL (s) | Cost class | Cost control | Cost sensitivity |",
     "| --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- |",
   ];
