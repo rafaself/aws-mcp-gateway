@@ -6,6 +6,7 @@ import {
   OAUTH_REQUIRED_SCOPE,
   readOnlyAwsToolDescriptor,
 } from "./descriptor.js";
+import { evaluateToolPolicy, type ToolPolicyContext } from "./policy.js";
 import { safeMcpHandler } from "./response.js";
 import type {
   GatewayToolCatalogMetadata,
@@ -72,6 +73,7 @@ export const DEFAULT_AUTH_SCOPES = [OAUTH_REQUIRED_SCOPE] as const;
 
 export function manifestToGatewayDefinition<TInput>(
   manifest: ToolManifest<TInput>,
+  policyContext: ToolPolicyContext,
 ): GatewayToolDefinition {
   const descriptor = {
     name: manifest.name,
@@ -81,7 +83,7 @@ export function manifestToGatewayDefinition<TInput>(
     outputSchema: manifest.outputSchema,
     visibility: manifest.visibility,
     catalog: manifest.catalog,
-    handler: wrapManifestHandler(manifest),
+    handler: wrapManifestHandler(manifest, policyContext),
   };
 
   switch (manifest.descriptorKind) {
@@ -94,7 +96,10 @@ export function manifestToGatewayDefinition<TInput>(
   }
 }
 
-function wrapManifestHandler<TInput>(manifest: ToolManifest<TInput>): GatewayToolHandler {
+function wrapManifestHandler<TInput>(
+  manifest: ToolManifest<TInput>,
+  policyContext: ToolPolicyContext,
+): GatewayToolHandler {
   return safeMcpHandler(
     {
       toolName: manifest.name,
@@ -102,7 +107,18 @@ function wrapManifestHandler<TInput>(manifest: ToolManifest<TInput>): GatewayToo
       getRegion: manifest.audit.getRegion,
       sanitizeInput: manifest.audit.sanitizeInput,
     },
-    manifest.handler as (args: TInput) => Promise<McpSuccessResult>,
+    async (args: TInput) => {
+      const denial = evaluateToolPolicy(
+        manifest as AnyToolManifest,
+        policyContext,
+        args as Record<string, unknown>,
+      );
+      if (denial) {
+        throw denial;
+      }
+
+      return (manifest.handler as (args: TInput) => Promise<McpSuccessResult>)(args);
+    },
   );
 }
 

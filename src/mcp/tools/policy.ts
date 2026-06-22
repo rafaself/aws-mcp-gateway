@@ -1,0 +1,194 @@
+import type { AuthMode } from "../../config/env.js";
+import type { GatewayContext } from "../../config/context.js";
+import { GatewayError } from "../../errors/public-error.js";
+import { resolveRegions, validateAllowedRegions, validateRegion } from "../../security/regions.js";
+import { ValidationError } from "../../security/errors.js";
+import { DEFAULT_AUTH_SCOPES, type AnyToolManifest, type ToolPack, type ToolRiskLevel } from "./manifest.js";
+
+const VALID_PACKS: ReadonlySet<ToolPack> = new Set([
+  "core",
+  "cost",
+  "inventory",
+  "observability",
+]);
+
+export type ToolPolicyContext = {
+  enabledToolNames: ReadonlySet<string>;
+  enabledPacks: ReadonlySet<ToolPack>;
+  maxRiskLevel: ToolRiskLevel;
+  allowedAwsServices: ReadonlySet<string>;
+  allowedAwsActions: ReadonlySet<string>;
+  allowedRegions: readonly string[];
+  authMode: AuthMode;
+  requiredScopes: readonly string[];
+};
+
+export type ToolPolicyContextOverrides = Partial<{
+  enabledToolNames: ReadonlySet<string>;
+  enabledPacks: ReadonlySet<ToolPack>;
+  maxRiskLevel: ToolRiskLevel;
+  allowedAwsServices: ReadonlySet<string>;
+  allowedAwsActions: ReadonlySet<string>;
+}>;
+
+export function isAwsBackedManifest(manifest: AnyToolManifest): boolean {
+  return manifest.descriptorKind === "aws-readonly";
+}
+
+export function buildToolPolicyContext(
+  ctx: GatewayContext,
+  manifests: ReadonlyArray<AnyToolManifest>,
+  overrides?: ToolPolicyContextOverrides,
+): ToolPolicyContext {
+  return {
+    enabledToolNames:
+      overrides?.enabledToolNames ?? new Set(manifests.map((manifest) => manifest.name)),
+    enabledPacks:
+      overrides?.enabledPacks ?? new Set(manifests.map((manifest) => manifest.pack)),
+    maxRiskLevel: overrides?.maxRiskLevel ?? "read-only",
+    allowedAwsServices:
+      overrides?.allowedAwsServices ??
+      new Set(manifests.flatMap((manifest) => manifest.aws.services)),
+    allowedAwsActions:
+      overrides?.allowedAwsActions ??
+      new Set(manifests.flatMap((manifest) => manifest.aws.actions)),
+    allowedRegions: ctx.allowedRegions,
+    authMode: ctx.authMode ?? "local-bearer",
+    requiredScopes: ctx.oauthRequiredScopes ?? [...DEFAULT_AUTH_SCOPES],
+  };
+}
+
+function policyDenial(message: string): GatewayError {
+  return new GatewayError("validation_error", message);
+}
+
+function validateManifestStructure(manifest: AnyToolManifest): GatewayError | null {
+  if (!manifest.name || typeof manifest.name !== "string") {
+    return policyDenial("Tool manifest is malformed.");
+  }
+
+  if (!manifest.pack || !VALID_PACKS.has(manifest.pack)) {
+    return policyDenial("Tool manifest is malformed.");
+  }
+
+  if (!manifest.safety?.riskLevel) {
+    return policyDenial("Tool manifest is malformed.");
+  }
+
+  if (manifest.aws?.readonly !== true) {
+    return policyDenial("Tool manifest is malformed.");
+  }
+
+  return null;
+}
+
+function validateAwsMetadata(manifest: AnyToolManifest, policy: ToolPolicyContext): GatewayError | null {
+  if (!isAwsBackedManifest(manifest)) {
+    return null;
+  }
+
+  if (manifest.aws.services.length === 0 || manifest.aws.actions.length === 0) {
+    return policyDenial("Tool is missing required AWS metadata.");
+  }
+
+  for (const service of manifest.aws.services) {
+    if (!policy.allowedAwsServices.has(service)) {
+      return policyDenial("Tool AWS service is not allowed.");
+    }
+  }
+
+  for (const action of manifest.aws.actions) {
+    if (!policy.allowedAwsActions.has(action)) {
+      return policyDenial("Tool AWS action is not allowed.");
+    }
+  }
+
+  return null;
+}
+
+function validateRequestedRegions(
+  manifest: AnyToolManifest,
+  policy: ToolPolicyContext,
+  args: Record<string, unknown>,
+): GatewayError | null {
+  if (manifest.aws.regionMode === "none") {
+    return null;
+  }
+
+  try {
+    validateAllowedRegions([...policy.allowedRegions]);
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return policyDenial(error.message);
+    }
+    throw error;
+  }
+
+  if (manifest.aws.regionMode === "single-region") {
+    const region =
+      manifest.audit.getRegion?.(args) ??
+      (typeof args.region === "string" ? args.region : undefined);
+
+    if (region) {
+      try {
+        validateRegion(region, [...policy.allowedRegions]);
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return policyDenial(error.message);
+        }
+        throw error;
+      }
+    }
+
+    return null;
+  }
+
+  if (manifest.aws.regionMode === "bounded-multi-region") {
+    const requestedRegions = Array.isArray(args.regions)
+      ? args.regions.filter((region): region is string => typeof region === "string")
+      : undefined;
+
+    if (requestedRegions && requestedRegions.length > 0) {
+      try {
+        resolveRegions(requestedRegions, [...policy.allowedRegions]);
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return policyDenial(error.message);
+        }
+        throw error;
+      }
+    }
+  }
+
+  return null;
+}
+
+export function evaluateToolPolicy(
+  manifest: AnyToolManifest,
+  policy: ToolPolicyContext,
+  args: Record<string, unknown>,
+): GatewayError | null {
+  const malformed = validateManifestStructure(manifest);
+  if (malformed) {
+    return malformed;
+  }
+
+  if (!policy.enabledToolNames.has(manifest.name)) {
+    return policyDenial("Tool is not enabled.");
+  }
+
+  if (!policy.enabledPacks.has(manifest.pack)) {
+    return policyDenial("Tool pack is not enabled.");
+  }
+
+  if (manifest.safety.riskLevel !== policy.maxRiskLevel) {
+    return policyDenial("Tool risk level is not allowed.");
+  }
+
+  const awsMetadata = validateAwsMetadata(manifest, policy);
+  if (awsMetadata) {
+    return awsMetadata;
+  }
+
+  return validateRequestedRegions(manifest, policy, args);
+}
