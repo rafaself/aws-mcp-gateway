@@ -19,4 +19,5 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run repo:safety
+      - run: pnpm run output:guardrail
       - run: pnpm run verify:connector-contract

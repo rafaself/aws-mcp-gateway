@@ -298,12 +298,15 @@ Run the standard local checks:
 
 ```bash
 pnpm run repo:safety
+pnpm run output:guardrail
 pnpm run typecheck
 pnpm test
 pnpm run test:integrity
 ```
 
 `pnpm run repo:safety` verifies tracked files stay public-safe (no local env files, secret-like values, or maintainer deployment defaults in Git).
+
+`pnpm run output:guardrail` verifies production source routes runtime output through `src/observability/` and does not call `console.*` elsewhere.
 
 Tests are offline by default. A global fetch guard fails any unmocked network request during unit tests.
 

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   buildRequestDiagnostics,
+  logError,
   logInfo,
   logWarn,
   sanitizeLogEvent,
@@ -145,6 +146,42 @@ describe("buildRequestDiagnostics", () => {
 
     expect(buildRequestDiagnostics(request).requestKind).toBe("empty_post");
   });
+
+  it("classifies aiohttp user agents without logging raw UA", () => {
+    const request = new Request("https://gateway.example.com/mcp", {
+      method: "GET",
+      headers: {
+        "User-Agent": "aiohttp/3.9.1",
+      },
+    });
+
+    const diagnostics = buildRequestDiagnostics(request);
+
+    expect(diagnostics.userAgentFamily).toBe("aiohttp");
+    expect(JSON.stringify(diagnostics)).not.toContain("aiohttp/3.9.1");
+  });
+
+  it("classifies unknown user agents as other", () => {
+    const request = new Request("https://gateway.example.com/mcp", {
+      method: "GET",
+      headers: {
+        "User-Agent": "curl/8.5.0",
+      },
+    });
+
+    expect(buildRequestDiagnostics(request).userAgentFamily).toBe("other");
+  });
+
+  it("classifies non-json requests as other request kind", () => {
+    const request = new Request("https://gateway.example.com/mcp", {
+      method: "GET",
+      headers: {
+        Accept: "text/html",
+      },
+    });
+
+    expect(buildRequestDiagnostics(request).requestKind).toBe("other");
+  });
 });
 
 describe("logInfo", () => {
@@ -160,5 +197,26 @@ describe("logInfo", () => {
     });
 
     infoSpy.mockRestore();
+  });
+});
+
+describe("logError", () => {
+  it("emits a sanitized object via console.error", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    logError({
+      phase: "mcp_handler_error",
+      code: "internal_error",
+      access_token: "must-not-appear",
+    });
+
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy).toHaveBeenCalledWith({
+      service: "aws-mcp-gateway",
+      phase: "mcp_handler_error",
+      code: "internal_error",
+    });
+
+    errorSpy.mockRestore();
   });
 });

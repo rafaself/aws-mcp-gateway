@@ -48,7 +48,8 @@ src/cache/      cache helpers
 src/config/     env validation and gateway context
 src/errors/     error classes and handling
 src/mcp/        MCP server and tool registration
-src/mcp/audit/  MCP tool audit logging
+src/mcp/audit/  MCP tool audit payload builders
+src/observability/ centralized runtime output sinks
 src/security/   limits, dates, region validation, redaction helpers
 src/test/       shared test setup and fixtures
 ```
@@ -67,6 +68,7 @@ Rules:
 - Enforce date and result-size limits.
 - Return normalized output — never raw provider responses.
 - Never expose or log credentials, bearer tokens, signed headers, raw stack traces, or raw AWS responses.
+- All production `console.*` output must go through `src/observability/` (operational logging in `logging.ts`, structured audit lines in `audit.ts`).
 - Do not add new production dependencies without a clear reason.
 
 ## Testing expectations
@@ -128,6 +130,7 @@ Before handing off:
 - The change matches the issue scope.
 - Required checks pass (`pnpm run typecheck`, `pnpm test`), or are skipped with a clear reason.
 - When touching tracked config, scripts, or repository hygiene, `pnpm run repo:safety` passes.
+- When touching production logging, audit output, or observability code, `pnpm run output:guardrail` passes.
 - No secrets or local-only files were added.
 - Documentation is updated when behavior or setup changed.
 - AGENTS.md remains concise and repository-specific — no architecture docs or issue backlog here.

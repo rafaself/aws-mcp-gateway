@@ -58,6 +58,7 @@ This repository is intended to be public-safe. Before pushing or opening a PR:
 - [ ] No MCP bearer tokens, Cloudflare API tokens, or OAuth client secrets appear in commits.
 - [ ] `.env`, `.dev.vars`, and `.wrangler/` are not tracked (see [.gitignore](.gitignore)).
 - [ ] CI runs `pnpm run repo:safety` on every pull request and push to `main` to enforce the rules above.
+- [ ] CI runs `pnpm run output:guardrail` on every pull request and push to `main` to block direct `console.*` usage outside `src/observability/`.
 - [ ] Only [`.env.example`](.env.example) documents secret names — it contains no real values.
 - [ ] `wrangler.jsonc` `[vars]` contains operational configuration only (regions, app name), not credentials.
 - [ ] Documentation examples use placeholders, not real account IDs, ARNs, log group names, or worker URLs tied to a live deployment.
@@ -145,13 +146,14 @@ Caching is optional via the `AWS_MCP_CACHE` KV binding. See [README.md](README.m
 
 ## Audit and logging checklist
 
-Audit events are emitted from `src/mcp/audit/log.ts` and tool handlers via `safeMcpHandler`.
+Audit events are emitted from `src/observability/audit.ts` via `safeEmitAuditEvent` in `src/mcp/audit/log.ts` and tool handlers via `safeMcpHandler`.
 
 - [ ] Successful and failed tool calls emit structured JSON audit events with tool name, outcome, and duration.
 - [ ] Audit `input` fields use sanitized summaries (for example, region counts, date-range flags) — not full raw tool arguments when sensitive.
 - [ ] Audit events do not include bearer tokens, AWS credentials, signed headers, or raw AWS response payloads.
 - [ ] Audit logging failures are swallowed and do not change public MCP tool behavior.
-- [ ] Application logs do not print `MCP_AUTH_TOKEN`, AWS secret keys, or raw provider error bodies.
+- [ ] Application logs use `src/observability/logging.ts` and do not print `MCP_AUTH_TOKEN`, AWS secret keys, or raw provider error bodies.
+- [ ] Production source does not call `console.*` outside `src/observability/`.
 
 ---
 
@@ -174,6 +176,7 @@ Before merging any PR:
 - [ ] `pnpm run typecheck` passes locally or in CI.
 - [ ] `pnpm test` passes — unit tests do not call live AWS or unmocked external services.
 - [ ] `pnpm run test:integrity` passes — no committed `.only` markers or unjustified skipped tests.
+- [ ] `pnpm run output:guardrail` passes — production source uses centralized observability sinks only.
 - [ ] GitHub Actions CI workflow (`.github/workflows/ci.yml`) passes on the PR.
 - [ ] New production dependencies are justified and reviewed — the project avoids unnecessary packages.
 - [ ] Security, validation, redaction, authentication, region allowlist, and read-only contract tests were not weakened to make unrelated changes pass.
