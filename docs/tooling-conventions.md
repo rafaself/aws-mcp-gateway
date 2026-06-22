@@ -21,7 +21,12 @@ get_recent_log_errors
 list_lambda_functions
 list_s3_buckets
 list_log_groups
+aws_account_overview
+aws_cost_overview
+aws_observability_overview
 ```
+
+Aggregate overview tools (`aws_*_overview`) live in the `aggregates` pack and are disabled by default. They compose existing AWS clients and return bounded counts plus short samples — not full account crawls. Enable the pack explicitly when needed.
 
 ## Input validation
 

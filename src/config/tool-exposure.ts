@@ -4,6 +4,7 @@ export const TOOL_PACKS = [
   "inventory",
   "observability",
   "security",
+  "aggregates",
 ] as const;
 
 export type ConfigToolPack = (typeof TOOL_PACKS)[number];
@@ -27,6 +28,9 @@ export const PUBLIC_TOOL_NAMES = [
   "list_lambda_functions",
   "list_s3_buckets",
   "list_log_groups",
+  "aws_account_overview",
+  "aws_cost_overview",
+  "aws_observability_overview",
 ] as const;
 
 export type PublicToolName = (typeof PUBLIC_TOOL_NAMES)[number];

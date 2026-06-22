@@ -16,6 +16,7 @@ const VALID_PACKS: ReadonlySet<ToolPack> = new Set([
   "inventory",
   "observability",
   "security",
+  "aggregates",
 ]);
 
 export type ToolPolicyContext = {

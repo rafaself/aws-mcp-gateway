@@ -19,6 +19,9 @@ import {
   createListS3BucketsToolManifest,
   createSearchToolManifest,
   createStatusToolManifest,
+  createAwsAccountOverviewToolManifest,
+  createAwsCostOverviewToolManifest,
+  createAwsObservabilityOverviewToolManifest,
 } from "./definitions/index.js";
 
 export type GatewayToolCatalogMetadata = {
@@ -77,6 +80,9 @@ export function createToolManifests(ctx: GatewayContext): AnyToolManifest[] {
     createListLambdaFunctionsToolManifest(ctx),
     createListS3BucketsToolManifest(ctx),
     createListLogGroupsToolManifest(ctx),
+    createAwsAccountOverviewToolManifest(ctx),
+    createAwsCostOverviewToolManifest(ctx),
+    createAwsObservabilityOverviewToolManifest(ctx),
   ] as AnyToolManifest[];
 }
 

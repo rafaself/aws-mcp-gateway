@@ -6,13 +6,13 @@ import {
   fetchCatalogEntry,
   searchCatalog,
 } from "./catalog.js";
-import { createToolRegistry, getChatGptCatalogEntries } from "../tools/registry.js";
+import { getChatGptCatalogEntries, buildToolRegistryState } from "../tools/registry.js";
 
 const RESOURCE_URL = "https://aws-mcp-gateway.example.workers.dev";
 
 const testContext = createTestGatewayContext();
-
-const catalogEntries = getChatGptCatalogEntries(createToolRegistry(testContext));
+const { registry, policyContext } = buildToolRegistryState(testContext);
+const catalogEntries = getChatGptCatalogEntries(registry, policyContext.enabledToolNames);
 
 describe("ChatGPT catalog", () => {
   it("returns ranked search results for cost queries", () => {

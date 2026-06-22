@@ -7,9 +7,12 @@ import {
   createToolRegistry,
   getChatGptCatalogEntries,
   PUBLIC_TOOL_NAMES,
+  buildToolRegistryState,
 } from "./registry.js";
 import type { AnyToolManifest } from "./manifest.js";
 import { isAwsBackedManifest } from "./policy.js";
+import { DEFAULT_ENABLED_TOOL_PACKS } from "../../config/tool-exposure.js";
+
 import {
   COST_MAX_DATE_RANGE_DAYS,
   COST_MAX_SERVICE_ROWS,
@@ -54,6 +57,9 @@ const AWS_BACKED_TOOLS = [
   "list_lambda_functions",
   "list_s3_buckets",
   "list_log_groups",
+  "aws_account_overview",
+  "aws_cost_overview",
+  "aws_observability_overview",
 ] as const;
 
 const CORE_TOOLS = ["search", "fetch", "get_gateway_status"] as const;
@@ -78,6 +84,9 @@ const EXPECTED_PACKS: Record<string, string> = {
   list_lambda_functions: "inventory",
   list_s3_buckets: "inventory",
   list_log_groups: "observability",
+  aws_account_overview: "aggregates",
+  aws_cost_overview: "aggregates",
+  aws_observability_overview: "aggregates",
 };
 
 const EXPECTED_CATALOG_ANCHORS = [
@@ -90,7 +99,22 @@ const EXPECTED_CATALOG_ANCHORS = [
   { toolName: "list_lambda_functions", docsAnchor: "7-list_lambda_functions" },
   { toolName: "list_s3_buckets", docsAnchor: "8-list_s3_buckets" },
   { toolName: "list_log_groups", docsAnchor: "9-list_log_groups" },
+  { toolName: "aws_account_overview", docsAnchor: "10-aws_account_overview" },
+  { toolName: "aws_cost_overview", docsAnchor: "11-aws_cost_overview" },
+  { toolName: "aws_observability_overview", docsAnchor: "12-aws_observability_overview" },
 ] as const;
+
+const DEFAULT_EXPOSED_CATALOG_ANCHORS = EXPECTED_CATALOG_ANCHORS.filter(
+  ({ toolName }) => EXPECTED_PACKS[toolName] !== "aggregates",
+);
+
+function defaultExposedToolNames(manifests: AnyToolManifest[]): string[] {
+  const enabledPacks = new Set(DEFAULT_ENABLED_TOOL_PACKS);
+  return manifests
+    .filter((manifest) => enabledPacks.has(manifest.pack as (typeof DEFAULT_ENABLED_TOOL_PACKS)[number]))
+    .map((manifest) => manifest.name)
+    .sort();
+}
 
 function manifestsByName(manifests: AnyToolManifest[]): Record<string, AnyToolManifest> {
   return Object.fromEntries(manifests.map((manifest) => [manifest.name, manifest]));
@@ -194,11 +218,24 @@ describe("tool manifest contract", () => {
   });
 
   it("maps fanout-sensitive tools to allowed-region fanout metadata", () => {
-    for (const toolName of ["list_ec2_instances", "get_cloudwatch_alarms", "list_lambda_functions"] as const) {
+    for (const toolName of [
+      "list_ec2_instances",
+      "get_cloudwatch_alarms",
+      "list_lambda_functions",
+      "aws_account_overview",
+      "aws_observability_overview",
+    ] as const) {
       const manifest = byName[toolName];
       expect(manifest.costControl.class).toBe("fanout-sensitive");
       expect(manifest.costControl.maxRegions).toBe(testContext.allowedRegions.length);
     }
+  });
+
+  it("maps aggregate cost overview to paid cost-control metadata", () => {
+    const manifest = byName.aws_cost_overview;
+    expect(manifest.costControl.class).toBe("paid");
+    expect(manifest.costControl.maxDateRangeDays).toBe(COST_MAX_DATE_RANGE_DAYS);
+    expect(manifest.costControl.maxResultCount).toBe(COST_MAX_SERVICE_ROWS);
   });
 
   it("maps logs tool to volume-sensitive cost-control metadata", () => {
@@ -225,10 +262,12 @@ describe("tool manifest contract", () => {
   });
 
   it("buildPublicToolList remains compatible with manifest-derived registry", () => {
-    const registry = createToolRegistry(testContext);
-    const { tools } = buildPublicToolList(registry);
+    const { registry, policyContext } = buildToolRegistryState(testContext);
+    const { tools } = buildPublicToolList(registry, policyContext.enabledToolNames);
 
-    expect(tools.map((tool) => tool.name).sort()).toEqual([...PUBLIC_TOOL_NAMES].sort());
+    expect(tools.map((tool) => tool.name).sort()).toEqual(
+      defaultExposedToolNames(manifests),
+    );
 
     for (const tool of tools) {
       expect(tool.title?.length).toBeGreaterThan(0);
@@ -239,16 +278,33 @@ describe("tool manifest contract", () => {
     }
   });
 
-  it("getChatGptCatalogEntries discovers the same catalog entries", () => {
-    const entries = getChatGptCatalogEntries(createToolRegistry(testContext));
+  it("getChatGptCatalogEntries discovers default exposed catalog entries", () => {
+    const { registry, policyContext } = buildToolRegistryState(testContext);
+    const entries = getChatGptCatalogEntries(registry, policyContext.enabledToolNames);
 
-    expect(entries).toHaveLength(EXPECTED_CATALOG_ANCHORS.length);
+    expect(entries).toHaveLength(DEFAULT_EXPOSED_CATALOG_ANCHORS.length);
 
-    for (const expected of EXPECTED_CATALOG_ANCHORS) {
+    for (const expected of DEFAULT_EXPOSED_CATALOG_ANCHORS) {
       const entry = entries.find((candidate) => candidate.toolName === expected.toolName);
       expect(entry).toBeDefined();
       expect(entry!.docsAnchor).toBe(expected.docsAnchor);
     }
+  });
+
+  it("getChatGptCatalogEntries includes aggregate tools when pack is enabled", () => {
+    const ctx = createTestGatewayContext({
+      toolExposure: {
+        ...testContext.toolExposure,
+        enabledToolPacks: new Set([
+          ...DEFAULT_ENABLED_TOOL_PACKS,
+          "aggregates",
+        ]),
+      },
+    });
+    const { registry, policyContext } = buildToolRegistryState(ctx);
+    const entries = getChatGptCatalogEntries(registry, policyContext.enabledToolNames);
+
+    expect(entries).toHaveLength(EXPECTED_CATALOG_ANCHORS.length);
   });
 });
 

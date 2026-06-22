@@ -10,7 +10,8 @@ import {
   evaluateToolPolicy,
   isAwsBackedManifest,
 } from "./policy.js";
-import { createToolManifests, PUBLIC_TOOL_NAMES } from "./registry.js";
+import { createToolManifests } from "./registry.js";
+import { DEFAULT_ENABLED_TOOL_PACKS } from "../../config/tool-exposure.js";
 
 const { mockFetch } = vi.hoisted(() => ({ mockFetch: vi.fn() }));
 
@@ -47,9 +48,26 @@ describe("tool policy gate", () => {
   const manifests = createToolManifests(testContext);
   const defaultPolicy = buildToolPolicyContext(testContext, manifests);
 
-  it("allows every existing public tool under the default policy", () => {
+  it("allows every enabled tool under the default policy", () => {
     for (const manifest of manifests) {
+      if (!defaultPolicy.enabledToolNames.has(manifest.name)) {
+        continue;
+      }
       expect(evaluateToolPolicy(manifest, defaultPolicy, {})).toBeNull();
+    }
+  });
+
+  it("denies aggregate tools when aggregates pack is disabled", () => {
+    for (const toolName of [
+      "aws_account_overview",
+      "aws_cost_overview",
+      "aws_observability_overview",
+    ] as const) {
+      const manifest = manifests.find((candidate) => candidate.name === toolName)!;
+      expect(evaluateToolPolicy(manifest, defaultPolicy, {})).toMatchObject({
+        code: "validation_error",
+        message: "Tool is not enabled.",
+      });
     }
   });
 
@@ -261,10 +279,13 @@ describe("tool policy gate", () => {
     });
   });
 
-  it("covers every public tool name in default enabled set", () => {
-    for (const toolName of PUBLIC_TOOL_NAMES) {
-      expect(defaultPolicy.enabledToolNames.has(toolName)).toBe(true);
-    }
+  it("covers every default-enabled tool name", () => {
+    const enabledPacks = new Set(DEFAULT_ENABLED_TOOL_PACKS);
+    const expectedDefaultTools = manifests
+      .filter((manifest) => enabledPacks.has(manifest.pack as (typeof DEFAULT_ENABLED_TOOL_PACKS)[number]))
+      .map((manifest) => manifest.name);
+
+    expect([...defaultPolicy.enabledToolNames].sort()).toEqual(expectedDefaultTools.sort());
   });
 
   it("denies AWS-backed tools with missing cost-control metadata", () => {
