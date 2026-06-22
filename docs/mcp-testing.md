@@ -26,7 +26,7 @@ AUTH_MODE=local-bearer
 MCP_AUTH_TOKEN=<local-token>
 ```
 
-`legacy-bearer` is accepted as a deprecated alias for `local-bearer`.
+Use `AUTH_MODE=local-bearer` with `MCP_AUTH_TOKEN` for local development and manual testing.
 
 Curl uses `Authorization: Bearer <MCP_AUTH_TOKEN>`.
 

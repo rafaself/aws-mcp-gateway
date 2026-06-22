@@ -66,7 +66,7 @@ The gateway ships two authentication modes:
 | Mode | Use case | Documentation |
 |------|----------|---------------|
 | `AUTH_MODE=oauth` | Production ChatGPT connector deployments | [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md) |
-| `AUTH_MODE=local-bearer` | Local development and manual curl testing (`legacy-bearer` is a deprecated alias) | [mcp-testing.md](mcp-testing.md) |
+| `AUTH_MODE=local-bearer` | Local development and manual curl testing | [mcp-testing.md](mcp-testing.md) |
 
 OAuth behavior — protected resource metadata, JWT validation, `aws:read` scope, tool descriptor security schemes — is defined in [specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md). Client identification modes (predefined Auth0 client vs future CIMD) are in [specs/oauth-client-identification.md](specs/oauth-client-identification.md).
 
@@ -102,7 +102,7 @@ Any multi-user or advanced authorization capability must:
 
 ## Broader AWS inventory (read-only expansion)
 
-Future read-only tools — such as RDS instance listing, Lambda function listing, budget status, cost forecasts, or service inventory — extend the current read-only scope but **remain within the read-only boundary**.
+Future read-only tools — such as RDS instance listing, budget status, cost forecasts, or service inventory — extend the current read-only scope but **remain within the read-only boundary**.
 
 Examples mentioned in the roadmap (not yet implemented):
 

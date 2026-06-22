@@ -135,15 +135,6 @@ export function getChatGptCatalogEntries(
     }));
 }
 
-export function manifestToGatewayDefinitionForContext(
-  ctx: GatewayContext,
-  manifest: AnyToolManifest,
-): GatewayToolDefinition {
-  const manifests = createToolManifests(ctx);
-  const policyContext = buildToolPolicyContext(ctx, manifests);
-  return manifestToGatewayDefinition(manifest, policyContext);
-}
-
 export function findToolDefinition(
   registry: GatewayToolDefinition[],
   name: string,

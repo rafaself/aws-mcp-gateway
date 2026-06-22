@@ -10,9 +10,7 @@ import {
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
-  type AnyToolManifest,
 } from "../manifest.js";
-import { manifestToGatewayDefinitionForContext, type GatewayToolDefinition } from "../registry.js";
 
 const listLambdaFunctionsInputSchema = z.object({
   regions: z
@@ -111,13 +109,4 @@ export function createListLambdaFunctionsToolManifest(
       };
     },
   };
-}
-
-export function createListLambdaFunctionsToolDefinition(
-  ctx: GatewayContext,
-): GatewayToolDefinition {
-  return manifestToGatewayDefinitionForContext(
-    ctx,
-    createListLambdaFunctionsToolManifest(ctx) as AnyToolManifest,
-  );
 }

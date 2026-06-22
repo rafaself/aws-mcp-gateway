@@ -14,10 +14,10 @@ describe("resolveAuthMode", () => {
     expect(resolveAuthMode({ AUTH_MODE: "oauth" })).toEqual({ valid: true, mode: "oauth" });
   });
 
-  it("accepts legacy-bearer as a deprecated alias for local-bearer", () => {
+  it("rejects legacy-bearer as an invalid AUTH_MODE value", () => {
     expect(resolveAuthMode({ AUTH_MODE: "legacy-bearer" })).toEqual({
-      valid: true,
-      mode: "local-bearer",
+      valid: false,
+      errors: ["AUTH_MODE (must be local-bearer or oauth)"],
     });
   });
 

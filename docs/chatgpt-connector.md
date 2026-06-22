@@ -66,7 +66,7 @@ Each descriptor must include stable `name`, `title`, `description`, `inputSchema
 
 Catalog document ids use the prefix `tool/` (for example `tool/list_ec2_instances`). Citation URLs point at `${MCP_RESOURCE_URL}/mcp#tool=<tool_name>`.
 
-Implementation: [`src/mcp/chatgpt/catalog.ts`](../src/mcp/chatgpt/catalog.ts), [`src/mcp/tools/search.ts`](../src/mcp/tools/search.ts), [`src/mcp/tools/fetch.ts`](../src/mcp/tools/fetch.ts).
+Implementation: [`src/mcp/chatgpt/catalog.ts`](../src/mcp/chatgpt/catalog.ts), [`src/mcp/tools/definitions/search.ts`](../src/mcp/tools/definitions/search.ts), [`src/mcp/tools/definitions/fetch.ts`](../src/mcp/tools/definitions/fetch.ts).
 
 ## OAuth linking and discovery
 

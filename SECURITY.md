@@ -68,7 +68,7 @@ This repository is intended to be public-safe. Before pushing or opening a PR:
 
 ## Runtime configuration checklist
 
-Configure secrets with `wrangler secret put` and non-secret vars in `wrangler.jsonc`. See [README.md](README.md#environment-variables-and-secrets) for the full list.
+Configure secrets with `wrangler secret put` and non-secret vars in `wrangler.jsonc`. See [README.md](README.md#configuration) for the full list.
 
 - [ ] `AWS_ACCESS_KEY_ID` is set as a Cloudflare secret (not in Git or `[vars]`).
 - [ ] `AWS_SECRET_ACCESS_KEY` is set as a Cloudflare secret (not in Git or `[vars]`).
@@ -159,7 +159,7 @@ See also [docs/specs/secure-tool-platform.md](docs/specs/secure-tool-platform.md
 
 ## Manifest metadata checklist
 
-Every public tool must have exactly one manifest in `src/mcp/tools/manifest.ts` (via definition factories in `src/mcp/tools/registry.ts`).
+Every public tool must have exactly one manifest factory in `src/mcp/tools/definitions/*.ts`, registered via `src/mcp/tools/registry.ts`. Shared manifest types and conversion live in `src/mcp/tools/manifest.ts`.
 
 - [ ] Each manifest declares `name`, `title`, `description`, `pack`, `lifecycle`, `visibility`, `auth`, `aws`, `safety`, `costControl`, `audit`, `descriptorKind`, and `handler`.
 - [ ] AWS-backed manifests declare `aws.services`, `aws.actions`, `aws.capabilities`, `aws.regionMode`, and `aws.readonly: true`.
@@ -267,7 +267,7 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 
 - [ ] All sections above relevant to this release are checked.
 - [ ] Secrets are configured in the target Cloudflare environment (`wrangler secret put`).
-- [ ] `AUTH_MODE` is set appropriately: `oauth` for ChatGPT production, `local-bearer` for local/single-token deployments (`legacy-bearer` is accepted as a deprecated alias).
+- [ ] `AUTH_MODE` is set appropriately: `oauth` for ChatGPT production, `local-bearer` for local/single-token deployments.
 - [ ] In `oauth` mode: OAuth vars are set and `MCP_AUTH_TOKEN` is **not** required; `GET /.well-known/oauth-protected-resource` returns expected metadata.
 - [ ] In `local-bearer` mode: `MCP_AUTH_TOKEN` secret is configured.
 - [ ] `AWS_ALLOWED_REGIONS` reflects only regions this deployment should serve.

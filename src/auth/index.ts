@@ -1,4 +1,4 @@
-import { authenticateLegacyBearerRequest } from "./bearer.js";
+import { authenticateLocalBearerRequest } from "./bearer.js";
 import { authenticateOAuthRequest } from "./oauth/verify-token.js";
 import { GatewayError, errorResponse } from "../errors/public-error.js";
 import { resolveAuthMode, validateOAuthConfig } from "../config/env.js";
@@ -35,5 +35,5 @@ export async function authenticateRequest(
     return authenticateOAuthRequest(request, oauthResult.config!);
   }
 
-  return authenticateLegacyBearerRequest(request, env);
+  return authenticateLocalBearerRequest(request, env);
 }

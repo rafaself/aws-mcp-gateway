@@ -13,9 +13,7 @@ import {
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
-  type AnyToolManifest,
 } from "../manifest.js";
-import { manifestToGatewayDefinitionForContext, type GatewayToolDefinition } from "../registry.js";
 
 const listEc2InstancesInputSchema = z.object({
   regions: z
@@ -129,8 +127,4 @@ export function createListEc2InstancesToolManifest(
       };
     },
   };
-}
-
-export function createListEc2InstancesToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
-  return manifestToGatewayDefinitionForContext(ctx, createListEc2InstancesToolManifest(ctx) as AnyToolManifest);
 }

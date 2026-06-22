@@ -17,7 +17,7 @@ export function resolveAuthMode(env: unknown): AuthModeResolution {
   }
 
   const trimmed = mode.trim();
-  if (trimmed === "local-bearer" || trimmed === "legacy-bearer") {
+  if (trimmed === "local-bearer") {
     return { valid: true, mode: "local-bearer" };
   }
   if (trimmed === "oauth") {

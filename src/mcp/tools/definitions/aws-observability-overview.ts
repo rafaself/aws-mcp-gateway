@@ -14,9 +14,7 @@ import {
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
-  type AnyToolManifest,
 } from "../manifest.js";
-import { manifestToGatewayDefinitionForContext, type GatewayToolDefinition } from "../registry.js";
 
 const OBS_INCLUDE_OPTIONS = ["alarms", "logGroups"] as const;
 
@@ -97,13 +95,4 @@ export function createAwsObservabilityOverviewToolManifest(
       };
     },
   };
-}
-
-export function createAwsObservabilityOverviewToolDefinition(
-  ctx: GatewayContext,
-): GatewayToolDefinition {
-  return manifestToGatewayDefinitionForContext(
-    ctx,
-    createAwsObservabilityOverviewToolManifest(ctx) as AnyToolManifest,
-  );
 }

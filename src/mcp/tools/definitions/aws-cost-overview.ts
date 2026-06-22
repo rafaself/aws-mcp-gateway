@@ -14,9 +14,7 @@ import {
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
-  type AnyToolManifest,
 } from "../manifest.js";
-import { manifestToGatewayDefinitionForContext, type GatewayToolDefinition } from "../registry.js";
 
 const awsCostOverviewInputSchema = z.object({
   startDate: z
@@ -98,13 +96,4 @@ export function createAwsCostOverviewToolManifest(
       };
     },
   };
-}
-
-export function createAwsCostOverviewToolDefinition(
-  ctx: GatewayContext,
-): GatewayToolDefinition {
-  return manifestToGatewayDefinitionForContext(
-    ctx,
-    createAwsCostOverviewToolManifest(ctx) as AnyToolManifest,
-  );
 }

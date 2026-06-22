@@ -12,7 +12,7 @@ function unauthorizedResult(): AuthResult {
   };
 }
 
-export function authenticateLegacyBearerRequest(
+export function authenticateLocalBearerRequest(
   request: Request,
   env: unknown,
 ): AuthResult {

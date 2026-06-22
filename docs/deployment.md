@@ -74,7 +74,7 @@ wrangler secret put AWS_ACCESS_KEY_ID
 wrangler secret put AWS_SECRET_ACCESS_KEY
 ```
 
-**Local bearer mode only** (`AUTH_MODE=local-bearer` or absent; `legacy-bearer` is accepted as a deprecated alias):
+**Local bearer mode only** (`AUTH_MODE=local-bearer` or absent):
 
 ```bash
 wrangler secret put MCP_AUTH_TOKEN

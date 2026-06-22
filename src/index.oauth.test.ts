@@ -69,11 +69,6 @@ const localBearerEnv = {
   MCP_AUTH_TOKEN: "valid-token",
 };
 
-const legacyBearerAliasEnv = {
-  ...localBearerEnv,
-  AUTH_MODE: "legacy-bearer",
-};
-
 beforeEach(() => {
   resetJwksCache();
   createServerMock.mockClear();
@@ -443,29 +438,6 @@ describe("local bearer mode", () => {
         body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
       }),
       localBearerEnv,
-      {} as ExecutionContext,
-    );
-
-    expect(response.status).not.toBe(401);
-    expect(createStreamableHttpMcpHandlerMock).toHaveBeenCalledTimes(1);
-    expect(streamableHttpHandlerMock).toHaveBeenCalledTimes(1);
-    getCreateServerFactory()();
-    expect(createServerMock).toHaveBeenCalledWith(
-      expect.objectContaining({ grantedScopes: ["aws:read"] }),
-    );
-  });
-
-  it("accepts legacy-bearer as a deprecated alias", async () => {
-    const response = await worker.fetch(
-      new Request("https://gateway.example.com/mcp", {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer valid-token",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
-      }),
-      legacyBearerAliasEnv,
       {} as ExecutionContext,
     );
 

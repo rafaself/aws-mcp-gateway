@@ -6,13 +6,13 @@ This document is the canonical OAuth authorization contract for the AWS MCP Gate
 
 Production ChatGPT deployments use `AUTH_MODE=oauth`: the Worker acts as an OAuth resource server, validates JWT access tokens from an external OIDC provider, and requires the `aws:read` scope before executing read-only MCP tools.
 
-Local development uses `AUTH_MODE=local-bearer` with `MCP_AUTH_TOKEN` (`legacy-bearer` is a deprecated alias). ChatGPT's connector UI supports only **OAuth** or **No auth**; unauthenticated `/mcp` is never acceptable for AWS account data.
+Local development uses `AUTH_MODE=local-bearer` with `MCP_AUTH_TOKEN`. ChatGPT's connector UI supports only **OAuth** or **No auth**; unauthenticated `/mcp` is never acceptable for AWS account data.
 
 ## Non-goals
 
 - No custom OAuth authorization server in this repository.
 - Dynamic Client Registration and Client ID Metadata Documents are not supported in the current production path. For the post-MVP CIMD readiness path, see [oauth-client-identification.md](oauth-client-identification.md).
-- Do not remove local bearer support (`AUTH_MODE=local-bearer`; `legacy-bearer` remains a deprecated alias).
+- Do not remove local bearer support (`AUTH_MODE=local-bearer`).
 - Do not allow unauthenticated `/mcp` in any production mode.
 - Do not implement a generic OAuth provider, user database, password flow, refresh-token storage, or session store.
 - Do not add write-capable AWS permissions or tools.
@@ -74,8 +74,6 @@ AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) remain Cloudflare
 AUTH_MODE=local-bearer
 MCP_AUTH_TOKEN=<local-only-token>
 ```
-
-`legacy-bearer` is accepted as a deprecated alias for `local-bearer`.
 
 ### Production ChatGPT OAuth mode
 
@@ -198,7 +196,7 @@ Tools returning `structuredContent` must include `outputSchema` matching `docs/m
 | Metadata route | Returns 200 with expected fields in oauth mode; no AWS credentials required |
 | OAuth challenge | 401 on unauthenticated `/mcp` includes `WWW-Authenticate` with `resource_metadata` |
 | JWT validation | Offline tests with fixture JWKS: valid/invalid/expired/wrong-iss/wrong-aud/missing-scope |
-| Local bearer | Existing bearer path unchanged when `AUTH_MODE=local-bearer` (`legacy-bearer` alias supported) |
+| Local bearer | Existing bearer path unchanged when `AUTH_MODE=local-bearer` |
 | Tool descriptors | Contract tests via `tools/list`: securitySchemes, annotations, outputSchema |
 | Secret safety | No tokens, claims, or credentials in responses or logs |
 

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="aws-mcp-gateway-logo.png" alt="AWS MCP Gateway" width="200" />
+</p>
+
 # AWS MCP Gateway
 
 AWS MCP Gateway is a security-focused [Model Context Protocol](https://modelcontextprotocol.io/) server that lets ChatGPT read selected AWS account data through explicit, read-only tools.
@@ -10,7 +14,7 @@ This project is a self-hosted MCP gateway for connecting ChatGPT to AWS account 
 
 Instead of giving ChatGPT broad AWS credentials, shell access, or a generic AWS API proxy, the gateway exposes a small set of audited MCP tools. Each tool has a fixed purpose, validated input, bounded output, and read-only AWS permissions.
 
-Every public tool is **manifest-backed**: a `ToolManifest` in `src/mcp/tools/` is the source of truth for registration, ChatGPT descriptors, AWS capability metadata, and cost-control limits. A central **policy gate** runs before handler execution and fails closed when a tool pack is disabled, cost-control metadata is missing, or request limits are exceeded.
+Every public tool is **manifest-backed**: a `ToolManifest` in `src/mcp/tools/definitions/` is the source of truth for registration, ChatGPT descriptors, AWS capability metadata, and cost-control limits. A central **policy gate** runs before handler execution and fails closed when a tool pack is disabled, cost-control metadata is missing, or request limits are exceeded.
 
 ```text
 ChatGPT Connector
@@ -33,7 +37,7 @@ The gateway is currently designed for:
 - ChatGPT custom app connector integration;
 - OAuth-based ChatGPT connector authentication;
 - local bearer mode development;
-- read-only AWS cost, EC2, CloudWatch, and CloudWatch Logs inspection.
+- read-only AWS cost, EC2, Lambda, S3, CloudWatch, and CloudWatch Logs inspection.
 
 Production deployments should still run the verification and acceptance checks documented in [`docs/chatgpt-connector-production-acceptance.md`](docs/chatgpt-connector-production-acceptance.md).
 
@@ -153,7 +157,7 @@ The local MCP endpoint is available at:
 http://localhost:8787/mcp
 ```
 
-Local development uses `AUTH_MODE=local-bearer` by default (`legacy-bearer` is accepted as a deprecated alias). Production ChatGPT connector deployments should use OAuth.
+Local development uses `AUTH_MODE=local-bearer` by default. Production ChatGPT connector deployments should use OAuth.
 
 ## Configuration
 
@@ -266,7 +270,10 @@ Default cache TTLs:
 | AWS cost summary | 30 minutes |
 | AWS cost by service | 30 minutes |
 | EC2 inventory | 5 minutes |
+| Lambda functions | 5 minutes |
+| S3 buckets | 5 minutes |
 | CloudWatch alarms | 5 minutes |
+| Log groups | 5 minutes |
 | Recent log events | 5 minutes |
 
 The cache is optional for local development and tests. If the binding is absent, tools run without caching.

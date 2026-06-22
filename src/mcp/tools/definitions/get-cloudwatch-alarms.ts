@@ -10,9 +10,7 @@ import {
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
-  type AnyToolManifest,
 } from "../manifest.js";
-import { manifestToGatewayDefinitionForContext, type GatewayToolDefinition } from "../registry.js";
 
 const cloudwatchAlarmsInputSchema = z.object({
   regions: z
@@ -135,10 +133,4 @@ export function createGetCloudwatchAlarmsToolManifest(
       };
     },
   };
-}
-
-export function createGetCloudwatchAlarmsToolDefinition(
-  ctx: GatewayContext,
-): GatewayToolDefinition {
-  return manifestToGatewayDefinitionForContext(ctx, createGetCloudwatchAlarmsToolManifest(ctx) as AnyToolManifest);
 }

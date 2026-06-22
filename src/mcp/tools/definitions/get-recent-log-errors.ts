@@ -11,9 +11,7 @@ import {
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
-  type AnyToolManifest,
 } from "../manifest.js";
-import { manifestToGatewayDefinitionForContext, type GatewayToolDefinition } from "../registry.js";
 
 const recentLogErrorsInputSchema = z.object({
   region: z.string().describe("AWS region (must be in the allowed regions list)."),
@@ -131,10 +129,4 @@ export function createGetRecentLogErrorsToolManifest(
       };
     },
   };
-}
-
-export function createGetRecentLogErrorsToolDefinition(
-  ctx: GatewayContext,
-): GatewayToolDefinition {
-  return manifestToGatewayDefinitionForContext(ctx, createGetRecentLogErrorsToolManifest(ctx) as AnyToolManifest);
 }

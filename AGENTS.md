@@ -38,20 +38,26 @@ pnpm dev
 Source layout:
 
 ```text
-src/auth/       bearer auth
-src/aws/        AWS request client and service-specific clients
+src/auth/              bearer auth and OAuth validation
+src/auth/oauth/
+src/aws/               AWS request client and service-specific clients
 src/aws/cost-explorer/
 src/aws/ec2/
 src/aws/cloudwatch/
+src/aws/lambda/
 src/aws/logs/
-src/cache/      cache helpers
-src/config/     env validation and gateway context
-src/errors/     error classes and handling
-src/mcp/        MCP server and tool registration
-src/mcp/audit/  MCP tool audit payload builders
-src/observability/ centralized runtime output sinks
-src/security/   limits, dates, region validation, redaction helpers
-src/test/       shared test setup and fixtures
+src/aws/s3/
+src/cache/             cache helpers
+src/config/            env validation and gateway context
+src/errors/            error classes and handling
+src/mcp/               MCP server and tool registration
+src/mcp/audit/         MCP tool audit payload builders
+src/mcp/chatgpt/       ChatGPT catalog adapter
+src/mcp/tools/definitions/  tool manifest factories
+src/observability/     centralized runtime output sinks
+src/security/          limits, dates, region validation, redaction helpers
+src/test/              shared test setup and fixtures
+infra/aws/             checked-in IAM policy template
 ```
 
 Rules:

@@ -11,14 +11,11 @@ import {
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
-  type AnyToolManifest,
   type AwsCapabilityId,
 } from "../manifest.js";
 import {
   buildToolRegistryState,
   getChatGptCatalogEntries,
-  manifestToGatewayDefinitionForContext,
-  type GatewayToolDefinition,
 } from "../registry.js";
 
 const DEFAULT_RESOURCE_URL = "https://aws-mcp-gateway.local";
@@ -82,8 +79,4 @@ export function createSearchToolManifest(ctx: GatewayContext): ToolManifest<Sear
       return chatgptStructuredResult(payload);
     },
   };
-}
-
-export function createSearchToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
-  return manifestToGatewayDefinitionForContext(ctx, createSearchToolManifest(ctx) as AnyToolManifest);
 }

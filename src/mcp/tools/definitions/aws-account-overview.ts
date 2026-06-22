@@ -13,9 +13,7 @@ import {
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
-  type AnyToolManifest,
 } from "../manifest.js";
-import { manifestToGatewayDefinitionForContext, type GatewayToolDefinition } from "../registry.js";
 
 const ACCOUNT_INCLUDE_OPTIONS = ["ec2", "lambda", "s3"] as const;
 
@@ -87,13 +85,4 @@ export function createAwsAccountOverviewToolManifest(
       };
     },
   };
-}
-
-export function createAwsAccountOverviewToolDefinition(
-  ctx: GatewayContext,
-): GatewayToolDefinition {
-  return manifestToGatewayDefinitionForContext(
-    ctx,
-    createAwsAccountOverviewToolManifest(ctx) as AnyToolManifest,
-  );
 }

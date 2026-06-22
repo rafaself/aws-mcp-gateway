@@ -10,9 +10,7 @@ import {
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
-  type AnyToolManifest,
 } from "../manifest.js";
-import { manifestToGatewayDefinitionForContext, type GatewayToolDefinition } from "../registry.js";
 
 const listS3BucketsInputSchema = z.object({
   limit: z
@@ -94,13 +92,4 @@ export function createListS3BucketsToolManifest(
       };
     },
   };
-}
-
-export function createListS3BucketsToolDefinition(
-  ctx: GatewayContext,
-): GatewayToolDefinition {
-  return manifestToGatewayDefinitionForContext(
-    ctx,
-    createListS3BucketsToolManifest(ctx) as AnyToolManifest,
-  );
 }

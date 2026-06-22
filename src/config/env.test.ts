@@ -328,19 +328,18 @@ describe("validateEnv", () => {
     expect(result.config.authMode).toBe("local-bearer");
   });
 
-  it("accepts legacy-bearer as a deprecated alias for local-bearer", () => {
-    const env = {
+  it("rejects legacy-bearer as an invalid AUTH_MODE value", () => {
+    const result = validateEnv({
       AUTH_MODE: "legacy-bearer",
       AWS_ACCESS_KEY_ID: "key",
       AWS_SECRET_ACCESS_KEY: "secret",
       AWS_REGION: "us-east-1",
       AWS_ALLOWED_REGIONS: "us-east-1",
       MCP_AUTH_TOKEN: "token",
-    };
+    });
 
-    const result = validateEnv(env) as EnvValidationSuccess;
-
-    expect(result.config.authMode).toBe("local-bearer");
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("AUTH_MODE (must be local-bearer or oauth)");
   });
 
   it("rejects invalid AUTH_MODE values", () => {
