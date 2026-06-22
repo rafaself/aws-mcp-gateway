@@ -30,6 +30,24 @@ export type AwsRegionMode = "none" | "single-region" | "bounded-multi-region";
 
 export type CostClass = "none" | "cached-read";
 
+export type CostControlClass =
+  | "free"
+  | "low"
+  | "paid"
+  | "volume-sensitive"
+  | "fanout-sensitive";
+
+export type ToolCostControl = {
+  class: CostControlClass;
+  requiresCache: boolean;
+  timeoutMs: number;
+  maxRegions?: number;
+  maxDateRangeDays?: number;
+  maxResultCount?: number;
+  maxLookbackHours?: number;
+  minCacheTtlSeconds?: number;
+};
+
 export type ToolDescriptorKind = "aws-readonly" | "local-status" | "chatgpt-discovery";
 
 export type ToolManifestAudit<TInput = Record<string, unknown>> = {
@@ -68,6 +86,7 @@ export type ToolManifest<TInput = Record<string, unknown>> = {
     timeoutMs: number;
     costClass: CostClass;
   };
+  costControl: ToolCostControl;
   audit: ToolManifestAudit<TInput>;
   descriptorKind: ToolDescriptorKind;
   handler: ToolManifestHandler<TInput>;

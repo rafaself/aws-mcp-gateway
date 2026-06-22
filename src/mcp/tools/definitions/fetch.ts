@@ -28,6 +28,12 @@ const CORE_SAFETY = {
   costClass: "none" as const,
 };
 
+const CORE_COST_CONTROL = {
+  class: "free" as const,
+  requiresCache: false,
+  timeoutMs: 5000,
+};
+
 const CORE_AWS = {
   services: [] as string[],
   actions: [] as string[],
@@ -69,6 +75,7 @@ export function createFetchToolManifest(ctx: GatewayContext): ToolManifest<Fetch
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
     aws: CORE_AWS,
     safety: CORE_SAFETY,
+    costControl: CORE_COST_CONTROL,
     audit: { sanitizeInput: sanitizeNoInput },
     descriptorKind: "chatgpt-discovery",
     handler: async (args: FetchInput) => {

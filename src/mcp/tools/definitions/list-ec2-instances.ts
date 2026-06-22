@@ -62,6 +62,13 @@ export function createListEc2InstancesToolManifest(
       timeoutMs: 30000,
       costClass: "cached-read",
     },
+    costControl: {
+      class: "fanout-sensitive",
+      requiresCache: true,
+      timeoutMs: 30000,
+      maxRegions: ctx.allowedRegions.length,
+      minCacheTtlSeconds: 300,
+    },
     audit: {
       awsService: "ec2",
       sanitizeInput: (args) => summarizeRegionListInput(args),

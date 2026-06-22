@@ -60,6 +60,13 @@ export function createGetCloudwatchAlarmsToolManifest(
       timeoutMs: 15000,
       costClass: "cached-read",
     },
+    costControl: {
+      class: "fanout-sensitive",
+      requiresCache: true,
+      timeoutMs: 15000,
+      maxRegions: ctx.allowedRegions.length,
+      minCacheTtlSeconds: 300,
+    },
     audit: {
       awsService: "monitoring",
       sanitizeInput: (args) => summarizeRegionListInput(args),

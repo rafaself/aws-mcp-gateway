@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { GatewayContext } from "../../../config/context.js";
 import { getCostSummary } from "../../../aws/cost-explorer/index.js";
+import { COST_MAX_DATE_RANGE_DAYS } from "../../../security/limits.js";
 import { summarizeCostDateRangeInput } from "../../audit/tool-input.js";
 import {
   costSummaryOutputSchema,
@@ -59,6 +60,13 @@ export function createCostSummaryToolManifest(ctx: GatewayContext): ToolManifest
       cacheTtlSeconds: 1800,
       timeoutMs: 15000,
       costClass: "cached-read",
+    },
+    costControl: {
+      class: "paid",
+      requiresCache: true,
+      timeoutMs: 15000,
+      maxDateRangeDays: COST_MAX_DATE_RANGE_DAYS,
+      minCacheTtlSeconds: 1800,
     },
     audit: {
       awsService: "ce",

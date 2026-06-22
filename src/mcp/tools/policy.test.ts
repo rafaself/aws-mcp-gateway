@@ -243,6 +243,11 @@ describe("tool policy gate", () => {
         timeoutMs: 1000,
         costClass: "none",
       },
+      costControl: {
+        class: "free",
+        requiresCache: false,
+        timeoutMs: 1000,
+      },
       audit: { sanitizeInput: sanitizeNoInput },
       descriptorKind: "local-status",
       handler: async () => ({
@@ -260,5 +265,96 @@ describe("tool policy gate", () => {
     for (const toolName of PUBLIC_TOOL_NAMES) {
       expect(defaultPolicy.enabledToolNames.has(toolName)).toBe(true);
     }
+  });
+
+  it("denies AWS-backed tools with missing cost-control metadata", () => {
+    const manifest = manifests.find((candidate) => candidate.name === "get_aws_cost_summary")!;
+    const missingCostControl: AnyToolManifest = {
+      ...manifest,
+      costControl: undefined as never,
+    };
+
+    const denial = evaluateToolPolicy(missingCostControl, defaultPolicy, {
+      startDate: "2025-01-01",
+      endDate: "2025-01-31",
+    });
+
+    expect(denial?.code).toBe("validation_error");
+    expect(denial?.message).toBe("Tool is missing required cost-control metadata.");
+  });
+
+  it("denies cost date ranges beyond policy metadata before handler execution", async () => {
+    const manifest = manifests.find((candidate) => candidate.name === "get_aws_cost_summary")!;
+    const handlerSpy = vi.fn();
+    const manifestWithSpy: AnyToolManifest = {
+      ...manifest,
+      handler: handlerSpy,
+    };
+
+    const tool = manifestToGatewayDefinition(manifestWithSpy, defaultPolicy);
+    const result = (await tool.handler({
+      startDate: "2024-01-01",
+      endDate: "2024-06-01",
+      granularity: "MONTHLY",
+    })) as {
+      isError?: boolean;
+      structuredContent?: { error: { code: string; message?: string } };
+    };
+
+    expect(handlerSpy).not.toHaveBeenCalled();
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent?.error.code).toBe("validation_error");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("denies excessive result counts before handler execution", async () => {
+    const manifest = manifests.find((candidate) => candidate.name === "get_aws_cost_by_service")!;
+    const handlerSpy = vi.fn();
+    const manifestWithSpy: AnyToolManifest = {
+      ...manifest,
+      handler: handlerSpy,
+    };
+
+    const tool = manifestToGatewayDefinition(manifestWithSpy, defaultPolicy);
+    const result = (await tool.handler({
+      startDate: "2025-01-01",
+      endDate: "2025-01-31",
+      granularity: "MONTHLY",
+      limit: 26,
+    })) as {
+      isError?: boolean;
+      structuredContent?: { error: { code: string } };
+    };
+
+    expect(handlerSpy).not.toHaveBeenCalled();
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent?.error.code).toBe("validation_error");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("denies excessive region fanout before handler execution", async () => {
+    const manifest = manifests.find((candidate) => candidate.name === "list_ec2_instances")!;
+    const handlerSpy = vi.fn();
+    const manifestWithSpy: AnyToolManifest = {
+      ...manifest,
+      costControl: {
+        ...manifest.costControl,
+        maxRegions: 1,
+      },
+      handler: handlerSpy,
+    };
+
+    const tool = manifestToGatewayDefinition(manifestWithSpy, defaultPolicy);
+    const result = (await tool.handler({
+      regions: ["us-east-1", "us-west-2"],
+    })) as {
+      isError?: boolean;
+      structuredContent?: { error: { code: string } };
+    };
+
+    expect(handlerSpy).not.toHaveBeenCalled();
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent?.error.code).toBe("validation_error");
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });

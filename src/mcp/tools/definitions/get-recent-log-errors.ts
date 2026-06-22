@@ -69,6 +69,14 @@ export function createGetRecentLogErrorsToolManifest(
       timeoutMs: 15000,
       costClass: "cached-read",
     },
+    costControl: {
+      class: "volume-sensitive",
+      requiresCache: true,
+      timeoutMs: 15000,
+      maxLookbackHours: LOGS_MAX_HOURS,
+      maxResultCount: LOGS_MAX_EVENTS,
+      minCacheTtlSeconds: 300,
+    },
     audit: {
       awsService: "logs",
       getRegion: (args: RecentLogErrorsInput) => args.region,
