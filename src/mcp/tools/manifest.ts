@@ -20,7 +20,13 @@ import type { mcpErrorResult } from "../../errors/public-error.js";
 
 export type { AwsCapabilityId } from "../../aws/capabilities.js";
 
-export type ToolPack = "core" | "cost" | "inventory" | "observability" | "security";
+export type ToolPack =
+  | "core"
+  | "cost"
+  | "inventory"
+  | "observability"
+  | "security"
+  | "aggregates";
 
 export type ToolLifecycle = "stable";
 

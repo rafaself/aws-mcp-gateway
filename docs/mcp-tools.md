@@ -34,10 +34,15 @@ error behavior, caching, region handling, and safety boundaries.
 | 7 | `list_lambda_functions` | Lambda inventory | Yes | [↓](#7-list_lambda_functions) |
 | 8 | `list_s3_buckets` | S3 bucket inventory | Yes | [↓](#8-list_s3_buckets) |
 | 9 | `list_log_groups` | Log group inventory | Yes | [↓](#9-list_log_groups) |
+| 10 | `aws_account_overview` | Bounded account summary | Yes | [↓](#10-aws_account_overview) |
+| 11 | `aws_cost_overview` | Bounded cost summary | Yes | [↓](#11-aws_cost_overview) |
+| 12 | `aws_observability_overview` | Bounded observability summary | Yes | [↓](#12-aws_observability_overview) |
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
 All public tools require OAuth (`aws:read`) or local bearer authentication and are read-only.
+
+**Aggregate overview tools (10–12)** compose existing manifest-backed capabilities into bounded summaries. They are in the `aggregates` tool pack, which is **disabled by default**. Enable with `AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,aggregates` when you want higher-level summaries instead of calling each inventory or observability tool separately. Aggregates are not full account crawlers — they return counts and short normalized samples only.
 
 ---
 
@@ -804,6 +809,172 @@ fields are not exposed.
 
 ---
 
+## 10. `aws_account_overview`
+
+**Purpose:** Returns a bounded account resource overview by composing EC2, Lambda, and S3 inventory capabilities. Disabled by default unless the `aggregates` pack is enabled.
+
+**Pack:** `aggregates` (opt-in)
+
+### Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `regions` | string[] | no | AWS regions to query (defaults to all allowed regions) |
+| `include` | `("ec2" \| "lambda" \| "s3")[]` | no | Sections to include (default: `["ec2"]`) |
+
+### Output (`structuredContent`)
+
+```json
+{
+  "regions": ["us-east-1"],
+  "ec2": {
+    "count": 12,
+    "countsByState": { "running": 10, "stopped": 2 },
+    "countsByRegion": { "us-east-1": 12 },
+    "sample": [
+      {
+        "instanceId": "i-abc123",
+        "region": "us-east-1",
+        "state": "running",
+        "instanceType": "t3.micro",
+        "name": "web-1"
+      }
+    ]
+  }
+}
+```
+
+Only keys present in `include` are returned. Each section includes at most five sample rows (`OVERVIEW_SAMPLE_LIMIT`).
+
+### Redacted fields
+
+No public/private IPs, launch times, availability zones, Lambda environment variables, bucket policies, ACLs, or IAM data.
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Region not in allowlist | `validation_error` | false |
+| Region fanout exceeds policy | `validation_error` | false |
+| Tool or pack disabled | `validation_error` | false |
+| AWS API failure | `aws_request_failed` | varies |
+
+### Safety boundaries
+
+- Composes existing AWS clients only — no generic AWS access.
+- Invalid input fails before any downstream AWS call.
+- Bounded samples only; not a full inventory export.
+
+---
+
+## 11. `aws_cost_overview`
+
+**Purpose:** Returns a bounded cost overview by composing cost summary and cost-by-service capabilities. Disabled by default unless the `aggregates` pack is enabled.
+
+**Pack:** `aggregates` (opt-in)
+
+### Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `startDate` | string | yes | Start date (`YYYY-MM-DD`) |
+| `endDate` | string | yes | End date (`YYYY-MM-DD`) |
+| `granularity` | `"DAILY"` \| `"MONTHLY"` | no | Default `MONTHLY` |
+| `serviceLimit` | number | no | Max services to return (1–25, default 10) |
+
+### Output (`structuredContent`)
+
+```json
+{
+  "period": { "startDate": "2025-01-01", "endDate": "2025-02-01" },
+  "granularity": "MONTHLY",
+  "total": 123.45,
+  "currency": "USD",
+  "services": [
+    { "service": "Amazon EC2", "amount": 50.0 }
+  ]
+}
+```
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Invalid date format or range | `validation_error` | false |
+| `serviceLimit` above 25 | `validation_error` | false |
+| Tool or pack disabled | `validation_error` | false |
+| AWS API failure | `aws_request_failed` | varies |
+
+### Safety boundaries
+
+- Reuses Cost Explorer validation (90-day max range, no future dates).
+- Reuses KV cache keys from underlying cost clients.
+- Cost-sensitive: marked `paid` in cost-control metadata.
+
+---
+
+## 12. `aws_observability_overview`
+
+**Purpose:** Returns a bounded observability overview by composing CloudWatch alarms and log group inventory. Disabled by default unless the `aggregates` pack is enabled.
+
+**Pack:** `aggregates` (opt-in)
+
+### Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `regions` | string[] | no | AWS regions to query (defaults to all allowed regions) |
+| `include` | `("alarms" \| "logGroups")[]` | no | Sections to include (default: `["alarms"]`) |
+| `limit` | number | no | Max sample rows per section (1–100, default 5) |
+
+### Output (`structuredContent`)
+
+```json
+{
+  "regions": ["us-east-1"],
+  "alarms": {
+    "count": 5,
+    "countsByState": { "OK": 3, "ALARM": 2 },
+    "sample": [
+      {
+        "name": "HighCPU",
+        "region": "us-east-1",
+        "state": "ALARM",
+        "reason": "Threshold Crossed",
+        "updatedAt": "2026-06-19T12:00:00.000Z"
+      }
+    ]
+  },
+  "logGroups": {
+    "count": 20,
+    "sample": [
+      { "name": "/aws/lambda/example", "region": "us-east-1" }
+    ]
+  }
+}
+```
+
+### Redacted fields
+
+No log events, metric namespaces, or stored byte counts in this aggregate.
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Region not in allowlist | `validation_error` | false |
+| `limit` out of range | `validation_error` | false |
+| Tool or pack disabled | `validation_error` | false |
+| AWS API failure | `aws_request_failed` | varies |
+
+### Safety boundaries
+
+- Does not fetch log events in this aggregate.
+- Invalid input fails before any downstream AWS call.
+- Bounded samples only.
+
+---
+
 ## Error codes reference
 
 All tool errors use the `GatewayError` class hierarchy and return a consistent
@@ -886,6 +1057,9 @@ Every tool handler is wrapped in `safeMcpHandler` which:
 | `list_lambda_functions` | Yes | regions, limit | 300s (5 min) |
 | `list_s3_buckets` | Yes | limit | 300s (5 min) |
 | `list_log_groups` | Yes | region, prefix, limit | 300s (5 min) |
+| `aws_account_overview` | Yes | per composed client keys | 300s (5 min) |
+| `aws_cost_overview` | Yes | startDate, endDate, granularity (×2 CE calls) | 1800s (30 min) |
+| `aws_observability_overview` | Yes | per composed client keys | 300s (5 min) |
 
 **Key generation:** `SHA-256(toolName:normalizedParams)` → `ce:{64-hex-chars}`.
 Parameters are normalized with sorted keys and type-tagged serialization.

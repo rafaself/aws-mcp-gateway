@@ -51,3 +51,37 @@ export function summarizeLogGroupsInput(args: {
     ...(args.limit !== undefined ? { limit: args.limit } : {}),
   };
 }
+
+export function summarizeAccountOverviewInput(args: {
+  regions?: string[];
+  include?: string[];
+}): Record<string, unknown> {
+  return {
+    regionCount: args.regions?.length ?? "all",
+    includeCount: args.include?.length ?? 1,
+    include: args.include ?? ["ec2"],
+  };
+}
+
+export function summarizeCostOverviewInput(args: {
+  granularity?: string;
+  serviceLimit?: number;
+}): Record<string, unknown> {
+  return {
+    hasDateRange: true,
+    granularity: args.granularity,
+    ...(args.serviceLimit !== undefined ? { serviceLimit: args.serviceLimit } : {}),
+  };
+}
+
+export function summarizeObservabilityOverviewInput(args: {
+  regions?: string[];
+  include?: string[];
+  limit?: number;
+}): Record<string, unknown> {
+  return {
+    regionCount: args.regions?.length ?? "all",
+    include: args.include ?? ["alarms"],
+    ...(args.limit !== undefined ? { limit: args.limit } : {}),
+  };
+}

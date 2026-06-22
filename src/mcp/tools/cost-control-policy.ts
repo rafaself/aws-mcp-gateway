@@ -118,8 +118,11 @@ export function validateCostControlRequest(
     }
   }
 
-  if (costControl.maxResultCount !== undefined && typeof args.limit === "number") {
-    if (args.limit > costControl.maxResultCount) {
+  if (costControl.maxResultCount !== undefined) {
+    if (typeof args.limit === "number" && args.limit > costControl.maxResultCount) {
+      return policyDenial("Result count is not allowed for this tool.");
+    }
+    if (typeof args.serviceLimit === "number" && args.serviceLimit > costControl.maxResultCount) {
       return policyDenial("Result count is not allowed for this tool.");
     }
   }

@@ -14,3 +14,6 @@ export const S3_MAX_BUCKETS = 100;
 export const S3_CACHE_TTL_SECONDS = 300;
 export const LOG_GROUPS_MAX_COUNT = 100;
 export const LOG_GROUP_PREFIX_MAX_LENGTH = 256;
+
+export const OVERVIEW_SAMPLE_LIMIT = 5;
+export const OVERVIEW_DEFAULT_SERVICE_LIMIT = 10;

@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
-import { defaultResolvedToolExposure } from "../../config/tool-exposure.js";
+import { defaultResolvedToolExposure, DEFAULT_ENABLED_TOOL_PACKS } from "../../config/tool-exposure.js";
 import {
   buildToolRegistryState,
   createToolManifests,
-  PUBLIC_TOOL_NAMES,
 } from "./registry.js";
 import { buildPublicToolList } from "./public-list.js";
 import { resolveExposedToolNames } from "./packs.js";
@@ -24,12 +23,34 @@ beforeEach(() => {
 });
 
 describe("tool exposure configuration", () => {
-  it("default config exposes all current public tools", () => {
+  it("default config exposes tools from enabled packs only", () => {
     const ctx = createTestGatewayContext();
     const manifests = createToolManifests(ctx);
     const exposed = resolveExposedToolNames(manifests, ctx.toolExposure);
+    const enabledPacks = new Set(DEFAULT_ENABLED_TOOL_PACKS);
+    const expected = manifests
+      .filter((manifest) => enabledPacks.has(manifest.pack as (typeof DEFAULT_ENABLED_TOOL_PACKS)[number]))
+      .map((manifest) => manifest.name)
+      .sort();
 
-    expect([...exposed].sort()).toEqual([...PUBLIC_TOOL_NAMES].sort());
+    expect([...exposed].sort()).toEqual(expected);
+    expect(exposed.has("aws_account_overview")).toBe(false);
+    expect(exposed.has("aws_cost_overview")).toBe(false);
+    expect(exposed.has("aws_observability_overview")).toBe(false);
+  });
+
+  it("enabling aggregates pack exposes aggregate overview tools", () => {
+    const ctx = createTestGatewayContext({
+      toolExposure: {
+        ...defaultResolvedToolExposure(),
+        enabledToolPacks: new Set<ToolPack>([...DEFAULT_ENABLED_TOOL_PACKS, "aggregates"]),
+      },
+    });
+    const exposed = resolveExposedToolNames(createToolManifests(ctx), ctx.toolExposure);
+
+    expect(exposed.has("aws_account_overview")).toBe(true);
+    expect(exposed.has("aws_cost_overview")).toBe(true);
+    expect(exposed.has("aws_observability_overview")).toBe(true);
   });
 
   it("enabling only cost exposes only cost tools", () => {
@@ -60,7 +81,11 @@ describe("tool exposure configuration", () => {
     const { tools } = buildPublicToolList(registry, policyContext.enabledToolNames);
 
     expect(tools.map((tool) => tool.name)).not.toContain("list_ec2_instances");
-    expect(tools).toHaveLength(PUBLIC_TOOL_NAMES.length - 1);
+    const enabledPacks = new Set(DEFAULT_ENABLED_TOOL_PACKS);
+    const defaultCount = createToolManifests(ctx).filter((manifest) =>
+      enabledPacks.has(manifest.pack as (typeof DEFAULT_ENABLED_TOOL_PACKS)[number]),
+    ).length;
+    expect(tools).toHaveLength(defaultCount - 1);
   });
 
   it("denies direct calls to disabled tools before AWS execution", async () => {

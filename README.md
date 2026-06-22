@@ -194,10 +194,13 @@ Tool packs:
 ```text
 core:           search, fetch, get_gateway_status
 cost:           get_aws_cost_summary, get_aws_cost_by_service
-inventory:      list_ec2_instances
-observability:  get_cloudwatch_alarms, get_recent_log_errors
+inventory:      list_ec2_instances, list_lambda_functions, list_s3_buckets
+observability:  get_cloudwatch_alarms, get_recent_log_errors, list_log_groups
+aggregates:     aws_account_overview, aws_cost_overview, aws_observability_overview (disabled by default)
 security:       (no tools yet)
 ```
+
+The `aggregates` pack is opt-in. Enable it when you want bounded overview tools that compose existing inventory, cost, and observability capabilities. Default deployments expose 11 tools; enabling `aggregates` adds three more.
 
 Exposure rules:
 
@@ -218,6 +221,12 @@ Example — cost tools plus ChatGPT catalog helpers:
 
 ```text
 AWS_MCP_ENABLED_TOOL_PACKS=core,cost
+```
+
+Example — enable aggregate overview tools:
+
+```text
+AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,aggregates
 ```
 
 ## AWS IAM setup

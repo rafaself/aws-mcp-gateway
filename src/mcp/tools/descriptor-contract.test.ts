@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
 import { PUBLIC_TOOL_TITLES } from "./descriptor.js";
-import { createToolRegistry, PUBLIC_TOOL_NAMES } from "./registry.js";
+import { createToolRegistry, PUBLIC_TOOL_NAMES, buildToolRegistryState } from "./registry.js";
 import { buildPublicToolList } from "./public-list.js";
 
 const testContext = createTestGatewayContext({
@@ -19,6 +19,12 @@ const AWS_BACKED_TOOLS = [
   "list_lambda_functions",
   "list_s3_buckets",
   "list_log_groups",
+] as const;
+
+const AGGREGATE_TOOLS = [
+  "aws_account_overview",
+  "aws_cost_overview",
+  "aws_observability_overview",
 ] as const;
 
 const LOCAL_TOOLS = ["get_gateway_status", ...CHATGPT_CONNECTOR_TOOLS] as const;
@@ -42,8 +48,8 @@ describe("MCP tool registry", () => {
 });
 
 describe("MCP tool descriptor contract", () => {
-  const registry = createToolRegistry(testContext);
-  const { tools } = buildPublicToolList(registry);
+  const { registry, policyContext } = buildToolRegistryState(testContext);
+  const { tools } = buildPublicToolList(registry, policyContext.enabledToolNames);
   const toolsByName = Object.fromEntries(tools.map((tool) => [tool.name, tool]));
 
   it("lists every public tool", () => {
@@ -138,4 +144,33 @@ describe("MCP tool descriptor contract", () => {
     expect(serialized).not.toContain("gateway.example.com");
     expect(serialized).not.toContain("auth.example.com");
   });
+});
+
+describe("aggregate MCP tool descriptor contract", () => {
+  const ctx = createTestGatewayContext({
+    mcpResourceUrl: "https://aws-mcp-gateway.example.workers.dev",
+    toolExposure: {
+      ...testContext.toolExposure,
+      enabledToolPacks: new Set([
+        "core",
+        "cost",
+        "inventory",
+        "observability",
+        "aggregates",
+      ]),
+    },
+  });
+  const { registry, policyContext } = buildToolRegistryState(ctx);
+  const { tools } = buildPublicToolList(registry, policyContext.enabledToolNames);
+  const toolsByName = Object.fromEntries(tools.map((tool) => [tool.name, tool]));
+
+  for (const toolName of AGGREGATE_TOOLS) {
+    it(`${toolName} is listed when aggregates pack is enabled`, () => {
+      expect(toolsByName[toolName]).toBeDefined();
+      expect(toolsByName[toolName].outputSchema).toMatchObject({ type: "object" });
+      expect(toolsByName[toolName].title).toBe(
+        PUBLIC_TOOL_TITLES[toolName as keyof typeof PUBLIC_TOOL_TITLES],
+      );
+    });
+  }
 });

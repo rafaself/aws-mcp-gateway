@@ -23,6 +23,9 @@ export const PUBLIC_TOOL_TITLES = {
   list_lambda_functions: "List Lambda Functions",
   list_s3_buckets: "List S3 Buckets",
   list_log_groups: "List Log Groups",
+  aws_account_overview: "AWS Account Overview",
+  aws_cost_overview: "AWS Cost Overview",
+  aws_observability_overview: "AWS Observability Overview",
 } as const;
 
 export type PublicToolTitleName = keyof typeof PUBLIC_TOOL_TITLES;
@@ -225,4 +228,92 @@ export const listLogGroupsOutputSchema = z.object({
       name: z.string(),
     }),
   ),
+});
+
+const overviewEc2SectionSchema = z.object({
+  count: z.number(),
+  countsByState: z.record(z.string(), z.number()),
+  countsByRegion: z.record(z.string(), z.number()),
+  sample: z.array(
+    z.object({
+      instanceId: z.string(),
+      region: z.string(),
+      state: z.string(),
+      instanceType: z.string(),
+      name: z.string(),
+    }),
+  ),
+});
+
+const overviewLambdaSectionSchema = z.object({
+  count: z.number(),
+  countsByRegion: z.record(z.string(), z.number()),
+  sample: z.array(
+    z.object({
+      functionName: z.string(),
+      region: z.string(),
+      runtime: z.string(),
+      state: z.string(),
+    }),
+  ),
+});
+
+const overviewS3SectionSchema = z.object({
+  count: z.number(),
+  sample: z.array(
+    z.object({
+      name: z.string(),
+      createdAt: z.string(),
+    }),
+  ),
+});
+
+export const awsAccountOverviewOutputSchema = z.object({
+  regions: z.array(z.string()),
+  ec2: overviewEc2SectionSchema.optional(),
+  lambda: overviewLambdaSectionSchema.optional(),
+  s3: overviewS3SectionSchema.optional(),
+});
+
+export const awsCostOverviewOutputSchema = z.object({
+  period: costPeriodSchema,
+  granularity: z.enum(["DAILY", "MONTHLY"]),
+  total: z.number(),
+  currency: z.string(),
+  services: z.array(
+    z.object({
+      service: z.string(),
+      amount: z.number(),
+    }),
+  ),
+});
+
+const overviewAlarmSampleSchema = z.object({
+  name: z.string(),
+  region: z.string(),
+  state: z.enum(["ALARM", "INSUFFICIENT_DATA", "OK"]),
+  reason: z.string(),
+  updatedAt: z.string(),
+});
+
+const overviewAlarmsSectionSchema = z.object({
+  count: z.number(),
+  countsByState: z.record(z.string(), z.number()),
+  sample: z.array(overviewAlarmSampleSchema),
+});
+
+const overviewLogGroupsSectionSchema = z.object({
+  count: z.number(),
+  sample: z.array(
+    z.object({
+      name: z.string(),
+      region: z.string(),
+    }),
+  ),
+});
+
+export const awsObservabilityOverviewOutputSchema = z.object({
+  regions: z.array(z.string()),
+  alarms: overviewAlarmsSectionSchema.optional(),
+  logGroups: overviewLogGroupsSectionSchema.optional(),
 });
