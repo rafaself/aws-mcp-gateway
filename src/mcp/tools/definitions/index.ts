@@ -18,3 +18,15 @@ export {
   createGetRecentLogErrorsToolDefinition,
   createGetRecentLogErrorsToolManifest,
 } from "./get-recent-log-errors.js";
+export {
+  createListLambdaFunctionsToolDefinition,
+  createListLambdaFunctionsToolManifest,
+} from "./list-lambda-functions.js";
+export {
+  createListS3BucketsToolDefinition,
+  createListS3BucketsToolManifest,
+} from "./list-s3-buckets.js";
+export {
+  createListLogGroupsToolDefinition,
+  createListLogGroupsToolManifest,
+} from "./list-log-groups.js";

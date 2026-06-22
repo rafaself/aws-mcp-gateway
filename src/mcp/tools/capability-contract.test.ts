@@ -20,6 +20,9 @@ const AWS_BACKED_TOOLS = [
   "list_ec2_instances",
   "get_cloudwatch_alarms",
   "get_recent_log_errors",
+  "list_lambda_functions",
+  "list_s3_buckets",
+  "list_log_groups",
 ] as const;
 
 const NON_AWS_TOOLS = ["search", "fetch", "get_gateway_status"] as const;

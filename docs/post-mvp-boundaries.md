@@ -111,7 +111,6 @@ get_aws_daily_cost_trend
 get_aws_cost_forecast
 get_budget_status
 list_rds_instances
-list_lambda_functions
 get_service_inventory
 ```
 

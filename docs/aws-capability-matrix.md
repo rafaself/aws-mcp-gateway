@@ -14,3 +14,6 @@ before merge.
 | get_cloudwatch_alarms | observability | cloudwatch | cloudwatch:DescribeAlarms | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |
 | get_recent_log_errors | observability | logs | logs:FilterLogEvents | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |
 | list_ec2_instances | inventory | ec2 | ec2:DescribeInstances | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |
+| list_lambda_functions | inventory | lambda | lambda:ListFunctions | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |
+| list_log_groups | observability | logs | logs:DescribeLogGroups | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |
+| list_s3_buckets | inventory | s3 | s3:ListAllMyBuckets | single-region | read-only | 300 | cached-read | low | low |

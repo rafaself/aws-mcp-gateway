@@ -56,6 +56,9 @@ Production deployments should still run the verification and acceptance checks d
 | `list_ec2_instances` | List EC2 instances in allowed regions | Yes |
 | `get_cloudwatch_alarms` | Return CloudWatch alarm states | Yes |
 | `get_recent_log_errors` | Return recent CloudWatch Logs errors/warnings | Yes |
+| `list_lambda_functions` | List Lambda functions in allowed regions | Yes |
+| `list_s3_buckets` | List S3 buckets in the account | Yes |
+| `list_log_groups` | List CloudWatch log groups in a region | Yes |
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
@@ -69,7 +72,9 @@ Use this gateway when you want ChatGPT to answer questions such as:
 - “Which services are driving my AWS bill?”
 - “What EC2 instances are running in my allowed regions?”
 - “Are there any CloudWatch alarms in ALARM state?”
-- “Show me recent error or warning log events.”
+- “What Lambda functions are deployed in my allowed regions?”
+- “What S3 buckets exist in my account?”
+- “Which CloudWatch log groups are defined in us-east-1?”
 
 The project is useful for personal AWS account inspection, lightweight cloud operations, cost visibility, and controlled ChatGPT-based observability workflows.
 
@@ -302,7 +307,7 @@ source .env.deploy.local && pnpm run verify:oauth
 pnpm run verify:oauth:authenticated
 ```
 
-Then create or refresh the ChatGPT connector. The Actions list should expose all 8 public MCP tools.
+Then create or refresh the ChatGPT connector. The Actions list should expose all 11 public MCP tools.
 
 Detailed setup and troubleshooting:
 

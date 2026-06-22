@@ -51,6 +51,9 @@ const AWS_BACKED_TOOLS = [
   "list_ec2_instances",
   "get_cloudwatch_alarms",
   "get_recent_log_errors",
+  "list_lambda_functions",
+  "list_s3_buckets",
+  "list_log_groups",
 ] as const;
 
 const CORE_TOOLS = ["search", "fetch", "get_gateway_status"] as const;
@@ -72,6 +75,9 @@ const EXPECTED_PACKS: Record<string, string> = {
   list_ec2_instances: "inventory",
   get_cloudwatch_alarms: "observability",
   get_recent_log_errors: "observability",
+  list_lambda_functions: "inventory",
+  list_s3_buckets: "inventory",
+  list_log_groups: "observability",
 };
 
 const EXPECTED_CATALOG_ANCHORS = [
@@ -81,6 +87,9 @@ const EXPECTED_CATALOG_ANCHORS = [
   { toolName: "list_ec2_instances", docsAnchor: "4-list_ec2_instances" },
   { toolName: "get_cloudwatch_alarms", docsAnchor: "5-get_cloudwatch_alarms" },
   { toolName: "get_recent_log_errors", docsAnchor: "6-get_recent_log_errors" },
+  { toolName: "list_lambda_functions", docsAnchor: "7-list_lambda_functions" },
+  { toolName: "list_s3_buckets", docsAnchor: "8-list_s3_buckets" },
+  { toolName: "list_log_groups", docsAnchor: "9-list_log_groups" },
 ] as const;
 
 function manifestsByName(manifests: AnyToolManifest[]): Record<string, AnyToolManifest> {
@@ -185,7 +194,7 @@ describe("tool manifest contract", () => {
   });
 
   it("maps fanout-sensitive tools to allowed-region fanout metadata", () => {
-    for (const toolName of ["list_ec2_instances", "get_cloudwatch_alarms"] as const) {
+    for (const toolName of ["list_ec2_instances", "get_cloudwatch_alarms", "list_lambda_functions"] as const) {
       const manifest = byName[toolName];
       expect(manifest.costControl.class).toBe("fanout-sensitive");
       expect(manifest.costControl.maxRegions).toBe(testContext.allowedRegions.length);

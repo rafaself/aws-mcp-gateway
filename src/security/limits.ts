@@ -7,3 +7,10 @@ export const LOGS_MAX_MESSAGE_LENGTH = 1_000;
 export const EC2_CACHE_TTL_SECONDS = 300;
 export const CW_CACHE_TTL_SECONDS = 300;
 export const LOGS_CACHE_TTL_SECONDS = 300;
+
+export const LAMBDA_MAX_FUNCTIONS = 100;
+export const LAMBDA_CACHE_TTL_SECONDS = 300;
+export const S3_MAX_BUCKETS = 100;
+export const S3_CACHE_TTL_SECONDS = 300;
+export const LOG_GROUPS_MAX_COUNT = 100;
+export const LOG_GROUP_PREFIX_MAX_LENGTH = 256;

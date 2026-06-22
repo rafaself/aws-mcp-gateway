@@ -121,7 +121,7 @@ curl -X POST https://<worker-host>/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-Expected: `200` with a `result.tools` array containing all 8 registered tools (`search`, `fetch`, and six AWS tools).
+Expected: `200` with a `result.tools` array containing all 11 registered tools (`search`, `fetch`, and nine AWS tools).
 
 ### 4. Low-risk status tool
 

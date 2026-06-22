@@ -117,7 +117,7 @@ Example JSON-RPC payload (no token required in the body):
 **Expected:**
 
 - HTTP `200`
-- `result.tools` includes all **8** public tools:
+- `result.tools` includes all **11** public tools:
   - `search`
   - `fetch`
   - `get_gateway_status`
@@ -126,6 +126,9 @@ Example JSON-RPC payload (no token required in the body):
   - `list_ec2_instances`
   - `get_cloudwatch_alarms`
   - `get_recent_log_errors`
+  - `list_lambda_functions`
+  - `list_s3_buckets`
+  - `list_log_groups`
 - Each tool descriptor includes `name`, `title`, `description`, `inputSchema`, OAuth `securitySchemes`, and read-only annotations.
 
 If `tools/list` is empty or descriptors are missing required fields, OAuth may still succeed while ChatGPT shows **“No app actions available yet”**. Fix descriptors and redeploy before troubleshooting in the ChatGPT UI.

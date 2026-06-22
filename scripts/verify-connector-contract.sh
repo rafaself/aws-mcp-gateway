@@ -27,7 +27,7 @@ echo "  - src/mcp/tools/cost-control-policy.test.ts (cost-control metadata and l
 echo "  - src/mcp/tools/capability-contract.test.ts (capability/IAM alignment)"
 echo "  - src/mcp/tools/capability-matrix.test.ts (generated capability matrix doc)"
 echo "  - src/mcp/tools/exposure.test.ts (tool pack and disable exposure)"
-echo "  - src/mcp/tools/list-integration.test.ts (HTTP tools/list, 8 public tools)"
+echo "  - src/mcp/tools/list-integration.test.ts (HTTP tools/list, 11 public tools)"
 echo "  - src/index.oauth.test.ts (/mcp 401 challenge, protected-resource metadata)"
 echo ""
 

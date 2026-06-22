@@ -10,12 +10,15 @@ import {
 } from "./capabilities.js";
 
 describe("aws capabilities registry", () => {
-  it("defines the four current capability IDs", () => {
+  it("defines the current capability IDs", () => {
     expect(AWS_CAPABILITY_IDS.sort()).toEqual([
       "ce:GetCostAndUsage",
       "cloudwatch:DescribeAlarms",
       "ec2:DescribeInstances",
+      "lambda:ListFunctions",
+      "logs:DescribeLogGroups",
       "logs:FilterLogEvents",
+      "s3:ListAllMyBuckets",
     ]);
   });
 
@@ -32,13 +35,18 @@ describe("aws capabilities registry", () => {
       "ce:GetCostAndUsage",
       "cloudwatch:DescribeAlarms",
       "ec2:DescribeInstances",
+      "lambda:ListFunctions",
+      "logs:DescribeLogGroups",
       "logs:FilterLogEvents",
+      "s3:ListAllMyBuckets",
     ]);
     expect(awsServicesForCapabilities(AWS_CAPABILITY_IDS)).toEqual([
       "ce",
       "cloudwatch",
       "ec2",
+      "lambda",
       "logs",
+      "s3",
     ]);
   });
 
