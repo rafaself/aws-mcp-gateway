@@ -297,10 +297,13 @@ For the full security checklist, see [`SECURITY.md`](SECURITY.md).
 Run the standard local checks:
 
 ```bash
+pnpm run repo:safety
 pnpm run typecheck
 pnpm test
 pnpm run test:integrity
 ```
+
+`pnpm run repo:safety` verifies tracked files stay public-safe (no local env files, secret-like values, or maintainer deployment defaults in Git).
 
 Tests are offline by default. A global fetch guard fails any unmocked network request during unit tests.
 
