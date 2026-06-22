@@ -20,6 +20,15 @@ function makeRequest(token: string | null, scheme = "Bearer"): Request {
   });
 }
 
+function authFailureResponse(
+  result: Awaited<ReturnType<typeof authenticateOAuthRequest>>,
+): Response {
+  if (result.ok) {
+    throw new Error("expected auth failure");
+  }
+  return result.response;
+}
+
 describe("authenticateOAuthRequest", () => {
   beforeEach(() => {
     resetJwksCache();
@@ -30,11 +39,12 @@ describe("authenticateOAuthRequest", () => {
     const fixture = await createTestOAuthFixture();
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
 
-    const response = await authenticateOAuthRequest(makeRequest(null), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest(null), fixture.config);
+    const response = authFailureResponse(result);
 
-    expect(response?.status).toBe(401);
-    expect(response?.headers.get("WWW-Authenticate")).toContain("resource_metadata=");
-    const body = await response!.json() as { error: { code: string; message: string } };
+    expect(response.status).toBe(401);
+    expect(response.headers.get("WWW-Authenticate")).toContain("resource_metadata=");
+    const body = await response.json() as { error: { code: string; message: string } };
     expect(body.error.code).toBe("unauthorized");
     expect(body.error.message).toBe("Authentication is required.");
     expect(JSON.stringify(body)).not.toContain("eyJ");
@@ -44,18 +54,18 @@ describe("authenticateOAuthRequest", () => {
     const fixture = await createTestOAuthFixture();
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
 
-    const response = await authenticateOAuthRequest(makeRequest("token", "Basic"), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest("token", "Basic"), fixture.config);
 
-    expect(response?.status).toBe(401);
+    expect(authFailureResponse(result).status).toBe(401);
   });
 
   it("returns 401 for malformed JWT", async () => {
     const fixture = await createTestOAuthFixture();
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
 
-    const response = await authenticateOAuthRequest(makeRequest("not-a-jwt"), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest("not-a-jwt"), fixture.config);
 
-    expect(response?.status).toBe(401);
+    expect(authFailureResponse(result).status).toBe(401);
   });
 
   it("returns 401 for expired JWT", async () => {
@@ -63,9 +73,9 @@ describe("authenticateOAuthRequest", () => {
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
     const token = await fixture.signAccessToken({ scope: "aws:read" }, { expiresIn: "-1h" });
 
-    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest(token), fixture.config);
 
-    expect(response?.status).toBe(401);
+    expect(authFailureResponse(result).status).toBe(401);
   });
 
   it("returns 401 for wrong issuer", async () => {
@@ -76,9 +86,9 @@ describe("authenticateOAuthRequest", () => {
       { issuer: "https://wrong.example.com/" },
     );
 
-    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest(token), fixture.config);
 
-    expect(response?.status).toBe(401);
+    expect(authFailureResponse(result).status).toBe(401);
   });
 
   it("returns 401 for wrong audience", async () => {
@@ -89,10 +99,11 @@ describe("authenticateOAuthRequest", () => {
       { audience: "https://wrong.example.com" },
     );
 
-    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const response = authFailureResponse(result);
 
-    expect(response?.status).toBe(401);
-    expect(response?.headers.get("WWW-Authenticate")).toContain('error="invalid_token"');
+    expect(response.status).toBe(401);
+    expect(response.headers.get("WWW-Authenticate")).toContain('error="invalid_token"');
   });
 
   it("returns 401 for wrong JWT signature", async () => {
@@ -101,9 +112,9 @@ describe("authenticateOAuthRequest", () => {
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, verifyingFixture.jwksResolver);
     const token = await signingFixture.signAccessToken();
 
-    const response = await authenticateOAuthRequest(makeRequest(token), verifyingFixture.config);
+    const result = await authenticateOAuthRequest(makeRequest(token), verifyingFixture.config);
 
-    expect(response?.status).toBe(401);
+    expect(authFailureResponse(result).status).toBe(401);
   });
 
   it("returns 403 when required scope is missing", async () => {
@@ -112,12 +123,13 @@ describe("authenticateOAuthRequest", () => {
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
     const token = await fixture.signAccessToken({ scope: "openid profile" });
 
-    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const response = authFailureResponse(result);
 
-    expect(response?.status).toBe(403);
-    const body = await response!.json() as { error: { code: string } };
+    expect(response.status).toBe(403);
+    const body = await response.json() as { error: { code: string } };
     expect(body.error.code).toBe("forbidden");
-    expect(response?.headers.get("WWW-Authenticate")).toContain('error="insufficient_scope"');
+    expect(response.headers.get("WWW-Authenticate")).toContain('error="insufficient_scope"');
 
     const scopeDeniedLog = warnSpy.mock.calls
       .map((call) => call[0] as Record<string, unknown>)
@@ -146,9 +158,13 @@ describe("authenticateOAuthRequest", () => {
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
     const token = await fixture.signAccessToken({ scope: "openid profile aws:read" });
 
-    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest(token), fixture.config);
 
-    expect(response).toBeNull();
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("expected auth success");
+    }
+    expect(result.grantedScopes).toEqual(expect.arrayContaining(["openid", "profile", "aws:read"]));
   });
 
   it("accepts valid scp array containing aws:read", async () => {
@@ -156,9 +172,13 @@ describe("authenticateOAuthRequest", () => {
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
     const token = await fixture.signAccessToken({ scp: ["openid", "profile", "aws:read"] });
 
-    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest(token), fixture.config);
 
-    expect(response).toBeNull();
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("expected auth success");
+    }
+    expect(result.grantedScopes).toEqual(expect.arrayContaining(["openid", "profile", "aws:read"]));
   });
 
   it("accepts Auth0-style permissions claim without scope", async () => {
@@ -166,9 +186,13 @@ describe("authenticateOAuthRequest", () => {
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
     const token = await fixture.signAccessToken({ permissions: ["aws:read"] });
 
-    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest(token), fixture.config);
 
-    expect(response).toBeNull();
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("expected auth success");
+    }
+    expect(result.grantedScopes).toEqual(["aws:read"]);
   });
 
   it("returns 403 when permissions omit aws:read", async () => {
@@ -176,12 +200,13 @@ describe("authenticateOAuthRequest", () => {
     setJwksResolverForTesting(TEST_OAUTH_JWKS_URI, fixture.jwksResolver);
     const token = await fixture.signAccessToken({ permissions: ["openid"] });
 
-    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const response = authFailureResponse(result);
 
-    expect(response?.status).toBe(403);
-    const body = await response!.json() as { error: { code: string } };
+    expect(response.status).toBe(403);
+    const body = await response.json() as { error: { code: string } };
     expect(body.error.code).toBe("forbidden");
-    expect(response?.headers.get("WWW-Authenticate")).toContain('error="insufficient_scope"');
+    expect(response.headers.get("WWW-Authenticate")).toContain('error="insufficient_scope"');
   });
 
   it("accepts audience with /mcp suffix", async () => {
@@ -192,9 +217,9 @@ describe("authenticateOAuthRequest", () => {
       { audience: `${TEST_OAUTH_AUDIENCE}/mcp` },
     );
 
-    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest(token), fixture.config);
 
-    expect(response).toBeNull();
+    expect(result.ok).toBe(true);
   });
 
   it("does not leak token or claim details in error responses", async () => {
@@ -205,8 +230,8 @@ describe("authenticateOAuthRequest", () => {
       { issuer: "https://wrong.example.com/" },
     );
 
-    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
-    const body = await response!.json();
+    const result = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const body = await authFailureResponse(result).json();
 
     const serialized = JSON.stringify(body);
     expect(serialized).not.toContain(token);
@@ -224,9 +249,13 @@ describe("authenticateOAuthRequest", () => {
       resource: TEST_OAUTH_AUDIENCE,
     });
 
-    const response = await authenticateOAuthRequest(makeRequest(token), fixture.config);
+    const result = await authenticateOAuthRequest(makeRequest(token), fixture.config);
 
-    expect(response).toBeNull();
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("expected auth success");
+    }
+    expect(result.grantedScopes).toEqual(["aws:read"]);
   });
 
   it("accepts opaque tokens through introspection mode", async () => {
@@ -240,7 +269,7 @@ describe("authenticateOAuthRequest", () => {
       }),
     );
 
-    const response = await authenticateOAuthRequest(
+    const result = await authenticateOAuthRequest(
       makeRequest("opaque-token-value"),
       {
         MCP_RESOURCE_URL: TEST_OAUTH_AUDIENCE,
@@ -256,7 +285,11 @@ describe("authenticateOAuthRequest", () => {
       },
     );
 
-    expect(response).toBeNull();
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("expected auth success");
+    }
+    expect(result.grantedScopes).toEqual(["aws:read"]);
   });
 
   it("supports hybrid validation for opaque tokens", async () => {
@@ -270,7 +303,7 @@ describe("authenticateOAuthRequest", () => {
       }),
     );
 
-    const response = await authenticateOAuthRequest(
+    const result = await authenticateOAuthRequest(
       makeRequest("opaque-token-value"),
       {
         MCP_RESOURCE_URL: TEST_OAUTH_AUDIENCE,
@@ -287,6 +320,10 @@ describe("authenticateOAuthRequest", () => {
       },
     );
 
-    expect(response).toBeNull();
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("expected auth success");
+    }
+    expect(result.grantedScopes).toEqual(["aws:read"]);
   });
 });

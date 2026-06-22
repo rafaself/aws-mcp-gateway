@@ -11,13 +11,14 @@ import {
 } from "./token-claims.js";
 import { buildClaimDiagnostics, buildScopeDiagnostics } from "./diagnostics.js";
 import { logInfo, logWarn } from "../../observability/logging.js";
+import type { AuthResult } from "../result.js";
 
 async function authenticateViaJwks(
   token: string,
   config: ValidatedOAuthConfig,
-): Promise<Response | null> {
+): Promise<AuthResult> {
   if (!config.OAUTH_JWKS_URI) {
-    return oauthUnauthorizedResponse(config);
+    return { ok: false, response: oauthUnauthorizedResponse(config) };
   }
 
   const jwks = await getJwksResolver(config.OAUTH_JWKS_URI);
@@ -39,7 +40,7 @@ async function authenticateViaJwks(
       audienceValidated: false,
       ...buildClaimDiagnostics(claims),
     });
-    return oauthUnauthorizedResponse(config);
+    return { ok: false, response: oauthUnauthorizedResponse(config) };
   }
 
   if (!hasValidTokenTimes(claims)) {
@@ -49,7 +50,7 @@ async function authenticateViaJwks(
       timeValidated: false,
       ...buildClaimDiagnostics(claims),
     });
-    return oauthUnauthorizedResponse(config);
+    return { ok: false, response: oauthUnauthorizedResponse(config) };
   }
 
   const scopes = extractScopes(claims);
@@ -59,7 +60,7 @@ async function authenticateViaJwks(
       validationMode: config.OAUTH_TOKEN_VALIDATION_MODE,
       ...buildScopeDiagnostics(claims, config.OAUTH_REQUIRED_SCOPES),
     });
-    return oauthForbiddenResponse(config);
+    return { ok: false, response: oauthForbiddenResponse(config) };
   }
 
   logInfo({
@@ -68,24 +69,24 @@ async function authenticateViaJwks(
     ...buildScopeDiagnostics(claims, config.OAUTH_REQUIRED_SCOPES),
   });
 
-  return null;
+  return { ok: true, grantedScopes: scopes };
 }
 
 export async function authenticateOAuthRequest(
   request: Request,
   config: ValidatedOAuthConfig,
-): Promise<Response | null> {
+): Promise<AuthResult> {
   const authHeader = request.headers.get("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     logWarn({ phase: "oauth_token_missing" });
-    return oauthUnauthorizedResponse(config);
+    return { ok: false, response: oauthUnauthorizedResponse(config) };
   }
 
   const token = authHeader.slice(7).trim();
   if (token.length === 0) {
     logWarn({ phase: "oauth_token_empty" });
-    return oauthUnauthorizedResponse(config);
+    return { ok: false, response: oauthUnauthorizedResponse(config) };
   }
 
   try {
@@ -108,10 +109,10 @@ export async function authenticateOAuthRequest(
       try {
         return await authenticateViaIntrospection(token, config);
       } catch {
-        return oauthUnauthorizedResponse(config);
+        return { ok: false, response: oauthUnauthorizedResponse(config) };
       }
     }
 
-    return oauthUnauthorizedResponse(config);
+    return { ok: false, response: oauthUnauthorizedResponse(config) };
   }
 }

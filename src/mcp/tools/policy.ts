@@ -3,6 +3,7 @@ import type { GatewayContext } from "../../config/context.js";
 import { GatewayError } from "../../errors/public-error.js";
 import { resolveRegions, validateAllowedRegions, validateRegion } from "../../security/regions.js";
 import { ValidationError } from "../../security/errors.js";
+import { hasRequiredScopes } from "../../auth/oauth/scopes.js";
 import { DEFAULT_AUTH_SCOPES, type AnyToolManifest, type ToolPack, type ToolRiskLevel } from "./manifest.js";
 import { resolveExposedToolNames } from "./packs.js";
 import {
@@ -28,6 +29,7 @@ export type ToolPolicyContext = {
   allowedRegions: readonly string[];
   authMode: AuthMode;
   requiredScopes: readonly string[];
+  grantedScopes: readonly string[];
 };
 
 export type ToolPolicyContextOverrides = Partial<{
@@ -36,6 +38,7 @@ export type ToolPolicyContextOverrides = Partial<{
   maxRiskLevel: ToolRiskLevel;
   allowedAwsServices: ReadonlySet<string>;
   allowedAwsActions: ReadonlySet<string>;
+  grantedScopes: readonly string[];
 }>;
 
 export function isAwsBackedManifest(manifest: AnyToolManifest): boolean {
@@ -68,6 +71,7 @@ export function buildToolPolicyContext(
     allowedRegions: ctx.allowedRegions,
     authMode: ctx.authMode ?? "local-bearer",
     requiredScopes: ctx.oauthRequiredScopes ?? [...DEFAULT_AUTH_SCOPES],
+    grantedScopes: overrides?.grantedScopes ?? ctx.grantedScopes ?? [...DEFAULT_AUTH_SCOPES],
   };
 }
 
@@ -176,6 +180,22 @@ function validateRequestedRegions(
   return null;
 }
 
+function validateGrantedScopes(
+  manifest: AnyToolManifest,
+  policy: ToolPolicyContext,
+): GatewayError | null {
+  const requiredScopes = manifest.auth?.requiredScopes;
+  if (!Array.isArray(requiredScopes) || requiredScopes.length === 0) {
+    return policyDenial("Tool manifest is malformed.");
+  }
+
+  if (!hasRequiredScopes([...policy.grantedScopes], [...requiredScopes])) {
+    return policyDenial("Required scope is not granted.");
+  }
+
+  return null;
+}
+
 export function evaluateToolPolicy(
   manifest: AnyToolManifest,
   policy: ToolPolicyContext,
@@ -196,6 +216,11 @@ export function evaluateToolPolicy(
 
   if (manifest.safety.riskLevel !== policy.maxRiskLevel) {
     return policyDenial("Tool risk level is not allowed.");
+  }
+
+  const scopeDenial = validateGrantedScopes(manifest, policy);
+  if (scopeDenial) {
+    return scopeDenial;
   }
 
   const awsMetadata = validateAwsMetadata(manifest, policy);

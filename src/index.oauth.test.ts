@@ -82,6 +82,17 @@ beforeEach(() => {
   vi.restoreAllMocks();
 });
 
+function getCreateServerFactory(): () => unknown {
+  const calls = createStreamableHttpMcpHandlerMock.mock.calls as unknown as Array<
+    [{ createServer: () => unknown }]
+  >;
+  const call = calls.at(-1)?.[0];
+  if (!call) {
+    throw new Error("createStreamableHttpMcpHandler was not called");
+  }
+  return call.createServer;
+}
+
 function collectStructuredLogs(
   infoSpy: ReturnType<typeof vi.spyOn>,
   warnSpy: ReturnType<typeof vi.spyOn>,
@@ -256,6 +267,10 @@ describe("oauth /mcp challenge", () => {
     expect(response.status).toBe(200);
     expect(createStreamableHttpMcpHandlerMock).toHaveBeenCalledTimes(1);
     expect(streamableHttpHandlerMock).toHaveBeenCalledTimes(1);
+    getCreateServerFactory()();
+    expect(createServerMock).toHaveBeenCalledWith(
+      expect.objectContaining({ grantedScopes: ["aws:read"] }),
+    );
   });
 
   it("delegates authenticated MCP requests to the streamable HTTP handler", async () => {
@@ -434,6 +449,10 @@ describe("local bearer mode", () => {
     expect(response.status).not.toBe(401);
     expect(createStreamableHttpMcpHandlerMock).toHaveBeenCalledTimes(1);
     expect(streamableHttpHandlerMock).toHaveBeenCalledTimes(1);
+    getCreateServerFactory()();
+    expect(createServerMock).toHaveBeenCalledWith(
+      expect.objectContaining({ grantedScopes: ["aws:read"] }),
+    );
   });
 
   it("accepts legacy-bearer as a deprecated alias", async () => {
@@ -453,5 +472,9 @@ describe("local bearer mode", () => {
     expect(response.status).not.toBe(401);
     expect(createStreamableHttpMcpHandlerMock).toHaveBeenCalledTimes(1);
     expect(streamableHttpHandlerMock).toHaveBeenCalledTimes(1);
+    getCreateServerFactory()();
+    expect(createServerMock).toHaveBeenCalledWith(
+      expect.objectContaining({ grantedScopes: ["aws:read"] }),
+    );
   });
 });

@@ -4,6 +4,7 @@ import { oauthForbiddenResponse, oauthUnauthorizedResponse } from "./errors.js";
 import type { ValidatedOAuthConfig } from "./types.js";
 import { buildClaimDiagnostics, buildScopeDiagnostics } from "./diagnostics.js";
 import { logWarn } from "../../observability/logging.js";
+import type { AuthResult } from "../result.js";
 
 function buildBasicAuthHeader(clientId: string, clientSecret: string): string {
   return `Basic ${btoa(`${clientId}:${clientSecret}`)}`;
@@ -12,10 +13,10 @@ function buildBasicAuthHeader(clientId: string, clientSecret: string): string {
 export async function authenticateViaIntrospection(
   token: string,
   config: ValidatedOAuthConfig,
-): Promise<Response | null> {
+): Promise<AuthResult> {
   const introspection = config.OAUTH_INTROSPECTION;
   if (!introspection) {
-    return oauthUnauthorizedResponse(config);
+    return { ok: false, response: oauthUnauthorizedResponse(config) };
   }
 
   const response = await fetch(introspection.url, {
@@ -35,17 +36,17 @@ export async function authenticateViaIntrospection(
   });
 
   if (!response.ok) {
-    return oauthUnauthorizedResponse(config);
+    return { ok: false, response: oauthUnauthorizedResponse(config) };
   }
 
   const payload = (await response.json()) as Record<string, unknown>;
 
   if (payload.active !== true) {
-    return oauthUnauthorizedResponse(config);
+    return { ok: false, response: oauthUnauthorizedResponse(config) };
   }
 
   if (typeof payload.iss === "string" && payload.iss !== config.OAUTH_ISSUER) {
-    return oauthUnauthorizedResponse(config);
+    return { ok: false, response: oauthUnauthorizedResponse(config) };
   }
 
   if (!hasExpectedAudience(payload, config.OAUTH_AUDIENCE)) {
@@ -55,7 +56,7 @@ export async function authenticateViaIntrospection(
       audienceValidated: false,
       ...buildClaimDiagnostics(payload),
     });
-    return oauthUnauthorizedResponse(config);
+    return { ok: false, response: oauthUnauthorizedResponse(config) };
   }
 
   if (!hasValidTokenTimes(payload)) {
@@ -65,7 +66,7 @@ export async function authenticateViaIntrospection(
       timeValidated: false,
       ...buildClaimDiagnostics(payload),
     });
-    return oauthUnauthorizedResponse(config);
+    return { ok: false, response: oauthUnauthorizedResponse(config) };
   }
 
   const scopes = extractScopes(payload);
@@ -75,8 +76,8 @@ export async function authenticateViaIntrospection(
       validationMode: "introspection",
       ...buildScopeDiagnostics(payload, config.OAUTH_REQUIRED_SCOPES),
     });
-    return oauthForbiddenResponse(config);
+    return { ok: false, response: oauthForbiddenResponse(config) };
   }
 
-  return null;
+  return { ok: true, grantedScopes: scopes };
 }

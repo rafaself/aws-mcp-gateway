@@ -405,4 +405,140 @@ describe("tool policy gate", () => {
     expect(denial?.code).toBe("validation_error");
     expect(denial?.message).toBe("Tool is missing required cost-control metadata.");
   });
+
+  it("allows tools when granted scopes satisfy manifest requirements", () => {
+    const manifest = manifests.find((candidate) => candidate.name === "search")!;
+    const policy = buildToolPolicyContext(testContext, manifests, {
+      grantedScopes: ["aws:read"],
+    });
+
+    expect(evaluateToolPolicy(manifest, policy, {})).toBeNull();
+  });
+
+  it("denies tools when a required scope is missing from granted scopes", () => {
+    const manifest = manifests.find((candidate) => candidate.name === "search")!;
+    const elevatedScopes: AnyToolManifest = {
+      ...manifest,
+      auth: { requiredScopes: ["aws:read", "aws:cost"] },
+    };
+    const policy = buildToolPolicyContext(testContext, manifests, {
+      grantedScopes: ["aws:read"],
+    });
+
+    const denial = evaluateToolPolicy(elevatedScopes, policy, {});
+
+    expect(denial?.code).toBe("validation_error");
+    expect(denial?.message).toBe("Required scope is not granted.");
+  });
+
+  it("denies missing required scopes before handler execution", async () => {
+    const manifest = manifests.find((candidate) => candidate.name === "list_ec2_instances")!;
+    const handlerSpy = vi.fn();
+    const manifestWithSpy: AnyToolManifest = {
+      ...manifest,
+      auth: { requiredScopes: ["aws:read", "aws:cost"] },
+      handler: handlerSpy,
+    };
+    const policy = buildToolPolicyContext(testContext, manifests, {
+      grantedScopes: ["aws:read"],
+    });
+
+    const tool = manifestToGatewayDefinition(manifestWithSpy, policy);
+    const result = (await tool.handler({ regions: ["us-east-1"] })) as {
+      isError?: boolean;
+      structuredContent?: { error: { code: string; message?: string } };
+    };
+
+    expect(handlerSpy).not.toHaveBeenCalled();
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent?.error.code).toBe("validation_error");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("returns normalized MCP errors for scope denials", async () => {
+    const manifest = manifests.find((candidate) => candidate.name === "search")!;
+    const manifestWithExtraScope: AnyToolManifest = {
+      ...manifest,
+      auth: { requiredScopes: ["aws:read", "aws:cost"] },
+    };
+    const policy = buildToolPolicyContext(testContext, manifests, {
+      grantedScopes: ["aws:read"],
+    });
+
+    const tool = manifestToGatewayDefinition(manifestWithExtraScope, policy);
+    const result = (await tool.handler({ query: "ec2" })) as {
+      isError: boolean;
+      structuredContent: { error: { code: string; retryable: boolean } };
+      content: Array<{ type: string; text: string }>;
+    };
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      error: { code: "validation_error", retryable: false },
+    });
+    expect(result.content[0]?.text).not.toMatch(/AKIA|secret|token|eyJ/i);
+  });
+
+  it("emits safe audit metadata for scope denials", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const manifest = manifests.find((candidate) => candidate.name === "list_ec2_instances")!;
+    const manifestWithExtraScope: AnyToolManifest = {
+      ...manifest,
+      auth: { requiredScopes: ["aws:read", "aws:cost"] },
+    };
+    const policy = buildToolPolicyContext(testContext, manifests, {
+      grantedScopes: ["aws:read"],
+    });
+
+    const tool = manifestToGatewayDefinition(manifestWithExtraScope, policy);
+    await tool.handler({ regions: ["us-east-1"] });
+
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(error).not.toHaveBeenCalled();
+
+    const event = JSON.parse(log.mock.calls[0][0] as string);
+    expect(event).toMatchObject({
+      event: "mcp_tool_call",
+      tool: "list_ec2_instances",
+      outcome: "failure",
+      error: { code: "validation_error", retryable: false },
+    });
+    expect(JSON.stringify(event)).not.toMatch(/AKIA|secret|token|eyJ/i);
+
+    log.mockRestore();
+    error.mockRestore();
+  });
+
+  it("allows oauth-mode policy when token-granted scopes satisfy manifest requirements", () => {
+    const manifest = manifests.find((candidate) => candidate.name === "search")!;
+    const oauthContext = createTestGatewayContext({
+      authMode: "oauth",
+      oauthRequiredScopes: ["aws:read"],
+      grantedScopes: ["openid", "aws:read"],
+    });
+    const policy = buildToolPolicyContext(oauthContext, manifests);
+
+    expect(evaluateToolPolicy(manifest, policy, {})).toBeNull();
+  });
+
+  it("denies oauth-mode policy when token-granted scopes omit a manifest requirement", () => {
+    const manifest = manifests.find((candidate) => candidate.name === "search")!;
+    const manifestWithExtraScope: AnyToolManifest = {
+      ...manifest,
+      auth: { requiredScopes: ["aws:read", "aws:cost"] },
+    };
+    const oauthContext = createTestGatewayContext({
+      authMode: "oauth",
+      oauthRequiredScopes: ["aws:read"],
+      grantedScopes: ["openid", "aws:read"],
+    });
+    const policy = buildToolPolicyContext(oauthContext, manifests);
+
+    const denial = evaluateToolPolicy(manifestWithExtraScope, policy, {});
+
+    expect(denial?.code).toBe("validation_error");
+    expect(denial?.message).toBe("Required scope is not granted.");
+  });
 });

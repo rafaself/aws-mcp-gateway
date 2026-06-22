@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { authenticateLegacyBearerRequest } from "./bearer.js";
+import { LOCAL_BEARER_GRANTED_SCOPES } from "./oauth/scopes.js";
 
 function makeRequest(authHeader: string | null): Request {
   const headers = new Headers();
@@ -17,9 +18,12 @@ describe("authenticateLegacyBearerRequest", () => {
 
     const result = authenticateLegacyBearerRequest(request, env);
 
-    expect(result).toBeInstanceOf(Response);
-    expect(result!.status).toBe(401);
-    const body = await result!.json() as { error: { code: string; message: string } };
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("expected auth failure");
+    }
+    expect(result.response.status).toBe(401);
+    const body = await result.response.json() as { error: { code: string; message: string } };
     expect(body.error.code).toBe("unauthorized");
     expect(body.error.message).toBe("Authentication is required.");
   });
@@ -29,9 +33,12 @@ describe("authenticateLegacyBearerRequest", () => {
 
     const result = authenticateLegacyBearerRequest(request, env);
 
-    expect(result).toBeInstanceOf(Response);
-    expect(result!.status).toBe(401);
-    const body = await result!.json() as { error: { code: string; message: string } };
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("expected auth failure");
+    }
+    expect(result.response.status).toBe(401);
+    const body = await result.response.json() as { error: { code: string; message: string } };
     expect(body.error.code).toBe("unauthorized");
   });
 
@@ -40,18 +47,24 @@ describe("authenticateLegacyBearerRequest", () => {
 
     const result = authenticateLegacyBearerRequest(request, env);
 
-    expect(result).toBeInstanceOf(Response);
-    expect(result!.status).toBe(401);
-    const body = await result!.json() as { error: { code: string; message: string } };
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("expected auth failure");
+    }
+    expect(result.response.status).toBe(401);
+    const body = await result.response.json() as { error: { code: string; message: string } };
     expect(body.error.code).toBe("unauthorized");
   });
 
-  it("allows a valid bearer token", () => {
+  it("allows a valid bearer token with default read scopes", () => {
     const request = makeRequest("Bearer valid-token");
 
     const result = authenticateLegacyBearerRequest(request, env);
 
-    expect(result).toBeNull();
+    expect(result).toEqual({
+      ok: true,
+      grantedScopes: LOCAL_BEARER_GRANTED_SCOPES,
+    });
   });
 
   it("returns a fresh Response each call so both bodies can be read", async () => {
@@ -61,8 +74,14 @@ describe("authenticateLegacyBearerRequest", () => {
     const result1 = authenticateLegacyBearerRequest(request1, env);
     const result2 = authenticateLegacyBearerRequest(request2, env);
 
-    const body1 = await result1!.json() as { error: { code: string } };
-    const body2 = await result2!.json() as { error: { code: string } };
+    expect(result1.ok).toBe(false);
+    expect(result2.ok).toBe(false);
+    if (result1.ok || result2.ok) {
+      throw new Error("expected auth failures");
+    }
+
+    const body1 = await result1.response.json() as { error: { code: string } };
+    const body2 = await result2.response.json() as { error: { code: string } };
     expect(body1.error.code).toBe("unauthorized");
     expect(body2.error.code).toBe("unauthorized");
   });
