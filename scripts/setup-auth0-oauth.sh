@@ -10,6 +10,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # shellcheck source=lib/oauth-url-checks.sh
 source "${SCRIPT_DIR}/lib/oauth-url-checks.sh"
+# shellcheck source=lib/oauth-token-errors.sh
+source "${SCRIPT_DIR}/lib/oauth-token-errors.sh"
 ENV_FILE="${1:-$ROOT/.env.deploy.local}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -117,14 +119,7 @@ TOKEN_RESPONSE="$(
 MGMT_TOKEN="$(echo "$TOKEN_RESPONSE" | jq -r '.access_token // empty')"
 
 if [[ -z "$MGMT_TOKEN" ]]; then
-  echo "Failed to obtain Management API token." >&2
-  echo "$TOKEN_RESPONSE" | jq -r '
-    if .error then
-      "Auth0 error: \(.error)\nDescription: \(.error_description // "none")"
-    else
-      "Unexpected Auth0 response (no access_token)."
-    end
-  ' >&2
+  print_oauth_token_failure "Management API token" "$TOKEN_RESPONSE"
   echo "" >&2
   echo "Checklist:" >&2
   echo "  1. Application type must be Machine to Machine (not Regular Web / SPA)." >&2

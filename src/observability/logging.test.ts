@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   buildRequestDiagnostics,
+  errorLogFields,
   logError,
   logInfo,
   logWarn,
@@ -200,6 +201,21 @@ describe("logInfo", () => {
   });
 });
 
+describe("errorLogFields", () => {
+  it("returns error name and message for Error instances", () => {
+    expect(errorLogFields(new TypeError("transport failed"))).toEqual({
+      errorName: "TypeError",
+      errorMessage: "transport failed",
+    });
+  });
+
+  it("returns an empty object for non-Error values", () => {
+    expect(errorLogFields("boom")).toEqual({});
+    expect(errorLogFields({ message: "boom" })).toEqual({});
+    expect(errorLogFields(null)).toEqual({});
+  });
+});
+
 describe("logError", () => {
   it("emits a sanitized object via console.error", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -215,6 +231,27 @@ describe("logError", () => {
       service: "aws-mcp-gateway",
       phase: "mcp_handler_error",
       code: "internal_error",
+    });
+
+    errorSpy.mockRestore();
+  });
+
+  it("includes errorName and errorMessage and caps long messages", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const longMessage = "x".repeat(250);
+
+    logError({
+      phase: "mcp_handler_error",
+      code: "internal_error",
+      ...errorLogFields(new Error(longMessage)),
+    });
+
+    expect(errorSpy).toHaveBeenCalledWith({
+      service: "aws-mcp-gateway",
+      phase: "mcp_handler_error",
+      code: "internal_error",
+      errorName: "Error",
+      errorMessage: `${"x".repeat(200)}…`,
     });
 
     errorSpy.mockRestore();

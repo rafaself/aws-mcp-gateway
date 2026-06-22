@@ -315,6 +315,16 @@ A successful response includes a `result` object with a `tools` array containing
 
 For a non-UI smoke check, run `pnpm run verify:oauth:authenticated` with either `AWS_MCP_GATEWAY_ACCESS_TOKEN` or the smoke OAuth client variables from `.env.deploy.local`.
 
+### GitHub Actions: Connector Smoke workflow
+
+Contract checks run on every PR and `main` push via [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). The separate **Connector Smoke** workflow (`.github/workflows/connector-smoke.yml`) is **manual only** (`workflow_dispatch`) so deployed validation against a live Worker does not run automatically with repository secrets.
+
+To run it after deployment:
+
+1. In the GitHub repository, configure Actions secrets: `AWS_MCP_GATEWAY_WORKER_URL`, `AWS_MCP_GATEWAY_OAUTH_TOKEN_URL`, `AWS_MCP_GATEWAY_OAUTH_CLIENT_ID`, `AWS_MCP_GATEWAY_OAUTH_CLIENT_SECRET`, and optionally `AWS_MCP_GATEWAY_OAUTH_AUDIENCE`, `AWS_MCP_GATEWAY_OAUTH_SCOPE`, and `AWS_MCP_GATEWAY_SMOKE_REGION`.
+2. Open **Actions → Connector Smoke → Run workflow**.
+3. Confirm both jobs pass: `contract` (local connector contract) and `deployed-smoke` (authenticated MCP checks against the deployed Worker). CI logs use quiet output; for full JSON responses, run `pnpm run verify:oauth:authenticated` locally.
+
 ### 4. Tool smoke tests
 
 After confirming the MCP connection works, run smoke tests for a subset of tools. See [mcp-testing.md](mcp-testing.md) for the recommended smoke test sequence and expected failure behavior.

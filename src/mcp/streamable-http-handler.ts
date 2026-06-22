@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { logError } from "../observability/logging.js";
+import { errorLogFields, logError } from "../observability/logging.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { isInitializeRpcRequest } from "./initialize-request.js";
 import {
@@ -36,7 +36,11 @@ export function createStreamableHttpMcpHandler(
     try {
       return await transport.handleRequest(request);
     } catch (error) {
-      logError({ phase: "mcp_handler_error", code: "internal_error" });
+      logError({
+        phase: "mcp_handler_error",
+        code: "internal_error",
+        ...errorLogFields(error),
+      });
       return new Response(
         JSON.stringify({
           jsonrpc: "2.0",

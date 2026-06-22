@@ -39,7 +39,8 @@ The gateway is a **read-only**, public-facing MCP endpoint for explicit AWS tool
 
 - Full deployment instructions — see [docs/deployment.md](docs/deployment.md).
 - Write-operation policy — see [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md).
-- Automated vulnerability scanning — not required for the current read-only scope.
+- Automated dependency or SAST vulnerability scanning — not required for the current read-only scope.
+- Secret-pattern scanning in CI (Gitleaks plus `pnpm run repo:safety`) is in scope and expected on every PR.
 
 **OAuth (implemented):**
 
@@ -178,6 +179,8 @@ Before merging any PR:
 - [ ] `pnpm run test:integrity` passes — no committed `.only` markers or unjustified skipped tests.
 - [ ] `pnpm run output:guardrail` passes — production source uses centralized observability sinks only.
 - [ ] GitHub Actions CI workflow (`.github/workflows/ci.yml`) passes on the PR.
+- [ ] GitHub Actions secret-scan workflow (`.github/workflows/secret-scan.yml`) passes on the PR.
+- [ ] `pnpm run repo:safety` passes — no secrets, maintainer defaults, or forbidden paths in tracked files.
 - [ ] New production dependencies are justified and reviewed — the project avoids unnecessary packages.
 - [ ] Security, validation, redaction, authentication, region allowlist, and read-only contract tests were not weakened to make unrelated changes pass.
 

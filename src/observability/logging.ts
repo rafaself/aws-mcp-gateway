@@ -79,6 +79,17 @@ export function logError(event: Record<string, unknown>): void {
   emit("error", event);
 }
 
+export function errorLogFields(error: unknown): SafeLogEvent {
+  if (!(error instanceof Error)) {
+    return {};
+  }
+
+  return {
+    errorName: error.name,
+    errorMessage: error.message,
+  };
+}
+
 export type UserAgentFamily = "openai-mcp" | "aiohttp" | "other";
 export type RequestKind = "empty_post" | "json_rpc" | "other";
 

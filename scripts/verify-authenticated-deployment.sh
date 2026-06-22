@@ -4,6 +4,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=lib/oauth-token-errors.sh
+source "${SCRIPT_DIR}/lib/oauth-token-errors.sh"
 WRANGLER_FILE="${ROOT}/wrangler.jsonc"
 WORKER_URL="${1:-${AWS_MCP_GATEWAY_WORKER_URL:-}}"
 
@@ -84,6 +87,19 @@ cleanup_json_rpc_temp_files() {
   fi
 }
 
+smoke_quiet() {
+  [[ "${AWS_MCP_GATEWAY_SMOKE_QUIET:-}" == "1" || "${GITHUB_ACTIONS:-}" == "true" ]]
+}
+
+print_smoke_response() {
+  local response="$1"
+  if smoke_quiet; then
+    echo "  ok"
+  else
+    echo "$response" | jq .
+  fi
+}
+
 if [[ -z "$ACCESS_TOKEN" ]]; then
   require_var AWS_MCP_GATEWAY_OAUTH_TOKEN_URL
   require_var AWS_MCP_GATEWAY_OAUTH_CLIENT_ID
@@ -111,8 +127,7 @@ if [[ -z "$ACCESS_TOKEN" ]]; then
   )"
   ACCESS_TOKEN="$(echo "$TOKEN_RESPONSE" | jq -r '.access_token // empty')"
   if [[ -z "$ACCESS_TOKEN" ]]; then
-    echo "Failed to obtain OAuth smoke access token." >&2
-    echo "$TOKEN_RESPONSE" | jq . >&2
+    print_oauth_token_failure "OAuth smoke access token" "$TOKEN_RESPONSE"
     exit 1
   fi
 fi
@@ -130,14 +145,14 @@ if [[ -z "$MCP_SESSION_ID" ]]; then
   exit 1
 fi
 MCP_PROTOCOL_VERSION="2024-11-05"
-echo "$INITIALIZE_RESPONSE" | jq .
+print_smoke_response "$INITIALIZE_RESPONSE"
 echo "$INITIALIZE_RESPONSE" | jq -e '.result.serverInfo.name == "aws-mcp-gateway"' >/dev/null
 
 echo "Checking authenticated tools/list ..."
 json_rpc '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
 TOOLS_LIST_RESPONSE="$MCP_LAST_RESPONSE"
 cleanup_json_rpc_temp_files
-echo "$TOOLS_LIST_RESPONSE" | jq .
+print_smoke_response "$TOOLS_LIST_RESPONSE"
 echo "$TOOLS_LIST_RESPONSE" | jq -e '.result.tools | length == 8' >/dev/null
 echo "$TOOLS_LIST_RESPONSE" | jq -e '
   ([.result.tools[].name] | sort) == (
@@ -163,21 +178,21 @@ echo "Checking get_gateway_status ..."
 json_rpc '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_gateway_status","arguments":{}}}'
 STATUS_RESPONSE="$MCP_LAST_RESPONSE"
 cleanup_json_rpc_temp_files
-echo "$STATUS_RESPONSE" | jq .
+print_smoke_response "$STATUS_RESPONSE"
 echo "$STATUS_RESPONSE" | jq -e '.result.structuredContent.status == "ok"' >/dev/null
 
 echo "Checking search ..."
 json_rpc '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"search","arguments":{"query":"ec2"}}}'
 SEARCH_RESPONSE="$MCP_LAST_RESPONSE"
 cleanup_json_rpc_temp_files
-echo "$SEARCH_RESPONSE" | jq .
+print_smoke_response "$SEARCH_RESPONSE"
 echo "$SEARCH_RESPONSE" | jq -e '.result.structuredContent.results | length > 0' >/dev/null
 
 echo "Checking fetch ..."
 json_rpc '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"fetch","arguments":{"id":"tool/list_ec2_instances"}}}'
 FETCH_RESPONSE="$MCP_LAST_RESPONSE"
 cleanup_json_rpc_temp_files
-echo "$FETCH_RESPONSE" | jq .
+print_smoke_response "$FETCH_RESPONSE"
 echo "$FETCH_RESPONSE" | jq -e '.result.structuredContent.id == "tool/list_ec2_instances"' >/dev/null
 
 if [[ -n "${AWS_MCP_GATEWAY_SMOKE_REGION:-}" ]]; then
@@ -195,7 +210,7 @@ if [[ -n "${AWS_MCP_GATEWAY_SMOKE_REGION:-}" ]]; then
       }')"
   EC2_RESPONSE="$MCP_LAST_RESPONSE"
   cleanup_json_rpc_temp_files
-  echo "$EC2_RESPONSE" | jq .
+  print_smoke_response "$EC2_RESPONSE"
   echo "$EC2_RESPONSE" | jq -e '
     (.result.structuredContent.count >= 0)
     or (

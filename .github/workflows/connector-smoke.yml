@@ -1,8 +1,6 @@
 name: Connector Smoke
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -35,6 +33,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Deployed connector smoke (optional)
         env:
+          AWS_MCP_GATEWAY_SMOKE_QUIET: "1"
           AWS_MCP_GATEWAY_WORKER_URL: ${{ secrets.AWS_MCP_GATEWAY_WORKER_URL }}
           AWS_MCP_GATEWAY_OAUTH_TOKEN_URL: ${{ secrets.AWS_MCP_GATEWAY_OAUTH_TOKEN_URL }}
           AWS_MCP_GATEWAY_OAUTH_CLIENT_ID: ${{ secrets.AWS_MCP_GATEWAY_OAUTH_CLIENT_ID }}

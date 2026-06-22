@@ -1,0 +1,12 @@
+title = "aws-mcp-gateway gitleaks config"
+
+[allowlist]
+description = "Example env files and repository-safety fixture paths"
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.deploy\.example$''',
+  '''\.dev\.vars\.example$''',
+  '''wrangler\.example\.jsonc$''',
+  '''scripts/lib/repository-safety-checks\.mjs$''',
+  '''scripts/repository-safety-checks\.test\.mjs$''',
+]
