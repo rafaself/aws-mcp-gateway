@@ -11,7 +11,7 @@
 	},
 	"vars": {
 		"AWS_REGION": "us-east-1",
-		"AWS_ALLOWED_REGIONS": "us-east-1,sa-east-1",
+		"AWS_ALLOWED_REGIONS": "us-east-1",
 		"AUTH_MODE": "oauth",
 		"RATE_LIMIT_MAX_REQUESTS": "120",
 		"RATE_LIMIT_WINDOW_SECONDS": "60",
