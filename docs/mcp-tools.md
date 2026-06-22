@@ -692,6 +692,7 @@ limiting. Does not return ownership, ACL, policy, or object-level details.
 ### Region behavior
 
 Global S3 control-plane API signed against `us-east-1`. No region input.
+Manifest metadata: `aws.regionMode: global`.
 
 ### AWS API
 
@@ -1082,8 +1083,10 @@ Parameters are normalized with sorted keys and type-tagged serialization.
    mutation operations are exposed.
 2. **No generic AWS access:** There is no `run_aws_cli`, `call_any_aws_api`, or
    arbitrary API proxy tool.
-3. **Region allowlist:** Every regional tool validates regions against the
-   `AWS_ALLOWED_REGIONS` environment variable.
+3. **Region allowlist:** Regional tools (`single-region` and `bounded-multi-region`)
+   validate regions against the `AWS_ALLOWED_REGIONS` environment variable.
+   Account-level tools (`global`, e.g. `list_s3_buckets`) do not accept region
+   input and skip request-region allowlist checks.
 4. **Input validation before AWS calls:** Zod schemas and security validators
    reject invalid input before any downstream call.
 5. **Normalized output:** Raw AWS response fields are never exposed in MCP

@@ -32,7 +32,7 @@ export type ToolLifecycle = "stable";
 
 export type ToolRiskLevel = "read-only";
 
-export type AwsRegionMode = "none" | "single-region" | "bounded-multi-region";
+export type AwsRegionMode = "none" | "global" | "single-region" | "bounded-multi-region";
 
 export type CostClass = "none" | "cached-read";
 

@@ -124,7 +124,7 @@ function validateRequestedRegions(
   policy: ToolPolicyContext,
   args: Record<string, unknown>,
 ): GatewayError | null {
-  if (manifest.aws.regionMode === "none") {
+  if (manifest.aws.regionMode === "none" || manifest.aws.regionMode === "global") {
     return null;
   }
 

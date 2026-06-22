@@ -49,7 +49,7 @@ export function createListS3BucketsToolManifest(
       services: ["s3"],
       actions: ["s3:ListAllMyBuckets"],
       capabilities: ["s3:ListAllMyBuckets"],
-      regionMode: "single-region",
+      regionMode: "global",
       readonly: true,
     },
     safety: {
