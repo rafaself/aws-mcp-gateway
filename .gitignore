@@ -8,3 +8,5 @@ dist/
 .dev.vars
 coverage/
 package-lock.json
+.opencode/
+.cursor/
