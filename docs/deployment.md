@@ -317,7 +317,7 @@ For a non-UI smoke check, run `pnpm run verify:oauth:authenticated` with either 
 
 ### 4. Tool smoke tests
 
-After confirming the MCP connection works, run smoke tests for a subset of tools. See [docs/mcp-testing.md](mcp-testing.md) for the recommended smoke test sequence and expected failure behavior.
+After confirming the MCP connection works, run smoke tests for a subset of tools. See [mcp-testing.md](mcp-testing.md) for the recommended smoke test sequence and expected failure behavior.
 
 ## Rollback
 

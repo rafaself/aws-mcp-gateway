@@ -2,7 +2,7 @@
 
 Final production gate proving the deployed Worker is ready for integration as a **ChatGPT Connector App**. This checklist validates repository safety, deployment health, MCP transport behavior, tool descriptors, read-only actions, and ChatGPT UI acceptance.
 
-**Prerequisites (connector hardening set):** [#87](https://github.com/rafaondjango/aws-mcp-gateway/issues/87), [#88](https://github.com/rafaondjango/aws-mcp-gateway/issues/88), [#89](https://github.com/rafaondjango/aws-mcp-gateway/issues/89), [#90](https://github.com/rafaondjango/aws-mcp-gateway/issues/90), [#91](https://github.com/rafaondjango/aws-mcp-gateway/issues/91), [#92](https://github.com/rafaondjango/aws-mcp-gateway/issues/92).
+Repository contract checks (pinned dependencies, OAuth URL rules, descriptor shape, `tools/list`, OAuth challenge) are covered by step 1 (`pnpm run verify:connector-contract`).
 
 **Related documentation:**
 

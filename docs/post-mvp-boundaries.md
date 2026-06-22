@@ -8,7 +8,7 @@ For repository workflow rules, see [AGENTS.md](../AGENTS.md). For spec-driven de
 
 The gateway today is a minimal Cloudflare Worker MCP gateway with **explicit, read-only AWS tools**. The current read-only scope is:
 
-- MCP endpoint protected by bearer authentication.
+- MCP endpoint protected by authentication (`AUTH_MODE=oauth` for production ChatGPT; `AUTH_MODE=local-bearer` for local development).
 - Each tool is named, typed, and allowlisted — no generic executor.
 - AWS credentials stored only as Cloudflare secrets with least-privilege read-only IAM.
 - Inputs validated (region allowlist, date ranges, result-size limits) before any AWS call.
@@ -59,20 +59,35 @@ Any write or management capability must:
 
 ---
 
-## OAuth and multi-user authentication
+## Current authentication
 
-The current read-only scope uses a **single shared bearer token** (`MCP_AUTH_TOKEN`) suitable for personal or single-tenant deployment. ChatGPT connector OAuth is **designed** in [docs/specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md) and must not weaken the current model unless explicitly replaced by that reviewed design.
+The gateway ships two authentication modes:
+
+| Mode | Use case | Documentation |
+|------|----------|---------------|
+| `AUTH_MODE=oauth` | Production ChatGPT connector deployments | [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md) |
+| `AUTH_MODE=local-bearer` | Local development and manual curl testing (`legacy-bearer` is a deprecated alias) | [mcp-testing.md](mcp-testing.md) |
+
+OAuth behavior — protected resource metadata, JWT validation, `aws:read` scope, tool descriptor security schemes — is defined in [specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md). Client identification modes (predefined Auth0 client vs future CIMD) are in [specs/oauth-client-identification.md](specs/oauth-client-identification.md).
+
+Production ChatGPT connectors must use OAuth. `MCP_AUTH_TOKEN` is required only in `local-bearer` mode.
+
+---
+
+## Future multi-user authorization
+
+Per-user IAM mapping, tenant isolation, per-principal tool allowlists, and advanced revocation are **out of scope for the current read-only scope** and require a separate security model.
 
 ### Requirements before implementation
 
-Any OAuth or multi-user auth implementation must follow the spec above. Additionally:
+Any multi-user or advanced authorization capability must:
 
-1. **Be designed separately** from the local bearer auth model. Do not bolt OAuth onto the existing token check without a dedicated spec covering identity, storage, and authorization.
+1. **Be designed in a separate spec** before code changes. Copy [docs/specs/template.md](specs/template.md) and follow [docs/specs/README.md](specs/README.md).
 2. **Define user identity, token storage, revocation, and authorization boundaries.** Document how users are identified, how tokens are issued and stored, how revocation works, and which tools each principal may call.
-3. **Not weaken single-token deployment mode** unless explicitly replaced. The current bearer-token path must remain available (or be migrated with a documented cutover) for operators who do not need multi-user auth.
+3. **Not weaken existing auth modes** unless explicitly replaced. The current OAuth and local-bearer paths must remain available (or be migrated with a documented cutover) for operators who do not need multi-user auth.
 4. **Include tests for auth edge cases:** unauthorized requests, expired tokens, malformed tokens, and insufficient-scope requests must all fail with safe, normalized errors — never raw provider responses or stack traces.
 
-### Acceptance expectations for future OAuth/multi-user work
+### Acceptance expectations for future multi-user authorization work
 
 | Area | Required verification |
 |------|----------------------|

@@ -1,15 +1,17 @@
-# Spec: ChatGPT OAuth connector authorization
+# OAuth authorization contract (ChatGPT connector)
 
 ## Goal
 
-Define the OAuth contract required to connect the deployed AWS MCP Gateway to ChatGPT's custom app connector using the **OAuth** authentication option, while preserving the existing read-only, allowlisted AWS tool security model.
+This document is the canonical OAuth authorization contract for the AWS MCP Gateway. It describes what the Worker enforces today when connecting to ChatGPT's custom app connector.
 
-The current read-only scope uses a single static bearer token (`MCP_AUTH_TOKEN`). ChatGPT's connector UI supports only **OAuth** or **No auth**. `No auth` is not acceptable for this gateway because it would expose account-specific AWS cost, EC2, CloudWatch, and CloudWatch Logs data without authentication.
+Production ChatGPT deployments use `AUTH_MODE=oauth`: the Worker acts as an OAuth resource server, validates JWT access tokens from an external OIDC provider, and requires the `aws:read` scope before executing read-only MCP tools.
+
+Local development uses `AUTH_MODE=local-bearer` with `MCP_AUTH_TOKEN` (`legacy-bearer` is a deprecated alias). ChatGPT's connector UI supports only **OAuth** or **No auth**; unauthenticated `/mcp` is never acceptable for AWS account data.
 
 ## Non-goals
 
-- Do not implement a custom OAuth authorization server in this repository.
-- Do not implement Dynamic Client Registration or Client ID Metadata Documents in the first phase. For the post-MVP CIMD readiness path, see [oauth-client-identification.md](oauth-client-identification.md).
+- No custom OAuth authorization server in this repository.
+- Dynamic Client Registration and Client ID Metadata Documents are not supported in the current production path. For the post-MVP CIMD readiness path, see [oauth-client-identification.md](oauth-client-identification.md).
 - Do not remove local bearer support (`AUTH_MODE=local-bearer`; `legacy-bearer` remains a deprecated alias).
 - Do not allow unauthenticated `/mcp` in any production mode.
 - Do not implement a generic OAuth provider, user database, password flow, refresh-token storage, or session store.
@@ -17,9 +19,9 @@ The current read-only scope uses a single static bearer token (`MCP_AUTH_TOKEN`)
 - Do not change public MCP tool names, inputs, outputs, AWS request semantics, cache semantics, or IAM policy.
 - Do not expose AWS credentials, bearer tokens, OAuth access tokens, JWT claims, signed headers, raw AWS responses, or stack traces.
 
-## Architecture decision
+## Architecture
 
-Use the Worker as an **OAuth resource server only**. Use an external OIDC/OAuth provider, with Auth0 as the documented first provider.
+The Worker is an **OAuth resource server only**. An external OIDC/OAuth provider (Auth0 is the documented first provider) issues access tokens; the Worker validates them before any MCP or AWS work runs.
 
 ```text
 ChatGPT connector
@@ -188,25 +190,6 @@ Tools returning `structuredContent` must include `outputSchema` matching `docs/m
 - OAuth does not permit write tools or generic AWS API access.
 - Auth failures must never leak tokens, JWT claims, JWKS contents, AWS secrets, or provider error bodies.
 - Unauthenticated callers must not receive detailed AWS configuration error messages.
-
-## Implementation sequence
-
-| Issue | Scope |
-|-------|-------|
-| #76 | Protected-resource metadata route, `WWW-Authenticate` challenge, `AUTH_MODE` config split |
-| #77 | OAuth JWT validation on `/mcp`, staged auth flow, `jose` dependency |
-| #78 | Tool descriptor OAuth security schemes and read-only annotations |
-| #79 | End-to-end Auth0 + ChatGPT setup documentation |
-
-## Acceptance criteria
-
-- [ ] Spec defines external-provider resource-server architecture
-- [ ] Spec explicitly rejects `No auth` for AWS account data
-- [ ] Spec defines all OAuth config variables and secrets vs non-secrets
-- [ ] Spec defines `aws:read` as the initial required scope
-- [ ] Spec states `MCP_AUTH_TOKEN` is only required in `local-bearer` mode
-- [ ] Spec defines implementation sequence for #76–#79
-- [ ] Spec preserves read-only, allowlisted, no-generic-AWS-proxy contract
 
 ## Test plan
 

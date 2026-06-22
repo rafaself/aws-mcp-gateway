@@ -66,7 +66,7 @@ Replace `<worker-host>` with the URL output by `pnpm deploy`, e.g. `https://aws-
 
 ## Tool allowlist
 
-The gateway exposes the following tools. See [docs/mcp-tools.md](mcp-tools.md) for the full input and output contracts. ChatGPT connector discovery is documented in [chatgpt-connector.md](chatgpt-connector.md).
+The gateway exposes the following tools. See [mcp-tools.md](mcp-tools.md) for the full input and output contracts. ChatGPT connector discovery is documented in [chatgpt-connector.md](chatgpt-connector.md).
 
 | Tool | Purpose | Requires AWS call |
 |------|---------|-------------------|

@@ -2,6 +2,8 @@
 
 Every MCP tool in this repository must follow the conventions below to keep the gateway predictable, testable and consistent.
 
+The AWS-backed tool names below are the core inventory tools. `search`, `fetch`, and `get_gateway_status` follow the same validation and output rules but are documented in [mcp-tools.md](mcp-tools.md).
+
 ## Tool naming
 
 - Use `snake_case`.

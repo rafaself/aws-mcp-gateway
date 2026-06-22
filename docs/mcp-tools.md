@@ -633,7 +633,7 @@ shape.
 
 | Code | Meaning | When |
 |------|---------|------|
-| `unauthorized` | Authentication failed | Missing or invalid `MCP_AUTH_TOKEN` |
+| `unauthorized` | Authentication failed | Missing or invalid `MCP_AUTH_TOKEN` (local-bearer) or OAuth access token / `aws:read` scope (oauth) |
 | `configuration_error` | Gateway configuration is invalid | Missing or invalid env bindings |
 | `validation_error` | Tool input failed validation | Invalid date, region, state, limit, etc. |
 | `aws_request_failed` | AWS API call failed | Network error, 5xx, timeout, invalid request |
@@ -720,7 +720,13 @@ The following environment bindings are required to use the AWS-backed MCP tools:
 | `AWS_SECRET_ACCESS_KEY` | AWS secret key |
 | `AWS_REGION` | Default signing region (must be in `AWS_ALLOWED_REGIONS`) |
 | `AWS_ALLOWED_REGIONS` | Comma-separated list of allowed regions |
-| `MCP_AUTH_TOKEN` | Bearer token for MCP authentication |
+
+Authentication bindings depend on `AUTH_MODE`:
+
+| Binding | Mode | Description |
+|---------|------|-------------|
+| `MCP_AUTH_TOKEN` | `local-bearer` only | Bearer token for local MCP authentication |
+| OAuth vars (`MCP_RESOURCE_URL`, `OAUTH_ISSUER`, `OAUTH_AUDIENCE`, `OAUTH_JWKS_URI`, `OAUTH_REQUIRED_SCOPES`, …) | `oauth` only | Production ChatGPT connector auth — see [deployment.md](deployment.md) and [specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md) |
 
 Optional binding:
 
