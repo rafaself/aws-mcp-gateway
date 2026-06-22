@@ -15,7 +15,7 @@ Server URL in ChatGPT: https://<worker-host>/mcp
 OAuth resource/audience: https://<worker-host>
 Protected resource metadata: https://<worker-host>/.well-known/oauth-protected-resource
 Required scope: aws:read
-Expected public MCP tools: 8
+Expected public MCP tools: 11
 ```
 
 Do not set `MCP_RESOURCE_URL` or `OAUTH_AUDIENCE` to `https://<worker-host>/mcp`. The OAuth resource identity is the Worker origin; the MCP transport endpoint is `/mcp`.
@@ -90,14 +90,14 @@ Runtime MCP/auth dependency upgrades must be treated as protocol changes until H
    - **Server URL:** `https://<worker-host>/mcp`
    - **Authentication:** OAuth
 3. Complete the OAuth login (Auth0 user, not your ChatGPT account).
-4. Validate authenticated `tools/list` returns all 8 public tools (see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md)).
+4. Validate authenticated `tools/list` returns all 11 public tools (see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md)).
 5. Open the connector and click **Refresh** after gateway updates so ChatGPT reloads `tools/list`.
-6. Confirm **Actions** lists all 8 tools (not “No app actions available yet”).
+6. Confirm **Actions** lists all 11 tools (not “No app actions available yet”).
 7. Call `get_gateway_status` before AWS-backed tools.
 
 ## Tool surface
 
-The gateway exposes **8 public MCP tools**:
+The gateway exposes **11 public MCP tools**:
 
 | Tool | Role | Calls AWS | Read-only | Auth | Output shape |
 |------|------|-----------|-----------|------|--------------|
@@ -109,6 +109,9 @@ The gateway exposes **8 public MCP tools**:
 | `list_ec2_instances` | EC2 inventory across allowed regions | Yes | Yes | OAuth `aws:read` | [`list_ec2_instances`](mcp-tools.md#4-list_ec2_instances) |
 | `get_cloudwatch_alarms` | CloudWatch alarm states | Yes | Yes | OAuth `aws:read` | [`get_cloudwatch_alarms`](mcp-tools.md#5-get_cloudwatch_alarms) |
 | `get_recent_log_errors` | Recent error/warning log events | Yes | Yes | OAuth `aws:read` | [`get_recent_log_errors`](mcp-tools.md#6-get_recent_log_errors) |
+| `list_lambda_functions` | Lambda functions across allowed regions | Yes | Yes | OAuth `aws:read` | [`list_lambda_functions`](mcp-tools.md#7-list_lambda_functions) |
+| `list_s3_buckets` | S3 bucket inventory | Yes | Yes | OAuth `aws:read` | [`list_s3_buckets`](mcp-tools.md#8-list_s3_buckets) |
+| `list_log_groups` | CloudWatch log groups in a region | Yes | Yes | OAuth `aws:read` | [`list_log_groups`](mcp-tools.md#9-list_log_groups) |
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
@@ -133,7 +136,7 @@ For the full manual validation flow (HTTP pre-checks through OAuth login, `tools
 
 After OAuth succeeds:
 
-1. Confirm **Actions** lists all 8 tools (not “No app actions available yet”).
+1. Confirm **Actions** lists all 11 tools (not “No app actions available yet”).
 2. Ask ChatGPT to check gateway status — it should call `get_gateway_status` first.
 3. Ask for a bounded read-only query (for example EC2 instances in an allowed region).
 

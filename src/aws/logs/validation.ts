@@ -1,4 +1,4 @@
-import { LOGS_MAX_HOURS, LOGS_MAX_EVENTS } from "../../security/limits.js";
+import { LOGS_MAX_HOURS, LOGS_MAX_EVENTS, LOG_GROUPS_MAX_COUNT, LOG_GROUP_PREFIX_MAX_LENGTH } from "../../security/limits.js";
 import { LogsError } from "./types.js";
 
 export function validateLogOptions(
@@ -32,6 +32,29 @@ export function validateLogOptions(
     throw new LogsError(
       "validation_error",
       `limit must not exceed ${LOGS_MAX_EVENTS}.`,
+    );
+  }
+}
+
+export function validateLogGroupListOptions(
+  prefix: string | undefined,
+  limit: number,
+): void {
+  if (prefix !== undefined && prefix.length > LOG_GROUP_PREFIX_MAX_LENGTH) {
+    throw new LogsError(
+      "validation_error",
+      `prefix must not exceed ${LOG_GROUP_PREFIX_MAX_LENGTH} characters.`,
+    );
+  }
+
+  if (limit < 1) {
+    throw new LogsError("validation_error", "limit must be at least 1.");
+  }
+
+  if (limit > LOG_GROUPS_MAX_COUNT) {
+    throw new LogsError(
+      "validation_error",
+      `limit must not exceed ${LOG_GROUPS_MAX_COUNT}.`,
     );
   }
 }

@@ -25,6 +25,20 @@ export interface FilterLogEventsOptions {
   endTime?: number;
 }
 
+export interface LogGroup {
+  name: string;
+}
+
+export interface DescribeLogGroupsResponse {
+  logGroups?: Array<{
+    logGroupName?: string;
+    creationTime?: number;
+    retentionInDays?: number;
+    storedBytes?: number;
+  }>;
+  nextToken?: string;
+}
+
 export class LogsError extends ValidationError {
   constructor(code: GatewayErrorCode, message: string) {
     super(code, message);

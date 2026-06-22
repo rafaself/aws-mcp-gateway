@@ -33,3 +33,21 @@ export function summarizeLogErrorsInput(args: {
     limit: args.limit,
   };
 }
+
+export function summarizeS3BucketsInput(args: {
+  limit?: number;
+}): Record<string, unknown> {
+  return {
+    ...(args.limit !== undefined ? { limit: args.limit } : {}),
+  };
+}
+
+export function summarizeLogGroupsInput(args: {
+  prefix?: string;
+  limit?: number;
+}): Record<string, unknown> {
+  return {
+    prefixLength: args.prefix?.length ?? 0,
+    ...(args.limit !== undefined ? { limit: args.limit } : {}),
+  };
+}

@@ -153,7 +153,7 @@ json_rpc '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
 TOOLS_LIST_RESPONSE="$MCP_LAST_RESPONSE"
 cleanup_json_rpc_temp_files
 print_smoke_response "$TOOLS_LIST_RESPONSE"
-echo "$TOOLS_LIST_RESPONSE" | jq -e '.result.tools | length == 8' >/dev/null
+echo "$TOOLS_LIST_RESPONSE" | jq -e '.result.tools | length == 11' >/dev/null
 echo "$TOOLS_LIST_RESPONSE" | jq -e '
   ([.result.tools[].name] | sort) == (
     [
@@ -164,7 +164,10 @@ echo "$TOOLS_LIST_RESPONSE" | jq -e '
       "get_aws_cost_by_service",
       "list_ec2_instances",
       "get_cloudwatch_alarms",
-      "get_recent_log_errors"
+      "get_recent_log_errors",
+      "list_lambda_functions",
+      "list_s3_buckets",
+      "list_log_groups"
     ] | sort
   )' >/dev/null
 echo "$TOOLS_LIST_RESPONSE" | jq -e '

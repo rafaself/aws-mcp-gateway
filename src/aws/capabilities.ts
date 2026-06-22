@@ -2,7 +2,10 @@ export type AwsCapabilityId =
   | "ce:GetCostAndUsage"
   | "ec2:DescribeInstances"
   | "cloudwatch:DescribeAlarms"
-  | "logs:FilterLogEvents";
+  | "logs:FilterLogEvents"
+  | "lambda:ListFunctions"
+  | "s3:ListAllMyBuckets"
+  | "logs:DescribeLogGroups";
 
 export type AwsCapabilityCostSensitivity =
   | "paid"
@@ -66,6 +69,27 @@ export const AWS_CAPABILITY_REGISTRY: Readonly<Record<AwsCapabilityId, AwsCapabi
       id: "logs:FilterLogEvents",
       iamService: "logs",
       iamAction: "logs:FilterLogEvents",
+      readonly: true,
+      costSensitivity: "volume-sensitive",
+    },
+    "lambda:ListFunctions": {
+      id: "lambda:ListFunctions",
+      iamService: "lambda",
+      iamAction: "lambda:ListFunctions",
+      readonly: true,
+      costSensitivity: "fanout-sensitive",
+    },
+    "s3:ListAllMyBuckets": {
+      id: "s3:ListAllMyBuckets",
+      iamService: "s3",
+      iamAction: "s3:ListAllMyBuckets",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "logs:DescribeLogGroups": {
+      id: "logs:DescribeLogGroups",
+      iamService: "logs",
+      iamAction: "logs:DescribeLogGroups",
       readonly: true,
       costSensitivity: "volume-sensitive",
     },

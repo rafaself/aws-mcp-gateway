@@ -10,12 +10,18 @@ const {
   listInstancesMock,
   listAlarmsMock,
   filterLogEventsMock,
+  listFunctionsMock,
+  listBucketsMock,
+  describeLogGroupsMock,
 } = vi.hoisted(() => ({
   getCostSummaryMock: vi.fn(),
   getCostByServiceMock: vi.fn(),
   listInstancesMock: vi.fn(),
   listAlarmsMock: vi.fn(),
   filterLogEventsMock: vi.fn(),
+  listFunctionsMock: vi.fn(),
+  listBucketsMock: vi.fn(),
+  describeLogGroupsMock: vi.fn(),
 }));
 
 vi.mock("../../aws/cost-explorer/index.js", () => ({
@@ -44,6 +50,23 @@ vi.mock("../../aws/logs/index.js", async (importOriginal) => {
   return {
     ...actual,
     filterLogEvents: filterLogEventsMock,
+    describeLogGroups: describeLogGroupsMock,
+  };
+});
+
+vi.mock("../../aws/lambda/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../aws/lambda/index.js")>();
+  return {
+    ...actual,
+    listFunctions: listFunctionsMock,
+  };
+});
+
+vi.mock("../../aws/s3/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../aws/s3/index.js")>();
+  return {
+    ...actual,
+    listBuckets: listBucketsMock,
   };
 });
 
@@ -102,6 +125,9 @@ beforeEach(() => {
   listInstancesMock.mockReset();
   listAlarmsMock.mockReset();
   filterLogEventsMock.mockReset();
+  listFunctionsMock.mockReset();
+  listBucketsMock.mockReset();
+  describeLogGroupsMock.mockReset();
 });
 
 describe("public tool audit contract", () => {
@@ -347,5 +373,87 @@ describe("public tool audit contract", () => {
     });
     const line = JSON.stringify(event);
     expect(line).not.toContain("/aws/lambda/private-service");
+  });
+
+  it("emits a sanitized success audit event for list_lambda_functions", async () => {
+    listFunctionsMock.mockResolvedValue([
+      {
+        functionName: "my-fn",
+        region: "us-east-1",
+        runtime: "python3.12",
+        state: "Active",
+      },
+    ]);
+
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const mock = makeMockServer();
+    registerMcpToolForTest(mock.server, testContext, "list_lambda_functions");
+
+    await mock.getTool("list_lambda_functions")!.handler({
+      regions: ["us-east-1", "us-west-2"],
+    });
+
+    const event = parseAuditEvent(log);
+    expect(event).toMatchObject({
+      event: "mcp_tool_call",
+      tool: "list_lambda_functions",
+      outcome: "success",
+      awsService: "lambda",
+      input: { regionCount: 2 },
+    });
+    expect(JSON.stringify(event)).not.toContain("my-fn");
+  });
+
+  it("emits a sanitized success audit event for list_s3_buckets", async () => {
+    listBucketsMock.mockResolvedValue([
+      { name: "my-bucket", createdAt: "2020-01-01T00:00:00.000Z" },
+    ]);
+
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const mock = makeMockServer();
+    registerMcpToolForTest(mock.server, testContext, "list_s3_buckets");
+
+    await mock.getTool("list_s3_buckets")!.handler({ limit: 10 });
+
+    const event = parseAuditEvent(log);
+    expect(event).toMatchObject({
+      event: "mcp_tool_call",
+      tool: "list_s3_buckets",
+      outcome: "success",
+      awsService: "s3",
+      input: { limit: 10 },
+    });
+    expect(JSON.stringify(event)).not.toContain("my-bucket");
+  });
+
+  it("emits a sanitized success audit event for list_log_groups", async () => {
+    describeLogGroupsMock.mockResolvedValue([{ name: "/aws/lambda/app" }]);
+
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const mock = makeMockServer();
+    registerMcpToolForTest(mock.server, testContext, "list_log_groups");
+
+    await mock.getTool("list_log_groups")!.handler({
+      region: "us-east-1",
+      prefix: "/aws/lambda",
+      limit: 20,
+    });
+
+    const event = parseAuditEvent(log);
+    expect(event).toMatchObject({
+      event: "mcp_tool_call",
+      tool: "list_log_groups",
+      outcome: "success",
+      awsService: "logs",
+      region: "us-east-1",
+      input: { prefixLength: 11, limit: 20 },
+    });
+    expect(JSON.stringify(event)).not.toContain("/aws/lambda");
   });
 });

@@ -20,6 +20,9 @@ export const PUBLIC_TOOL_TITLES = {
   list_ec2_instances: "List EC2 Instances",
   get_cloudwatch_alarms: "Get CloudWatch Alarms",
   get_recent_log_errors: "Get Recent Log Errors",
+  list_lambda_functions: "List Lambda Functions",
+  list_s3_buckets: "List S3 Buckets",
+  list_log_groups: "List Log Groups",
 } as const;
 
 export type PublicToolTitleName = keyof typeof PUBLIC_TOOL_TITLES;
@@ -187,6 +190,39 @@ export const recentLogErrorsOutputSchema = z.object({
       timestamp: z.string(),
       logStreamName: z.string(),
       message: z.string(),
+    }),
+  ),
+});
+
+export const listLambdaFunctionsOutputSchema = z.object({
+  regions: z.array(z.string()),
+  count: z.number(),
+  functions: z.array(
+    z.object({
+      functionName: z.string(),
+      region: z.string(),
+      runtime: z.string(),
+      state: z.string(),
+    }),
+  ),
+});
+
+export const listS3BucketsOutputSchema = z.object({
+  count: z.number(),
+  buckets: z.array(
+    z.object({
+      name: z.string(),
+      createdAt: z.string(),
+    }),
+  ),
+});
+
+export const listLogGroupsOutputSchema = z.object({
+  region: z.string(),
+  count: z.number(),
+  logGroups: z.array(
+    z.object({
+      name: z.string(),
     }),
   ),
 });

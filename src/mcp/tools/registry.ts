@@ -14,6 +14,9 @@ import {
   createGetCloudwatchAlarmsToolManifest,
   createGetRecentLogErrorsToolManifest,
   createListEc2InstancesToolManifest,
+  createListLambdaFunctionsToolManifest,
+  createListLogGroupsToolManifest,
+  createListS3BucketsToolManifest,
   createSearchToolManifest,
   createStatusToolManifest,
 } from "./definitions/index.js";
@@ -71,6 +74,9 @@ export function createToolManifests(ctx: GatewayContext): AnyToolManifest[] {
     createListEc2InstancesToolManifest(ctx),
     createGetCloudwatchAlarmsToolManifest(ctx),
     createGetRecentLogErrorsToolManifest(ctx),
+    createListLambdaFunctionsToolManifest(ctx),
+    createListS3BucketsToolManifest(ctx),
+    createListLogGroupsToolManifest(ctx),
   ] as AnyToolManifest[];
 }
 

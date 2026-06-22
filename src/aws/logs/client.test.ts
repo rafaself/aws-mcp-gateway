@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { filterLogEvents } from "./client.js";
+import { filterLogEvents, describeLogGroups } from "./client.js";
 import { LogsError } from "./types.js";
 import { buildCacheKey } from "../../cache/keys.js";
-import { logsFilterEventsResponse } from "../../test/fixtures.js";
+import {
+  logsFilterEventsResponse,
+  logsDescribeLogGroupsResponse,
+  makeLogGroup,
+} from "../../test/fixtures.js";
+import { LOG_GROUP_PREFIX_MAX_LENGTH } from "../../security/limits.js";
 import type { AwsCredentials } from "../types.js";
 
 const { mockFetch, awsClientConstructors } = vi.hoisted(() => {
@@ -420,6 +425,83 @@ function createMockKv(): { store: Map<string, string>; get: ReturnType<typeof vi
 
   return { store, get, put };
 }
+
+describe("describeLogGroups", () => {
+  it("returns normalized log group names", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(
+        logsDescribeLogGroupsResponse([
+          makeLogGroup({ logGroupName: "/aws/lambda/app" }),
+        ]),
+      ),
+    );
+
+    const result = await describeLogGroups({}, "us-east-1", credentials);
+
+    expect(result).toEqual([{ name: "/aws/lambda/app" }]);
+  });
+
+  it("sends prefix in request body when provided", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(logsDescribeLogGroupsResponse([])),
+    );
+
+    await describeLogGroups({ prefix: "/aws/lambda" }, "us-east-1", credentials);
+
+    const body = JSON.parse(
+      (mockFetch.mock.calls[0][1] as { body?: string }).body ?? "{}",
+    );
+    expect(body.logGroupNamePrefix).toBe("/aws/lambda");
+  });
+
+  it("rejects prefix exceeding max length", async () => {
+    const longPrefix = "x".repeat(LOG_GROUP_PREFIX_MAX_LENGTH + 1);
+
+    await expect(
+      describeLogGroups({ prefix: longPrefix }, "us-east-1", credentials),
+    ).rejects.toThrow(LogsError);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("does not leak raw AWS fields", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(
+        logsDescribeLogGroupsResponse([makeLogGroup()]),
+      ),
+    );
+
+    const result = await describeLogGroups({}, "us-east-1", credentials);
+    expect(Object.keys(result[0])).toEqual(["name"]);
+  });
+
+  it("sends correct X-Amz-Target header", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(logsDescribeLogGroupsResponse([])),
+    );
+
+    await describeLogGroups({}, "us-east-1", credentials);
+
+    const headers = (mockFetch.mock.calls[0][1] as { headers?: Record<string, string> }).headers ?? {};
+    expect(headers["X-Amz-Target"]).toBe("Logs_20140328.DescribeLogGroups");
+  });
+
+  it("returns cached result without calling AWS on cache hit", async () => {
+    const cache = createMockKv();
+    const cached = [{ name: "/aws/lambda/cached" }];
+    const key = await buildCacheKey("list_log_groups", {
+      region: "us-east-1",
+      prefix: "",
+      limit: 100,
+    });
+    cache.store.set(key, JSON.stringify(cached));
+
+    const result = await describeLogGroups({}, "us-east-1", credentials, cache as never);
+
+    expect(result).toEqual(cached);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+});
 
 const DEFAULT_FILTER_PATTERN = "?ERROR ?Error ?error ?Exception ?exception ?WARN ?Warn ?warn";
 

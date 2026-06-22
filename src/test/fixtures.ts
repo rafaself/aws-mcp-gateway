@@ -156,6 +156,81 @@ export function logsFilterEventsResponse(
   });
 }
 
+export function lambdaListFunctionsResponse(
+  functions: Array<Record<string, unknown>>,
+): Response {
+  return new Response(JSON.stringify({ Functions: functions }), {
+    status: 200,
+    headers: { "content-type": "application/x-amz-json-1.0" },
+  });
+}
+
+export function makeLambdaFunction(opts?: {
+  functionName?: string;
+  runtime?: string;
+  state?: string;
+  memorySize?: number;
+}): Record<string, unknown> {
+  return {
+    FunctionName: opts?.functionName ?? "my-function",
+    Runtime: opts?.runtime ?? "python3.12",
+    State: opts?.state ?? "Active",
+    MemorySize: opts?.memorySize ?? 128,
+    LastModified: "2026-01-01T00:00:00.000+0000",
+  };
+}
+
+export function s3ListBucketsXml(
+  buckets: Array<{ name: string; createdAt: string }>,
+): Response {
+  const bucketXml = buckets
+    .map(
+      (b) =>
+        `    <Bucket>\n      <Name>${b.name}</Name>\n      <CreationDate>${b.createdAt}</CreationDate>\n    </Bucket>`,
+    )
+    .join("\n");
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<ListAllMyBucketsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Owner>
+    <ID>abc123</ID>
+    <DisplayName>owner</DisplayName>
+  </Owner>
+  <Buckets>
+${bucketXml}
+  </Buckets>
+</ListAllMyBucketsResult>`;
+
+  return new Response(xml, {
+    status: 200,
+    headers: { "content-type": "application/xml" },
+  });
+}
+
+export function logsDescribeLogGroupsResponse(
+  logGroups: Array<Record<string, unknown>>,
+  nextToken?: string,
+): Response {
+  const body: Record<string, unknown> = { logGroups };
+  if (nextToken) body.nextToken = nextToken;
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "content-type": "application/x-amz-json-1.1" },
+  });
+}
+
+export function makeLogGroup(opts?: {
+  logGroupName?: string;
+  creationTime?: number;
+}): Record<string, unknown> {
+  return {
+    logGroupName: opts?.logGroupName ?? "/aws/lambda/example",
+    creationTime: opts?.creationTime ?? 1718798400000,
+    retentionInDays: 30,
+    storedBytes: 1024,
+  };
+}
+
 export function makeDayWithGroups(
   start: string,
   end: string,

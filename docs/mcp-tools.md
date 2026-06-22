@@ -31,6 +31,9 @@ error behavior, caching, region handling, and safety boundaries.
 | 4 | `list_ec2_instances` | EC2 inventory | Yes | [↓](#4-list_ec2_instances) |
 | 5 | `get_cloudwatch_alarms` | Alarm states | Yes | [↓](#5-get_cloudwatch_alarms) |
 | 6 | `get_recent_log_errors` | Recent log errors | Yes | [↓](#6-get_recent_log_errors) |
+| 7 | `list_lambda_functions` | Lambda inventory | Yes | [↓](#7-list_lambda_functions) |
+| 8 | `list_s3_buckets` | S3 bucket inventory | Yes | [↓](#8-list_s3_buckets) |
+| 9 | `list_log_groups` | Log group inventory | Yes | [↓](#9-list_log_groups) |
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
@@ -594,6 +597,213 @@ MCP output:
 
 ---
 
+## 7. `list_lambda_functions`
+
+**Purpose:** Lists Lambda functions across allowed regions with optional region
+and result limiting.
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `regions` | `string[]` | no | All allowed regions | Each region must be in `AWS_ALLOWED_REGIONS`. |
+| `limit` | `number` | no | 100 | Integer 1–100. |
+
+### Region behavior
+
+Multi-region fanout with partial failure tolerance. Defaults to all allowed
+regions when `regions` is omitted.
+
+### AWS API
+
+- **Service:** Lambda
+- **Action:** `ListFunctions`
+- **Capability:** `lambda:ListFunctions`
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `regions` (sorted), `limit` |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    regions: string[],
+    count: number,
+    functions: [
+      {
+        functionName: string,
+        region: string,
+        runtime: string,
+        state: string
+      }
+    ]
+  }
+}
+```
+
+### Redacted fields
+
+Configuration details beyond `functionName`, `region`, `runtime`, and `state`
+are not exposed (for example `MemorySize`, `LastModified`, environment variables).
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Region not in allowlist | `validation_error` | false |
+| `limit` out of range | `validation_error` | false |
+| AWS request failure (all regions) | `aws_request_failed` | varies |
+| Unknown error | `internal_error` | false |
+
+### Safety boundaries
+
+- No AWS call if region or limit validation fails.
+- Partial region failure is tolerated.
+- Global result cap applied after multi-region merge.
+
+---
+
+## 8. `list_s3_buckets`
+
+**Purpose:** Lists S3 buckets in the account (global API) with optional result
+limiting. Does not return ownership, ACL, policy, or object-level details.
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `limit` | `number` | no | 100 | Integer 1–100. |
+
+### Region behavior
+
+Global S3 control-plane API signed against `us-east-1`. No region input.
+
+### AWS API
+
+- **Service:** S3
+- **Action:** `ListAllMyBuckets`
+- **Capability:** `s3:ListAllMyBuckets`
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `limit` |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    count: number,
+    buckets: [
+      {
+        name: string,
+        createdAt: string  // ISO 8601 from CreationDate
+      }
+    ]
+  }
+}
+```
+
+### Redacted fields
+
+Owner ID, display name, bucket policies, ACLs, and object listings are not
+exposed.
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| `limit` out of range | `validation_error` | false |
+| AWS API failure | `aws_request_failed` | varies |
+| Unknown error | `internal_error` | false |
+
+### Safety boundaries
+
+- No AWS call if limit validation fails.
+- Bucket names and creation timestamps only.
+
+---
+
+## 9. `list_log_groups`
+
+**Purpose:** Lists CloudWatch log groups in a single region with optional prefix
+filtering.
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `region` | `string` | yes | — | Must be in `AWS_ALLOWED_REGIONS`. |
+| `prefix` | `string` | no | — | Max 256 characters. |
+| `limit` | `number` | no | 100 | Integer 1–100. |
+
+### Region behavior
+
+Single-region only. `region` is required.
+
+### AWS API
+
+- **Service:** CloudWatch Logs
+- **Action:** `DescribeLogGroups`
+- **Capability:** `logs:DescribeLogGroups`
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `region`, `prefix`, `limit` |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    region: string,
+    count: number,
+    logGroups: [
+      { name: string }
+    ]
+  }
+}
+```
+
+### Redacted fields
+
+`creationTime`, `retentionInDays`, `storedBytes`, and other DescribeLogGroups
+fields are not exposed.
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Region not in allowlist | `validation_error` | false |
+| Prefix too long | `validation_error` | false |
+| `limit` out of range | `validation_error` | false |
+| AWS API failure | `aws_request_failed` | varies |
+| Unknown error | `internal_error` | false |
+
+### Safety boundaries
+
+- No AWS call if region, prefix, or limit validation fails.
+- Log group names only in the initial version.
+
+---
+
 ## Error codes reference
 
 All tool errors use the `GatewayError` class hierarchy and return a consistent
@@ -673,6 +883,9 @@ Every tool handler is wrapped in `safeMcpHandler` which:
 | `list_ec2_instances` | Yes | regions, stateFilter | 300s (5 min) |
 | `get_cloudwatch_alarms` | Yes | regions, stateFilter | 300s (5 min) |
 | `get_recent_log_errors` | Yes | logGroupName, region, filterPattern, startTime, endTime, limit | 300s (5 min) |
+| `list_lambda_functions` | Yes | regions, limit | 300s (5 min) |
+| `list_s3_buckets` | Yes | limit | 300s (5 min) |
+| `list_log_groups` | Yes | region, prefix, limit | 300s (5 min) |
 
 **Key generation:** `SHA-256(toolName:normalizedParams)` → `ce:{64-hex-chars}`.
 Parameters are normalized with sorted keys and type-tagged serialization.
@@ -702,7 +915,7 @@ Parameters are normalized with sorted keys and type-tagged serialization.
    and raw stack traces are never exposed in error payloads or MCP content.
 7. **Bearer token authentication:** The `/mcp` endpoint requires a valid local bearer token or OAuth access token with `aws:read` scope.
 8. **Result size limits:** Cost results are capped at 25 services, log events
-   at 50, and date ranges at 90 days.
+   at 50, Lambda functions and S3 buckets and log groups at 100, and date ranges at 90 days.
 9. **Log message truncation:** Log event messages are truncated to 1000
    characters.
 10. **Cache TTL limits:** Short TTLs (300 seconds for most tools, 1800 seconds

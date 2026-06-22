@@ -138,7 +138,7 @@ Open `wrangler.jsonc` and ensure the `[vars]` section contains:
 
 ### Optional tool exposure controls
 
-Configure in `[vars]` or the Cloudflare dashboard. Defaults preserve the current 8-tool public surface.
+Configure in `[vars]` or the Cloudflare dashboard. Defaults preserve the current 11-tool public surface.
 
 ```jsonc
 {

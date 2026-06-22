@@ -22,7 +22,7 @@ ChatGPT Connector Server URL: https://<worker-host>/mcp
 MCP_RESOURCE_URL and OAUTH_AUDIENCE: https://<worker-host> (origin only — do not append /mcp)
 Protected resource metadata: https://<worker-host>/.well-known/oauth-protected-resource
 Required scope: aws:read
-Expected public MCP tools: 8
+Expected public MCP tools: 11
 ```
 
 ---
@@ -42,7 +42,7 @@ This runs `typecheck`, the full test suite (including connector contract tests),
 | Pinned runtime dependencies | `src/test/dependency-contract.test.ts` |
 | OAuth URL origin (no `/mcp` on resource/audience) | `src/config/oauth-urls.test.ts` |
 | Public descriptor shape, OAuth security, no `noauth` | `src/mcp/tools/descriptor-contract.test.ts` |
-| HTTP `tools/list` returns 8 public tools | `src/mcp/tools/list-integration.test.ts` |
+| HTTP `tools/list` returns 11 public tools | `src/mcp/tools/list-integration.test.ts` |
 | `/mcp` 401 challenge and protected-resource metadata | `src/index.oauth.test.ts` |
 
 - [ ] **1.** `pnpm run verify:connector-contract` passes
@@ -111,7 +111,7 @@ curl -i -X POST https://<worker-host>/mcp \
 
 - [ ] **6.** Authenticated `initialize` succeeds
 
-### 7. Authenticated `tools/list` returns exactly 8 public tools
+### 7. Authenticated `tools/list` returns exactly 11 public tools
 
 ```bash
 curl -sS -X POST https://<worker-host>/mcp \
@@ -123,11 +123,11 @@ curl -sS -X POST https://<worker-host>/mcp \
 
 **Expected:** `result.tools` includes exactly: `search`, `fetch`, `get_gateway_status`, `get_aws_cost_summary`, `get_aws_cost_by_service`, `list_ec2_instances`, `get_cloudwatch_alarms`, `get_recent_log_errors`.
 
-- [ ] **7.** Authenticated `tools/list` returns 8 public tools
+- [ ] **7.** Authenticated `tools/list` returns 11 public tools
 
 ### 8. Every public tool descriptor has required fields
 
-From the `tools/list` response, confirm each of the 8 tools includes:
+From the `tools/list` response, confirm each of the 11 tools includes:
 
 - `title`
 - `description`
@@ -203,9 +203,9 @@ Complete the OAuth flow in ChatGPT (Auth0 or compatible OIDC user — not ChatGP
 
 After OAuth linking, open the connector and click **Refresh** if updating after a deploy.
 
-**Expected:** The Actions page lists all 8 public MCP tools — not “No app actions available yet”.
+**Expected:** The Actions page lists all 11 public MCP tools — not “No app actions available yet”.
 
-- [ ] **16.** ChatGPT Actions list 8 public tools
+- [ ] **16.** ChatGPT Actions list 11 public tools
 
 ### 17. A real ChatGPT prompt can call `get_gateway_status`
 

@@ -51,5 +51,8 @@ describe("createServer", () => {
     expect(toolNames).toContain("list_ec2_instances");
     expect(toolNames).toContain("get_cloudwatch_alarms");
     expect(toolNames).toContain("get_recent_log_errors");
+    expect(toolNames).toContain("list_lambda_functions");
+    expect(toolNames).toContain("list_s3_buckets");
+    expect(toolNames).toContain("list_log_groups");
   });
 });
