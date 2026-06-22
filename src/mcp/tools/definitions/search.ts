@@ -12,6 +12,7 @@ import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
   type AnyToolManifest,
+  type AwsCapabilityId,
 } from "../manifest.js";
 import {
   buildToolRegistryState,
@@ -34,6 +35,7 @@ const CORE_SAFETY = {
 const CORE_AWS = {
   services: [] as string[],
   actions: [] as string[],
+  capabilities: [] as AwsCapabilityId[],
   regionMode: "none" as const,
   readonly: true as const,
 };

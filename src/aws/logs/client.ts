@@ -53,6 +53,7 @@ export async function filterLogEvents(
 
   const response = await awsRequest<FilterLogEventsResponse>(
     {
+      capability: "logs:FilterLogEvents",
       service: "logs",
       region,
       method: "POST",

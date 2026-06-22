@@ -41,7 +41,13 @@ export async function listInstances(
 
   const outcomes = await Promise.allSettled(
     regions.map((region) =>
-      ec2Fetch<Ec2DescribeInstancesResponse>("DescribeInstances", params, region, credentials)
+      ec2Fetch<Ec2DescribeInstancesResponse>(
+        "ec2:DescribeInstances",
+        "DescribeInstances",
+        params,
+        region,
+        credentials,
+      )
         .then((response) => {
           const reservations =
             response.DescribeInstancesResponse?.reservationSet?.item ?? [];

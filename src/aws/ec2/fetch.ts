@@ -1,4 +1,5 @@
 import { AwsClient } from "aws4fetch";
+import { assertAwsCapability, AwsCapabilityError, type AwsCapabilityId } from "../capabilities.js";
 import { AwsRequestError } from "../errors.js";
 import type { AwsCredentials } from "../types.js";
 import { parseEc2Response } from "./xml.js";
@@ -7,11 +8,20 @@ const EC2_API_VERSION = "2016-11-15";
 const EC2_REQUEST_TIMEOUT_MS = 30_000;
 
 export async function ec2Fetch<T>(
+  capability: AwsCapabilityId,
   action: string,
   params: Record<string, string>,
   region: string,
   credentials: AwsCredentials,
 ): Promise<T> {
+  assertAwsCapability(capability);
+  if (capability !== "ec2:DescribeInstances") {
+    throw new AwsCapabilityError(`Unsupported EC2 capability for fetch: ${capability}`);
+  }
+  if (action !== "DescribeInstances") {
+    throw new AwsCapabilityError(`Unsupported EC2 action for capability ${capability}: ${action}`);
+  }
+
   const client = new AwsClient({
     accessKeyId: credentials.accessKeyId,
     secretAccessKey: credentials.secretAccessKey,

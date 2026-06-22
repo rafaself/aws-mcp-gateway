@@ -50,6 +50,7 @@ export function createGetCloudwatchAlarmsToolManifest(
     aws: {
       services: ["cloudwatch"],
       actions: ["cloudwatch:DescribeAlarms"],
+      capabilities: ["cloudwatch:DescribeAlarms"],
       regionMode: "bounded-multi-region",
       readonly: true,
     },

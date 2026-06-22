@@ -371,6 +371,7 @@ Runtime MCP/auth dependency upgrades must be treated as protocol changes. See [`
 | [`docs/chatgpt-connector-smoke-test.md`](docs/chatgpt-connector-smoke-test.md) | Detailed connector smoke runbook |
 | [`docs/deployment.md`](docs/deployment.md) | Cloudflare deployment guide |
 | [`docs/aws-iam-setup.md`](docs/aws-iam-setup.md) | AWS IAM setup |
+| [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md) | Tool-to-IAM capability matrix |
 | [`docs/mcp-testing.md`](docs/mcp-testing.md) | Manual MCP smoke tests |
 | [`docs/post-mvp-boundaries.md`](docs/post-mvp-boundaries.md) | Future write/management safety boundaries |
 | [`docs/dependency-upgrade-contract.md`](docs/dependency-upgrade-contract.md) | MCP/auth dependency upgrade contract |

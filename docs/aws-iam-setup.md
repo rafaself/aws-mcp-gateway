@@ -27,7 +27,7 @@ This guide walks through creating a least-privilege IAM user and configuring its
 6. Set the policy name to `AwsMcpGatewayReadOnly`.
 7. Click **Create policy**.
 
-The policy grants only the read/list/describe/get actions required by the gateway's MCP tools. It does not include any mutation actions such as `StartInstances`, `PutMetricAlarm`, `DeleteLogGroup` or similar.
+The policy grants only read/list/describe/get actions required by the gateway's MCP tools. It does not include any mutation actions such as `StartInstances`, `PutMetricAlarm`, `DeleteLogGroup` or similar. Compare tool-required actions in the [AWS capability matrix](aws-capability-matrix.md) when reviewing policy changes.
 
 ## Step 3: Create an access key
 
@@ -130,9 +130,12 @@ The gateway is designed to be a narrow policy enforcement layer. AWS-managed pol
 
 The custom policy in this repository is intentionally narrow:
 
-- It lists exactly the AWS actions the supported MCP tools call.
+- It lists the read-only AWS actions required by current and near-term gateway tools.
+- The [AWS capability matrix](aws-capability-matrix.md) documents the **tool-required** IAM actions; the committed policy may include additional forward-looking read permissions not yet used by a tool.
 - Blocking all mutation actions by default prevents accidental or malicious resource changes even if the MCP endpoint authentication were bypassed.
 - Every new tool requires an explicit policy expansion, creating a natural review point.
+
+See [AWS capability matrix](aws-capability-matrix.md) for the authoritative tool-to-IAM mapping used in reviews.
 
 ### Why the gateway remains read-only
 

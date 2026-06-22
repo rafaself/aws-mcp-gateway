@@ -52,6 +52,7 @@ export function createListEc2InstancesToolManifest(
     aws: {
       services: ["ec2"],
       actions: ["ec2:DescribeInstances"],
+      capabilities: ["ec2:DescribeInstances"],
       regionMode: "bounded-multi-region",
       readonly: true,
     },

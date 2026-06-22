@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { AwsCapabilityError } from "./capabilities.js";
 import { awsRequest } from "./client.js";
 import { AwsRequestError } from "./errors.js";
+import type { AwsRequestOptions } from "./types.js";
 
 const { mockFetch, awsClientConstructors } = vi.hoisted(() => {
   const mockFetch = vi.fn();
@@ -36,12 +38,68 @@ const credentials = {
   secretAccessKey: "test-secret",
 };
 
+function ec2Request(overrides: Partial<AwsRequestOptions> = {}): AwsRequestOptions {
+  return {
+    capability: "ec2:DescribeInstances",
+    service: "ec2",
+    region: "us-east-1",
+    method: "GET",
+    path: "/",
+    ...overrides,
+  };
+}
+
+function logsRequest(overrides: Partial<AwsRequestOptions> = {}): AwsRequestOptions {
+  return {
+    capability: "logs:FilterLogEvents",
+    service: "logs",
+    region: "us-east-1",
+    method: "POST",
+    path: "/",
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   mockFetch.mockReset();
   awsClientConstructors.length = 0;
 });
 
 describe("awsRequest", () => {
+  it("rejects unknown capabilities before network I/O", async () => {
+    await expect(
+      awsRequest(
+        {
+          capability: "s3:GetObject" as "ec2:DescribeInstances",
+          service: "s3",
+          region: "us-east-1",
+          method: "GET",
+          path: "/",
+        },
+        credentials,
+      ),
+    ).rejects.toBeInstanceOf(AwsCapabilityError);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects service/capability mismatches before network I/O", async () => {
+    await expect(
+      awsRequest(
+        {
+          capability: "ec2:DescribeInstances",
+          service: "logs",
+          region: "us-east-1",
+          method: "GET",
+          path: "/",
+        },
+        credentials,
+      ),
+    ).rejects.toBeInstanceOf(AwsCapabilityError);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
   it("sends a signed GET request and returns parsed JSON", async () => {
     mockFetch.mockResolvedValue(
       new Response(JSON.stringify({ Reservations: [] }), {
@@ -50,10 +108,7 @@ describe("awsRequest", () => {
       }),
     );
 
-    const result = await awsRequest(
-      { service: "ec2", region: "us-east-1", method: "GET", path: "/" },
-      credentials,
-    );
+    const result = await awsRequest(ec2Request(), credentials);
 
     expect(result).toEqual({ Reservations: [] });
   });
@@ -64,13 +119,9 @@ describe("awsRequest", () => {
     );
 
     await awsRequest(
-      {
-        service: "ec2",
-        region: "us-east-1",
-        method: "GET",
-        path: "/",
+      ec2Request({
         query: { Action: "DescribeRegions", Version: "2016-11-15" },
-      },
+      }),
       credentials,
     );
 
@@ -85,13 +136,9 @@ describe("awsRequest", () => {
     );
 
     await awsRequest(
-      {
-        service: "sts",
-        region: "us-east-1",
-        method: "POST",
-        path: "/",
+      logsRequest({
         body: { user: "test" },
-      },
+      }),
       credentials,
     );
 
@@ -105,13 +152,9 @@ describe("awsRequest", () => {
     );
 
     await awsRequest(
-      {
-        service: "ec2",
-        region: "us-east-1",
-        method: "GET",
-        path: "/",
+      ec2Request({
         headers: { "X-Custom": "value" },
-      },
+      }),
       credentials,
     );
 
@@ -122,10 +165,7 @@ describe("awsRequest", () => {
   it("returns undefined for empty response body", async () => {
     mockFetch.mockResolvedValue(new Response("", { status: 200 }));
 
-    const result = await awsRequest(
-      { service: "s3", region: "us-east-1", method: "GET", path: "/" },
-      credentials,
-    );
+    const result = await awsRequest(ec2Request(), credentials);
 
     expect(result).toBeUndefined();
   });
@@ -133,10 +173,7 @@ describe("awsRequest", () => {
   it("throws AwsRequestError with retryable=false for 4xx", async () => {
     mockFetch.mockResolvedValue(new Response("Not found", { status: 404 }));
 
-    const err = await awsRequest(
-      { service: "ec2", region: "us-east-1", method: "GET", path: "/" },
-      credentials,
-    ).catch((e) => e);
+    const err = await awsRequest(ec2Request(), credentials).catch((e) => e);
 
     expect(err).toBeInstanceOf(AwsRequestError);
     expect(err.code).toBe("aws_request_failed");
@@ -149,10 +186,7 @@ describe("awsRequest", () => {
       new Response("Server error", { status: 503 }),
     );
 
-    const err = await awsRequest(
-      { service: "ec2", region: "us-east-1", method: "GET", path: "/" },
-      credentials,
-    ).catch((e) => e);
+    const err = await awsRequest(ec2Request(), credentials).catch((e) => e);
 
     expect(err).toBeInstanceOf(AwsRequestError);
     expect(err.code).toBe("aws_request_failed");
@@ -165,10 +199,7 @@ describe("awsRequest", () => {
     abortError.name = "AbortError";
     mockFetch.mockRejectedValue(abortError);
 
-    const err = await awsRequest(
-      { service: "ec2", region: "us-east-1", method: "GET", path: "/" },
-      credentials,
-    ).catch((e) => e);
+    const err = await awsRequest(ec2Request(), credentials).catch((e) => e);
 
     expect(err).toBeInstanceOf(AwsRequestError);
     expect(err.code).toBe("aws_request_failed");
@@ -179,10 +210,7 @@ describe("awsRequest", () => {
   it("throws AwsRequestError on network error", async () => {
     mockFetch.mockRejectedValue(new Error("Network failure"));
 
-    const err = await awsRequest(
-      { service: "ec2", region: "us-east-1", method: "GET", path: "/" },
-      credentials,
-    ).catch((e) => e);
+    const err = await awsRequest(ec2Request(), credentials).catch((e) => e);
 
     expect(err).toBeInstanceOf(AwsRequestError);
     expect(err.code).toBe("aws_request_failed");
@@ -195,7 +223,9 @@ describe("awsRequest", () => {
     );
 
     await awsRequest(
-      { service: "sts", region: "eu-west-1", method: "GET", path: "/" },
+      ec2Request({
+        region: "eu-west-1",
+      }),
       credentials,
     );
 
@@ -204,7 +234,7 @@ describe("awsRequest", () => {
       expect.objectContaining({
         accessKeyId: "AKIA-test-key",
         secretAccessKey: "test-secret",
-        service: "sts",
+        service: "ec2",
         region: "eu-west-1",
       }),
     );
@@ -213,10 +243,7 @@ describe("awsRequest", () => {
   it("does not leak credentials in AwsRequestError.toJSON()", async () => {
     mockFetch.mockResolvedValue(new Response("error", { status: 403 }));
 
-    const err = await awsRequest(
-      { service: "ec2", region: "us-east-1", method: "GET", path: "/" },
-      credentials,
-    ).catch((e) => e);
+    const err = await awsRequest(ec2Request(), credentials).catch((e) => e);
 
     const payload = err.toJSON();
     expect(payload.code).toBe("aws_request_failed");
@@ -232,18 +259,14 @@ describe("awsRequest", () => {
     );
 
     await awsRequest(
-      {
-        service: "lambda",
+      logsRequest({
         region: "sa-east-1",
-        method: "POST",
-        path: "/2015-03-31/functions/my-func/invocations",
-      },
+        path: "/filter",
+      }),
       credentials,
     );
 
     const calledUrl = mockFetch.mock.calls[0][0];
-    expect(calledUrl).toBe(
-      "https://lambda.sa-east-1.amazonaws.com/2015-03-31/functions/my-func/invocations",
-    );
+    expect(calledUrl).toBe("https://logs.sa-east-1.amazonaws.com/filter");
   });
 });

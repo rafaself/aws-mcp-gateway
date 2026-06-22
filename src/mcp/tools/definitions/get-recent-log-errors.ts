@@ -59,6 +59,7 @@ export function createGetRecentLogErrorsToolManifest(
     aws: {
       services: ["logs"],
       actions: ["logs:FilterLogEvents"],
+      capabilities: ["logs:FilterLogEvents"],
       regionMode: "single-region",
       readonly: true,
     },

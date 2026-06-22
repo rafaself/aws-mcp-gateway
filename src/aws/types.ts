@@ -1,6 +1,9 @@
+import type { AwsCapabilityId } from "./capabilities.js";
+
 export type AwsMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD";
 
 export interface AwsRequestOptions {
+  capability: AwsCapabilityId;
   service: string;
   region: string;
   method: AwsMethod;

@@ -60,6 +60,7 @@ export function createCostByServiceToolManifest(
     aws: {
       services: ["ce"],
       actions: ["ce:GetCostAndUsage"],
+      capabilities: ["ce:GetCostAndUsage"],
       regionMode: "single-region",
       readonly: true,
     },
