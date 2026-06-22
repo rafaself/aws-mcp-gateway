@@ -42,10 +42,10 @@ The Worker requires a mix of Cloudflare-managed secrets and non-secret configura
 
 | File | Purpose |
 |------|---------|
-| [`wrangler.example.jsonc`](../wrangler.example.jsonc) | Reusable template with placeholders — copy for your own deployment |
-| [`wrangler.jsonc`](../wrangler.jsonc) | Active deployment config for this repository (may contain maintainer non-secret values) |
+| [`wrangler.example.jsonc`](../wrangler.example.jsonc) | Reusable template with placeholders and inline comments — copy when starting a new deployment |
+| [`wrangler.jsonc`](../wrangler.jsonc) | Generic tracked config with placeholders — replace worker host, Auth0 tenant, and KV namespace id before OAuth production deploy |
 
-Before deploying your own connector, copy `wrangler.example.jsonc` to `wrangler.jsonc` (or merge into your existing config) and replace:
+Before deploying your own connector, copy `wrangler.example.jsonc` to `wrangler.jsonc` (or edit the tracked file) and replace:
 
 - `<your-worker-host>` — your Cloudflare Worker URL host
 - `<your-auth0-tenant>` — Auth0 domain (or compatible OIDC issuer host)
@@ -115,7 +115,7 @@ To support opaque access tokens from providers that expose RFC 7662 introspectio
 
 and configure `OAUTH_INTROSPECTION_CLIENT_ID` / `OAUTH_INTROSPECTION_CLIENT_SECRET` as Worker secrets.
 
-Keep committed `wrangler.jsonc` production-neutral if you prefer — use [`wrangler.example.jsonc`](../wrangler.example.jsonc) as the reusable template and set values in the Cloudflare dashboard per environment.
+Keep committed `wrangler.jsonc` production-neutral — use [`wrangler.example.jsonc`](../wrangler.example.jsonc) as the reusable template. Set real worker host, Auth0 tenant, and KV namespace id in your local uncommitted `wrangler.jsonc`, the Cloudflare dashboard, or CI secrets. Never commit live tenant, host, or KV namespace values.
 
 ### Required configuration (configure in `wrangler.jsonc` `[vars]`)
 

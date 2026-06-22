@@ -12,12 +12,21 @@ normalize_oauth_origin_url() {
   echo "$url"
 }
 
+reject_placeholder_oauth_url() {
+  local label="${1:?label required}"
+  local value="${2:?value required}"
+  if [[ "$value" == *"<your-"* ]]; then
+    oauth_url_fail "${label} still contains a placeholder — replace it with your deployment value"
+  fi
+}
+
 # Validate an HTTPS origin URL suitable for MCP_RESOURCE_URL / OAUTH_AUDIENCE.
 # Rejects paths (including /mcp), query strings, and fragments.
 validate_oauth_origin_url() {
   local label="${1:?label required}"
   local url="${2:?url required}"
   url="$(normalize_oauth_origin_url "$url")"
+  reject_placeholder_oauth_url "$label" "$url"
 
   if [[ ! "$url" =~ ^https://[^/]+$ ]]; then
     if [[ "$url" =~ ^http:// ]]; then
