@@ -47,6 +47,7 @@ These are the package scripts that map to this folder:
 ```bash
 pnpm run repo:safety
 pnpm run output:guardrail
+pnpm run legacy:check
 pnpm run test:integrity
 pnpm run sync-secrets
 pnpm run deploy:configured
@@ -67,6 +68,10 @@ Runs repository safety checks against tracked files. It detects unsafe tracked p
 #### `check-runtime-output.mjs`
 
 Scans production source files under `src/` and fails if `console.*` is used outside the approved observability sinks.
+
+#### `check-legacy-symbols.mjs`
+
+Scans production source files under `src/` and fails if removed legacy auth modes, tool-definition factories, or manifest bridge helpers are reintroduced.
 
 #### `check-test-integrity.mjs`
 
@@ -104,6 +109,10 @@ Checks deployed OAuth metadata and challenge behavior. It validates the Worker o
 
 This script calls external services but is read-only.
 
+#### `legacy-symbol-checks.test.mjs`
+
+Node test suite for the legacy symbol guardrail rules implemented in `lib/legacy-symbol-checks.mjs`.
+
 #### `repository-safety-checks.test.mjs`
 
 Node test suite for the repository safety rules implemented in `lib/repository-safety-checks.mjs`.
@@ -122,6 +131,10 @@ Shared shell helper that formats OAuth token request failures into a clearer err
 
 Shared shell helper for validating OAuth-related origin URLs, rejecting placeholders, and printing the expected ChatGPT connector URL.
 
+#### `lib/legacy-symbol-checks.mjs`
+
+Shared Node module that defines the legacy symbol guardrail logic used to detect removed auth modes, tool-definition factories, and manifest bridge helpers in production source files.
+
 #### `lib/repository-safety-checks.mjs`
 
 Shared Node module that defines repository safety rules and helpers such as forbidden tracked paths, placeholder detection, secret scanning, public config validation, and violation formatting.
@@ -132,7 +145,7 @@ Shared Node module that defines the runtime output guardrail logic used to detec
 
 ## Safety notes
 
-- Validation scripts such as `check-repository-safety.mjs`, `check-runtime-output.mjs`, `check-test-integrity.mjs`, and the `*.test.mjs` files are local-only.
+- Validation scripts such as `check-repository-safety.mjs`, `check-runtime-output.mjs`, `check-legacy-symbols.mjs`, `check-test-integrity.mjs`, and the `*.test.mjs` files are local-only.
 - `setup-auth0-oauth.sh`, `sync-secrets.sh`, and `deploy-with-env.sh` can change external systems.
 - `verify-oauth-deployment.sh` and `verify-authenticated-deployment.sh` call live deployed services and should be run with the correct target environment.
 

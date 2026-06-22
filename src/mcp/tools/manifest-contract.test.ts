@@ -111,7 +111,7 @@ const DEFAULT_EXPOSED_CATALOG_ANCHORS = EXPECTED_CATALOG_ANCHORS.filter(
 function defaultExposedToolNames(manifests: AnyToolManifest[]): string[] {
   const enabledPacks = new Set(DEFAULT_ENABLED_TOOL_PACKS);
   return manifests
-    .filter((manifest) => enabledPacks.has(manifest.pack as (typeof DEFAULT_ENABLED_TOOL_PACKS)[number]))
+    .filter((manifest) => enabledPacks.has(manifest.pack))
     .map((manifest) => manifest.name)
     .sort();
 }

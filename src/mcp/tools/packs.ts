@@ -1,4 +1,4 @@
-import type { AnyToolManifest, ToolPack, ToolRiskLevel } from "./manifest.js";
+import type { AnyToolManifest, ToolRiskLevel } from "./manifest.js";
 import type { ResolvedToolExposure } from "../../config/tool-exposure.js";
 
 export {
@@ -16,7 +16,7 @@ export function resolveExposedToolNames(
 
   const exposed = new Set<string>();
   for (const manifest of manifests) {
-    if (!exposure.enabledToolPacks.has(manifest.pack as ToolPack)) {
+    if (!exposure.enabledToolPacks.has(manifest.pack)) {
       continue;
     }
     if (exposure.disabledTools.has(manifest.name)) {

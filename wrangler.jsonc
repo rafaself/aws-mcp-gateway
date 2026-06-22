@@ -24,6 +24,9 @@
 		"OAUTH_TOKEN_VALIDATION_MODE": "jwks",
 		"OAUTH_JWKS_URI": "https://<your-auth0-tenant>/.well-known/jwks.json",
 		"OAUTH_REQUIRED_SCOPES": "aws:read",
+		// Introspection mode (alternative to JWKS):
+		// "OAUTH_TOKEN_VALIDATION_MODE": "introspection",
+		// "OAUTH_INTROSPECTION_URL": "https://<your-auth0-tenant>/oauth/introspect"
 		// Optional tool exposure (defaults expose all current public tools):
 		// "AWS_MCP_ENABLED_TOOL_PACKS": "core,cost,inventory,observability",
 		// "AWS_MCP_MAX_RISK_LEVEL": "read-only"

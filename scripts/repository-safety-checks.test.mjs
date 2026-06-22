@@ -4,6 +4,7 @@ import {
   checkMaintainerDenylist,
   checkPublicConfigFile,
   checkTrackedFile,
+  checkWranglerConfigParity,
   formatViolation,
   isForbiddenTrackedPath,
   isPlaceholderValue,
@@ -113,6 +114,53 @@ describe("checkPublicConfigFile", () => {
   });
 });
 
+describe("checkWranglerConfigParity", () => {
+  const baseConfig = `{
+    "name": "aws-mcp-gateway",
+    "vars": {
+      "MCP_RESOURCE_URL": "https://<your-worker-host>"
+    }
+  }`;
+
+  it("passes when structure matches despite different leaf values", () => {
+    const wrangler = `{
+      "name": "aws-mcp-gateway",
+      "vars": {
+        "MCP_RESOURCE_URL": "https://live-worker.example.com"
+      }
+    }`;
+    const violations = checkWranglerConfigParity(wrangler, baseConfig);
+    assert.equal(violations.length, 0);
+  });
+
+  it("fails when a section is missing", () => {
+    const wrangler = `{
+      "name": "aws-mcp-gateway"
+    }`;
+    const violations = checkWranglerConfigParity(wrangler, baseConfig);
+    assert.equal(violations.length, 1);
+    assert.equal(violations[0].ruleId, "wrangler-config-parity");
+  });
+
+  it("parses jsonc with comments and trailing commas", () => {
+    const wrangler = `{
+      "name": "aws-mcp-gateway",
+      "vars": {
+        "AUTH_MODE": "oauth",
+        // optional
+      },
+    }`;
+    const example = `{
+      "name": "aws-mcp-gateway",
+      "vars": {
+        "AUTH_MODE": "local-bearer",
+      },
+    }`;
+    const violations = checkWranglerConfigParity(wrangler, example);
+    assert.equal(violations.length, 0);
+  });
+});
+
 describe("formatViolation", () => {
   it("never includes secret substrings from scanned content", () => {
     const secret = "AKIAIOSFODNN7EXAMPLE";
@@ -144,6 +192,15 @@ describe("runRepositorySafetyChecks", () => {
     };
     const violations = runRepositorySafetyChecks(Object.keys(files), (path) => files[path] ?? null);
     assert.equal(violations.length, 0);
+  });
+
+  it("reports wrangler structural drift", () => {
+    const files = {
+      "wrangler.jsonc": '{ "name": "aws-mcp-gateway", "vars": { "AUTH_MODE": "oauth" } }',
+      "wrangler.example.jsonc": '{ "name": "aws-mcp-gateway", "vars": { "AUTH_MODE": "oauth", "AWS_REGION": "us-east-1" } }',
+    };
+    const violations = runRepositorySafetyChecks(Object.keys(files), (path) => files[path] ?? null);
+    assert.ok(violations.some((v) => v.ruleId === "wrangler-config-parity"));
   });
 });
 

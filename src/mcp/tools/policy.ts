@@ -4,21 +4,13 @@ import { GatewayError } from "../../errors/public-error.js";
 import { resolveRegions, validateAllowedRegions, validateRegion } from "../../security/regions.js";
 import { ValidationError } from "../../security/errors.js";
 import { hasRequiredScopes } from "../../auth/oauth/scopes.js";
+import { KNOWN_TOOL_PACKS } from "../../config/tool-exposure.js";
 import { DEFAULT_AUTH_SCOPES, type AnyToolManifest, type ToolPack, type ToolRiskLevel } from "./manifest.js";
 import { resolveExposedToolNames } from "./packs.js";
 import {
   validateCostControlManifest,
   validateCostControlRequest,
 } from "./cost-control-policy.js";
-
-const VALID_PACKS: ReadonlySet<ToolPack> = new Set([
-  "core",
-  "cost",
-  "inventory",
-  "observability",
-  "security",
-  "aggregates",
-]);
 
 export type ToolPolicyContext = {
   enabledToolNames: ReadonlySet<string>;
@@ -84,7 +76,7 @@ function validateManifestStructure(manifest: AnyToolManifest): GatewayError | nu
     return policyDenial("Tool manifest is malformed.");
   }
 
-  if (!manifest.pack || !VALID_PACKS.has(manifest.pack)) {
+  if (!manifest.pack || !KNOWN_TOOL_PACKS.has(manifest.pack)) {
     return policyDenial("Tool manifest is malformed.");
   }
 

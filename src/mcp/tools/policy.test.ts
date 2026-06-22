@@ -282,7 +282,7 @@ describe("tool policy gate", () => {
   it("covers every default-enabled tool name", () => {
     const enabledPacks = new Set(DEFAULT_ENABLED_TOOL_PACKS);
     const expectedDefaultTools = manifests
-      .filter((manifest) => enabledPacks.has(manifest.pack as (typeof DEFAULT_ENABLED_TOOL_PACKS)[number]))
+      .filter((manifest) => enabledPacks.has(manifest.pack))
       .map((manifest) => manifest.name);
 
     expect([...defaultPolicy.enabledToolNames].sort()).toEqual(expectedDefaultTools.sort());

@@ -145,6 +145,118 @@ export function isPlaceholderValue(value) {
 }
 
 /**
+ * Strip single-line // comments from JSONC (string-aware).
+ * @param {string} content
+ * @returns {string}
+ */
+export function stripJsoncComments(content) {
+  const lines = content.split("\n");
+  const stripped = [];
+
+  for (const line of lines) {
+    let inString = false;
+    let escaped = false;
+    let cutIndex = line.length;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === "\\" && inString) {
+        escaped = true;
+        continue;
+      }
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+      if (!inString && char === "/" && line[i + 1] === "/") {
+        cutIndex = i;
+        break;
+      }
+    }
+
+    stripped.push(line.slice(0, cutIndex).trimEnd());
+  }
+
+  return stripped.join("\n");
+}
+
+/**
+ * Remove trailing commas before object/array closers (JSONC → JSON).
+ * @param {string} jsonText
+ * @returns {string}
+ */
+export function stripJsoncTrailingCommas(jsonText) {
+  return jsonText.replace(/,(\s*[}\]])/g, "$1");
+}
+
+/**
+ * @param {unknown} value
+ * @returns {unknown}
+ */
+export function structuralNormalize(value) {
+  if (Array.isArray(value)) {
+    return value.map(structuralNormalize);
+  }
+  if (value !== null && typeof value === "object") {
+    /** @type {Record<string, unknown>} */
+    const result = {};
+    for (const key of Object.keys(value).sort()) {
+      result[key] = structuralNormalize(value[key]);
+    }
+    return result;
+  }
+  return null;
+}
+
+/**
+ * @param {string} content
+ * @returns {unknown}
+ */
+export function parseJsoncStructure(content) {
+  const jsonText = stripJsoncTrailingCommas(stripJsoncComments(content));
+  return structuralNormalize(JSON.parse(jsonText));
+}
+
+/**
+ * Compare wrangler.jsonc and wrangler.example.jsonc structure (keys/nesting), ignoring leaf values.
+ * @param {string} wranglerContent
+ * @param {string} exampleContent
+ * @returns {Array<{ file: string, line: number, ruleId: string }>}
+ */
+export function checkWranglerConfigParity(wranglerContent, exampleContent) {
+  try {
+    const wranglerStructure = parseJsoncStructure(wranglerContent);
+    const exampleStructure = parseJsoncStructure(exampleContent);
+    const wranglerJson = JSON.stringify(wranglerStructure);
+    const exampleJson = JSON.stringify(exampleStructure);
+
+    if (wranglerJson === exampleJson) {
+      return [];
+    }
+
+    return [
+      {
+        file: "wrangler.jsonc",
+        line: 0,
+        ruleId: "wrangler-config-parity",
+      },
+    ];
+  } catch {
+    return [
+      {
+        file: "wrangler.jsonc",
+        line: 0,
+        ruleId: "wrangler-config-parse-error",
+      },
+    ];
+  }
+}
+
+/**
  * @param {string} line
  * @returns {Array<{ ruleId: string }>}
  */
@@ -395,6 +507,15 @@ export function runRepositorySafetyChecks(trackedPaths, readFile) {
     }
 
     violations.push(...checkTrackedFile(filePath, content));
+  }
+
+  const trackedSet = new Set(trackedPaths);
+  if (trackedSet.has("wrangler.jsonc") && trackedSet.has("wrangler.example.jsonc")) {
+    const wranglerContent = readFile("wrangler.jsonc");
+    const exampleContent = readFile("wrangler.example.jsonc");
+    if (wranglerContent !== null && exampleContent !== null) {
+      violations.push(...checkWranglerConfigParity(wranglerContent, exampleContent));
+    }
   }
 
   return violations;

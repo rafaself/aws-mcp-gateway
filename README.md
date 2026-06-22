@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="aws-mcp-gateway-logo.png" alt="AWS MCP Gateway" width="200" />
+  <img src="docs/assets/aws-mcp-gateway-logo.png" alt="AWS MCP Gateway" width="200" />
 </p>
 
 # AWS MCP Gateway
@@ -161,7 +161,9 @@ Local development uses `AUTH_MODE=local-bearer` by default. Production ChatGPT c
 
 ## Configuration
 
-Copy the example Wrangler config:
+Both [`wrangler.jsonc`](wrangler.jsonc) and [`wrangler.example.jsonc`](wrangler.example.jsonc) are tracked and must stay structurally in sync. Edit `wrangler.example.jsonc` first when adding keys or sections, then mirror the same structure into `wrangler.jsonc`. `pnpm run repo:safety` enforces structural parity.
+
+On a fresh clone, if the files differ, copy the example:
 
 ```bash
 cp wrangler.example.jsonc wrangler.jsonc

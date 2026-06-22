@@ -121,7 +121,7 @@ To support opaque access tokens from providers that expose RFC 7662 introspectio
 
 and configure `OAUTH_INTROSPECTION_CLIENT_ID` / `OAUTH_INTROSPECTION_CLIENT_SECRET` as Worker secrets.
 
-Keep committed `wrangler.jsonc` production-neutral — use [`wrangler.example.jsonc`](../wrangler.example.jsonc) as the reusable template. Set real worker host, Auth0 tenant, and KV namespace id in your local uncommitted `wrangler.jsonc`, the Cloudflare dashboard, or CI secrets. Never commit live tenant, host, or KV namespace values.
+Keep committed `wrangler.jsonc` and [`wrangler.example.jsonc`](../wrangler.example.jsonc) production-neutral (placeholders only). Set real worker host, Auth0 tenant, and KV namespace id in the Cloudflare dashboard, CI deploy overrides, or `.env.deploy.local` for setup scripts — never commit live tenant, host, or KV namespace values. When changing Wrangler structure, edit the example file first and mirror the same shape into `wrangler.jsonc`.
 
 ### Required configuration (configure in `wrangler.jsonc` `[vars]`)
 

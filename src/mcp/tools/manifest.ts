@@ -18,15 +18,11 @@ import type {
 import type { McpSuccessResult } from "./response.js";
 import type { mcpErrorResult } from "../../errors/public-error.js";
 
+import type { ConfigToolPack } from "../../config/tool-exposure.js";
+
 export type { AwsCapabilityId } from "../../aws/capabilities.js";
 
-export type ToolPack =
-  | "core"
-  | "cost"
-  | "inventory"
-  | "observability"
-  | "security"
-  | "aggregates";
+export type ToolPack = ConfigToolPack;
 
 export type ToolLifecycle = "stable";
 

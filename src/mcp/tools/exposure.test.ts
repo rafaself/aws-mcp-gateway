@@ -29,7 +29,7 @@ describe("tool exposure configuration", () => {
     const exposed = resolveExposedToolNames(manifests, ctx.toolExposure);
     const enabledPacks = new Set(DEFAULT_ENABLED_TOOL_PACKS);
     const expected = manifests
-      .filter((manifest) => enabledPacks.has(manifest.pack as (typeof DEFAULT_ENABLED_TOOL_PACKS)[number]))
+      .filter((manifest) => enabledPacks.has(manifest.pack))
       .map((manifest) => manifest.name)
       .sort();
 
@@ -83,7 +83,7 @@ describe("tool exposure configuration", () => {
     expect(tools.map((tool) => tool.name)).not.toContain("list_ec2_instances");
     const enabledPacks = new Set(DEFAULT_ENABLED_TOOL_PACKS);
     const defaultCount = createToolManifests(ctx).filter((manifest) =>
-      enabledPacks.has(manifest.pack as (typeof DEFAULT_ENABLED_TOOL_PACKS)[number]),
+      enabledPacks.has(manifest.pack),
     ).length;
     expect(tools).toHaveLength(defaultCount - 1);
   });
