@@ -31,6 +31,16 @@ export const MAINTAINER_DENYLIST = [
   "5e3e4ee0a3194c7e9a34256b0febda8a",
 ];
 
+/** Paths that define or exercise denylist/pattern fixtures — skip self-matching rules. */
+export const MAINTAINER_SCAN_SKIP_PATHS = new Set([
+  "scripts/lib/repository-safety-checks.mjs",
+  "scripts/repository-safety-checks.test.mjs",
+]);
+
+export const SECRET_SCAN_SKIP_PATHS = new Set([
+  "scripts/repository-safety-checks.test.mjs",
+]);
+
 export const SENSITIVE_ENV_KEYS = [
   "AWS_ACCESS_KEY_ID",
   "AWS_SECRET_ACCESS_KEY",
@@ -300,7 +310,9 @@ export function checkPublicConfigFile(content, filePath, config) {
   }
 
   if (config.mode === "wrangler") {
-    violations.push(...checkMaintainerDenylist(content, filePath));
+    if (!MAINTAINER_SCAN_SKIP_PATHS.has(filePath)) {
+      violations.push(...checkMaintainerDenylist(content, filePath));
+    }
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -352,8 +364,10 @@ export function checkTrackedFile(filePath, content) {
   }
 
   if (isTextFile(filePath)) {
-    violations.push(...scanFileForSecrets(content, filePath));
-    if (!publicConfig) {
+    if (!SECRET_SCAN_SKIP_PATHS.has(filePath)) {
+      violations.push(...scanFileForSecrets(content, filePath));
+    }
+    if (!publicConfig && !MAINTAINER_SCAN_SKIP_PATHS.has(filePath)) {
       violations.push(...checkMaintainerDenylist(content, filePath));
     }
   }
