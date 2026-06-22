@@ -59,7 +59,7 @@ Before deploying your own connector, copy `wrangler.example.jsonc` to `wrangler.
 
 **Secrets vs non-secrets:**
 
-- **Secrets** (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `MCP_AUTH_TOKEN` in legacy mode) belong in Cloudflare secrets via `wrangler secret put` — never in Git or `[vars]`.
+- **Secrets** (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `MCP_AUTH_TOKEN` in local-bearer mode) belong in Cloudflare secrets via `wrangler secret put` — never in Git or `[vars]`.
 - **OAuth vars** (`MCP_RESOURCE_URL`, `OAUTH_ISSUER`, etc.) are deployment-specific but not secret — they belong in `[vars]` or the Cloudflare dashboard.
 - **Local helper files** (`.dev.vars`, `.env`, `.env.deploy.local`) and Cloudflare API tokens must never be committed.
 

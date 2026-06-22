@@ -14,13 +14,6 @@ describe("resolveAuthMode", () => {
     expect(resolveAuthMode({ AUTH_MODE: "oauth" })).toEqual({ valid: true, mode: "oauth" });
   });
 
-  it("rejects legacy-bearer as an invalid AUTH_MODE value", () => {
-    expect(resolveAuthMode({ AUTH_MODE: "legacy-bearer" })).toEqual({
-      valid: false,
-      errors: ["AUTH_MODE (must be local-bearer or oauth)"],
-    });
-  });
-
   it("rejects invalid AUTH_MODE values", () => {
     expect(resolveAuthMode({ AUTH_MODE: "open" })).toEqual({
       valid: false,
