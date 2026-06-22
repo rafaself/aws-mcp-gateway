@@ -127,7 +127,7 @@ describe("public tool audit contract", () => {
     expect(event.durationMs).toBeGreaterThanOrEqual(0);
     expect(event.awsService).toBeUndefined();
     expect(event.region).toBeUndefined();
-    expect(event.input).toBeUndefined();
+    expect(event.input).toEqual({});
   });
 
   it("emits a sanitized success audit event for get_aws_cost_summary", async () => {

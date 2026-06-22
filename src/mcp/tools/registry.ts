@@ -4,15 +4,16 @@ import type { GatewayContext } from "../../config/context.js";
 import type { ToolSecurityScheme } from "./descriptor.js";
 import type { McpSuccessResult } from "./response.js";
 import type { mcpErrorResult } from "../../errors/public-error.js";
+import { manifestToGatewayDefinition, type AnyToolManifest } from "./manifest.js";
 import {
-  createCostByServiceToolDefinition,
-  createCostSummaryToolDefinition,
-  createFetchToolDefinition,
-  createGetCloudwatchAlarmsToolDefinition,
-  createGetRecentLogErrorsToolDefinition,
-  createListEc2InstancesToolDefinition,
-  createSearchToolDefinition,
-  createStatusToolDefinition,
+  createCostByServiceToolManifest,
+  createCostSummaryToolManifest,
+  createFetchToolManifest,
+  createGetCloudwatchAlarmsToolManifest,
+  createGetRecentLogErrorsToolManifest,
+  createListEc2InstancesToolManifest,
+  createSearchToolManifest,
+  createStatusToolManifest,
 } from "./definitions/index.js";
 
 export type GatewayToolCatalogMetadata = {
@@ -69,17 +70,21 @@ export const PUBLIC_TOOL_NAMES = [
 
 export type PublicToolName = (typeof PUBLIC_TOOL_NAMES)[number];
 
-export function createToolRegistry(ctx: GatewayContext): GatewayToolDefinition[] {
+export function createToolManifests(ctx: GatewayContext): AnyToolManifest[] {
   return [
-    createSearchToolDefinition(ctx),
-    createFetchToolDefinition(ctx),
-    createStatusToolDefinition(ctx),
-    createCostSummaryToolDefinition(ctx),
-    createCostByServiceToolDefinition(ctx),
-    createListEc2InstancesToolDefinition(ctx),
-    createGetCloudwatchAlarmsToolDefinition(ctx),
-    createGetRecentLogErrorsToolDefinition(ctx),
-  ];
+    createSearchToolManifest(ctx),
+    createFetchToolManifest(ctx),
+    createStatusToolManifest(ctx),
+    createCostSummaryToolManifest(ctx),
+    createCostByServiceToolManifest(ctx),
+    createListEc2InstancesToolManifest(ctx),
+    createGetCloudwatchAlarmsToolManifest(ctx),
+    createGetRecentLogErrorsToolManifest(ctx),
+  ] as AnyToolManifest[];
+}
+
+export function createToolRegistry(ctx: GatewayContext): GatewayToolDefinition[] {
+  return createToolManifests(ctx).map(manifestToGatewayDefinition);
 }
 
 export function getPublicTools(registry: GatewayToolDefinition[]): GatewayToolDefinition[] {

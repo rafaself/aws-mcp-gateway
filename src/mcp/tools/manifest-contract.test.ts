@@ -1,0 +1,174 @@
+import { describe, expect, it, vi } from "vitest";
+import type { GatewayContext } from "../../config/context.js";
+import { OAUTH_REQUIRED_SCOPE } from "./descriptor.js";
+import { buildPublicToolList } from "./public-list.js";
+import {
+  createToolManifests,
+  createToolRegistry,
+  getChatGptCatalogEntries,
+  PUBLIC_TOOL_NAMES,
+} from "./registry.js";
+import type { AnyToolManifest } from "./manifest.js";
+
+const { mockFetch } = vi.hoisted(() => ({ mockFetch: vi.fn() }));
+
+vi.mock("aws4fetch", () => ({
+  AwsClient: class {
+    accessKeyId: string;
+    secretAccessKey: string;
+    service: string | undefined;
+    region: string | undefined;
+    fetch = mockFetch;
+
+    constructor(opts: {
+      accessKeyId: string;
+      secretAccessKey: string;
+      service?: string;
+      region?: string;
+    }) {
+      this.accessKeyId = opts.accessKeyId;
+      this.secretAccessKey = opts.secretAccessKey;
+      this.service = opts.service;
+      this.region = opts.region;
+    }
+  },
+}));
+
+const testContext: GatewayContext = {
+  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
+  region: "us-east-1",
+  allowedRegions: ["us-east-1", "us-west-2"],
+  mcpResourceUrl: "https://aws-mcp-gateway.example.workers.dev",
+};
+
+const AWS_BACKED_TOOLS = [
+  "get_aws_cost_summary",
+  "get_aws_cost_by_service",
+  "list_ec2_instances",
+  "get_cloudwatch_alarms",
+  "get_recent_log_errors",
+] as const;
+
+const CORE_TOOLS = ["search", "fetch", "get_gateway_status"] as const;
+
+const EXPECTED_PACKS: Record<string, string> = {
+  search: "core",
+  fetch: "core",
+  get_gateway_status: "core",
+  get_aws_cost_summary: "cost",
+  get_aws_cost_by_service: "cost",
+  list_ec2_instances: "inventory",
+  get_cloudwatch_alarms: "observability",
+  get_recent_log_errors: "observability",
+};
+
+const EXPECTED_CATALOG_ANCHORS = [
+  { toolName: "get_gateway_status", docsAnchor: "1-get_gateway_status" },
+  { toolName: "get_aws_cost_summary", docsAnchor: "2-get_aws_cost_summary" },
+  { toolName: "get_aws_cost_by_service", docsAnchor: "3-get_aws_cost_by_service" },
+  { toolName: "list_ec2_instances", docsAnchor: "4-list_ec2_instances" },
+  { toolName: "get_cloudwatch_alarms", docsAnchor: "5-get_cloudwatch_alarms" },
+  { toolName: "get_recent_log_errors", docsAnchor: "6-get_recent_log_errors" },
+] as const;
+
+function manifestsByName(manifests: AnyToolManifest[]): Record<string, AnyToolManifest> {
+  return Object.fromEntries(manifests.map((manifest) => [manifest.name, manifest]));
+}
+
+describe("tool manifest contract", () => {
+  const manifests = createToolManifests(testContext);
+  const byName = manifestsByName(manifests);
+
+  it("defines exactly one manifest per public tool", () => {
+    expect(manifests.map((manifest) => manifest.name).sort()).toEqual(
+      [...PUBLIC_TOOL_NAMES].sort(),
+    );
+    expect(manifests).toHaveLength(PUBLIC_TOOL_NAMES.length);
+  });
+
+  for (const toolName of PUBLIC_TOOL_NAMES) {
+    it(`${toolName} manifest includes required metadata`, () => {
+      const manifest = byName[toolName];
+
+      expect(manifest.pack).toBe(EXPECTED_PACKS[toolName]);
+      expect(manifest.lifecycle).toBe("stable");
+      expect(manifest.auth.requiredScopes).toEqual([OAUTH_REQUIRED_SCOPE]);
+      expect(manifest.safety.riskLevel).toBe("read-only");
+      expect(typeof manifest.safety.cacheTtlSeconds).toBe("number");
+      expect(typeof manifest.safety.timeoutMs).toBe("number");
+      expect(manifest.safety.costClass).toMatch(/^(none|cached-read)$/);
+      expect(typeof manifest.audit.sanitizeInput).toBe("function");
+      expect(manifest.aws.readonly).toBe(true);
+    });
+  }
+
+  for (const toolName of CORE_TOOLS) {
+    it(`${toolName} declares empty AWS metadata`, () => {
+      const manifest = byName[toolName];
+
+      expect(manifest.aws.services).toEqual([]);
+      expect(manifest.aws.actions).toEqual([]);
+      expect(manifest.aws.regionMode).toBe("none");
+    });
+  }
+
+  for (const toolName of AWS_BACKED_TOOLS) {
+    it(`${toolName} declares AWS service and action metadata`, () => {
+      const manifest = byName[toolName];
+
+      expect(manifest.aws.services.length).toBeGreaterThan(0);
+      expect(manifest.aws.actions.length).toBeGreaterThan(0);
+      expect(manifest.aws.regionMode).not.toBe("none");
+    });
+  }
+
+  it("createToolRegistry derives the same public tool names", () => {
+    const registry = createToolRegistry(testContext);
+    expect(registry.map((tool) => tool.name).sort()).toEqual([...PUBLIC_TOOL_NAMES].sort());
+  });
+
+  it("buildPublicToolList remains compatible with manifest-derived registry", () => {
+    const registry = createToolRegistry(testContext);
+    const { tools } = buildPublicToolList(registry);
+
+    expect(tools.map((tool) => tool.name).sort()).toEqual([...PUBLIC_TOOL_NAMES].sort());
+
+    for (const tool of tools) {
+      expect(tool.title?.length).toBeGreaterThan(0);
+      expect(tool.description?.length).toBeGreaterThan(0);
+      expect(tool.inputSchema).toMatchObject({ type: "object" });
+      expect(tool.securitySchemes).toEqual([{ type: "oauth2", scopes: ["aws:read"] }]);
+      expect((tool.annotations as Record<string, boolean>).readOnlyHint).toBe(true);
+    }
+  });
+
+  it("getChatGptCatalogEntries discovers the same catalog entries", () => {
+    const entries = getChatGptCatalogEntries(createToolRegistry(testContext));
+
+    expect(entries).toHaveLength(EXPECTED_CATALOG_ANCHORS.length);
+
+    for (const expected of EXPECTED_CATALOG_ANCHORS) {
+      const entry = entries.find((candidate) => candidate.toolName === expected.toolName);
+      expect(entry).toBeDefined();
+      expect(entry!.docsAnchor).toBe(expected.docsAnchor);
+    }
+  });
+});
+
+describe("tool manifest validation before AWS", () => {
+  it("does not call AWS when cost summary validation fails", async () => {
+    mockFetch.mockReset();
+
+    const registry = createToolRegistry(testContext);
+    const tool = registry.find((candidate) => candidate.name === "get_aws_cost_summary");
+    expect(tool).toBeDefined();
+
+    await tool!.handler({
+      startDate: "invalid",
+      endDate: "2025-02-01",
+      granularity: "MONTHLY",
+    });
+
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+});

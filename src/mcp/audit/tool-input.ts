@@ -1,3 +1,7 @@
+export function sanitizeNoInput(): Record<string, unknown> {
+  return {};
+}
+
 export function summarizeCostDateRangeInput(args: {
   granularity?: string;
   limit?: number;

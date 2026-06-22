@@ -2,12 +2,15 @@ import { z } from "zod";
 import type { GatewayContext } from "../../../config/context.js";
 import { getCostByService } from "../../../aws/cost-explorer/index.js";
 import { summarizeCostDateRangeInput } from "../../audit/tool-input.js";
-import { safeMcpHandler } from "../response.js";
 import {
   costByServiceOutputSchema,
   PUBLIC_TOOL_TITLES,
-  readOnlyAwsToolDescriptor,
 } from "../descriptor.js";
+import {
+  DEFAULT_AUTH_SCOPES,
+  manifestToGatewayDefinition,
+  type ToolManifest,
+} from "../manifest.js";
 import type { GatewayToolDefinition } from "../registry.js";
 
 const costByServiceInputSchema = z.object({
@@ -34,12 +37,16 @@ const costByServiceInputSchema = z.object({
 
 type CostByServiceInput = z.infer<typeof costByServiceInputSchema>;
 
-export function createCostByServiceToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
-  return readOnlyAwsToolDescriptor({
+export function createCostByServiceToolManifest(
+  ctx: GatewayContext,
+): ToolManifest<CostByServiceInput> {
+  return {
     name: "get_aws_cost_by_service",
     title: PUBLIC_TOOL_TITLES.get_aws_cost_by_service,
     description:
       "Returns AWS costs broken down by service for a given time period via Cost Explorer.",
+    pack: "cost",
+    lifecycle: "stable",
     inputSchema: costByServiceInputSchema,
     outputSchema: costByServiceOutputSchema,
     visibility: { mcp: true, chatgpt: true },
@@ -49,49 +56,64 @@ export function createCostByServiceToolDefinition(ctx: GatewayContext): GatewayT
       inputSummary: "startDate, endDate, optional granularity and limit (max 25).",
       awsService: "ce",
     },
-    handler: safeMcpHandler(
-      {
-        toolName: "get_aws_cost_by_service",
-        awsService: "ce",
-        getRegion: () => ctx.region,
-        sanitizeInput: (args) => summarizeCostDateRangeInput(args),
-      },
-      async (args: CostByServiceInput) => {
-        const result = await getCostByService(
+    auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
+    aws: {
+      services: ["ce"],
+      actions: ["ce:GetCostAndUsage"],
+      regionMode: "single-region",
+      readonly: true,
+    },
+    safety: {
+      riskLevel: "read-only",
+      cacheTtlSeconds: 1800,
+      timeoutMs: 15000,
+      costClass: "cached-read",
+    },
+    audit: {
+      awsService: "ce",
+      getRegion: () => ctx.region,
+      sanitizeInput: (args) => summarizeCostDateRangeInput(args),
+    },
+    descriptorKind: "aws-readonly",
+    handler: async (args: CostByServiceInput) => {
+      const result = await getCostByService(
+        {
+          startDate: args.startDate,
+          endDate: args.endDate,
+          granularity: args.granularity,
+        },
+        ctx.credentials,
+        ctx.region,
+        ctx.cache,
+      );
+
+      const services = result.services.slice(0, args.limit);
+
+      const lines = services.map(
+        (s) => `${s.service}: ${s.amount.toFixed(2)} ${result.currency}`,
+      );
+
+      return {
+        content: [
           {
-            startDate: args.startDate,
-            endDate: args.endDate,
-            granularity: args.granularity,
+            type: "text" as const,
+            text:
+              `AWS cost from ${result.period.startDate} to ${result.period.endDate} is ${result.total} ${result.currency}.\n` +
+              `Top services by cost:\n${lines.join("\n")}`,
           },
-          ctx.credentials,
-          ctx.region,
-          ctx.cache,
-        );
+        ],
+        structuredContent: {
+          period: result.period,
+          granularity: args.granularity,
+          total: result.total,
+          currency: result.currency,
+          services,
+        },
+      };
+    },
+  };
+}
 
-        const services = result.services.slice(0, args.limit);
-
-        const lines = services.map(
-          (s) => `${s.service}: ${s.amount.toFixed(2)} ${result.currency}`,
-        );
-
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text:
-                `AWS cost from ${result.period.startDate} to ${result.period.endDate} is ${result.total} ${result.currency}.\n` +
-                `Top services by cost:\n${lines.join("\n")}`,
-            },
-          ],
-          structuredContent: {
-            period: result.period,
-            granularity: args.granularity,
-            total: result.total,
-            currency: result.currency,
-            services,
-          },
-        };
-      },
-    ),
-  });
+export function createCostByServiceToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
+  return manifestToGatewayDefinition(createCostByServiceToolManifest(ctx));
 }
