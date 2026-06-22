@@ -13,7 +13,10 @@ error behavior, caching, region handling, and safety boundaries.
 - Every tool is read-only. Write and management operations are out of scope for
   the current read-only scope.
 - Invalid input always fails before any downstream AWS call.
+- The central policy gate may deny a tool call before AWS work (normalized `validation_error`) when packs are disabled, cost-control limits are exceeded, or exposure configuration hides the tool.
 - Generic AWS access (arbitrary API proxy or CLI execution) is outside scope.
+
+**IAM mapping:** See [aws-capability-matrix.md](aws-capability-matrix.md) for the authoritative tool-to-IAM action matrix.
 
 **ChatGPT connector:** ChatGPT discovers public actions through authenticated `tools/list`. Tools `search` and `fetch` implement the OpenAI MCP catalog schema — they help inspect the AWS tool catalog but do not replace `tools/list` action discovery. Neither `search` nor `fetch` calls AWS directly (except `fetch` may embed live `get_gateway_status` JSON for that catalog entry). See [chatgpt-connector.md](chatgpt-connector.md).
 

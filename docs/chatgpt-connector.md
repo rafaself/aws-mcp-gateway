@@ -15,7 +15,7 @@ Server URL in ChatGPT: https://<worker-host>/mcp
 OAuth resource/audience: https://<worker-host>
 Protected resource metadata: https://<worker-host>/.well-known/oauth-protected-resource
 Required scope: aws:read
-Expected public MCP tools: 11
+Expected enabled MCP tools: 11 (default packs) — see [tool exposure](#tool-exposure)
 ```
 
 Do not set `MCP_RESOURCE_URL` or `OAUTH_AUDIENCE` to `https://<worker-host>/mcp`. The OAuth resource identity is the Worker origin; the MCP transport endpoint is `/mcp`.
@@ -25,17 +25,19 @@ Do not set `MCP_RESOURCE_URL` or `OAUTH_AUDIENCE` to `https://<worker-host>/mcp`
 The gateway is organized as a single MCP runtime with layered responsibilities — not MCP-on-MCP or duplicate runtimes:
 
 ```text
-Core AWS tool definitions
-  -> tool registry and handlers
+Tool manifests (source of truth)
+  -> policy gate (packs, cost-control, capabilities)
+  -> typed handlers and AWS clients
   -> MCP transport layer at /mcp
   -> ChatGPT-compatible descriptor/catalog adapter
   -> optional future Apps SDK UI layer
 ```
 
-- **Core AWS tool definitions** — explicit read-only handlers with validated inputs and normalized outputs.
-- **Tool registry and handlers** — contract-first registration in `src/mcp/tools/`; no dynamic or arbitrary AWS proxy.
+- **Tool manifests** — each public tool is defined by a `ToolManifest` with pack, AWS capability, cost-control, and descriptor metadata.
+- **Policy gate** — `evaluateToolPolicy()` runs before handler execution; disabled packs/tools fail closed with normalized errors.
+- **Typed handlers** — explicit read-only handlers with validated inputs and normalized outputs.
 - **MCP transport at `/mcp`** — one JSON-RPC endpoint; authentication happens before MCP server creation.
-- **ChatGPT-compatible descriptor/catalog adapter** — `tools/list` descriptors plus `search`/`fetch` catalog helpers.
+- **ChatGPT-compatible descriptor/catalog adapter** — `tools/list` exposes **enabled** tools only; `search`/`fetch` are catalog helpers.
 - **Optional future Apps SDK UI layer** — out of scope for the current read-only scope; would sit above the same MCP contract.
 
 Do not add a second MCP server, proxy another MCP endpoint, or duplicate tool runtimes for ChatGPT compatibility.
@@ -54,7 +56,9 @@ OAuth can succeed while actions remain invisible if `tools/list` is empty, retur
 
 ## Action discovery
 
-**Actions appear only if authenticated `tools/list` returns valid public tool descriptors.**
+**Actions appear only if authenticated `tools/list` returns valid descriptors for enabled tools.**
+
+Disabled tools, pack-gated tools, and denylisted tools are **omitted from `tools/list`** and do not appear as ChatGPT Actions. The registry defines 14 public tools; default deployments expose 11.
 
 Each descriptor must include stable `name`, `title`, `description`, `inputSchema`, `outputSchema` (where applicable), read-only `annotations`, and OAuth `securitySchemes`. Without these, ChatGPT shows **“No app actions available yet”** even when OAuth linking succeeds.
 
@@ -90,14 +94,32 @@ Runtime MCP/auth dependency upgrades must be treated as protocol changes until H
    - **Server URL:** `https://<worker-host>/mcp`
    - **Authentication:** OAuth
 3. Complete the OAuth login (Auth0 user, not your ChatGPT account).
-4. Validate authenticated `tools/list` returns all 11 public tools (see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md)).
+4. Validate authenticated `tools/list` returns all **enabled** tools for your exposure configuration (11 by default — see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md)).
 5. Open the connector and click **Refresh** after gateway updates so ChatGPT reloads `tools/list`.
-6. Confirm **Actions** lists all 11 tools (not “No app actions available yet”).
+6. Confirm **Actions** lists all enabled tools (not “No app actions available yet”).
 7. Call `get_gateway_status` before AWS-backed tools.
+
+## Tool exposure
+
+Tool visibility is controlled by environment variables (see [README.md](../README.md#tool-exposure-optional)):
+
+| Pack | Tools | Default |
+|------|-------|---------|
+| `core` | `search`, `fetch`, `get_gateway_status` | Enabled |
+| `cost` | `get_aws_cost_summary`, `get_aws_cost_by_service` | Enabled |
+| `inventory` | `list_ec2_instances`, `list_lambda_functions`, `list_s3_buckets` | Enabled |
+| `observability` | `get_cloudwatch_alarms`, `get_recent_log_errors`, `list_log_groups` | Enabled |
+| `aggregates` | `aws_account_overview`, `aws_cost_overview`, `aws_observability_overview` | **Opt-in** |
+
+Enable aggregates when you want three additional bounded overview Actions:
+
+```text
+AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,aggregates
+```
 
 ## Tool surface
 
-The gateway exposes **11 public MCP tools**:
+Default deployments expose **11** MCP tools through `tools/list`:
 
 | Tool | Role | Calls AWS | Read-only | Auth | Output shape |
 |------|------|-----------|-----------|------|--------------|
@@ -136,7 +158,7 @@ For the full manual validation flow (HTTP pre-checks through OAuth login, `tools
 
 After OAuth succeeds:
 
-1. Confirm **Actions** lists all 11 tools (not “No app actions available yet”).
+1. Confirm **Actions** lists all enabled tools from `tools/list` (11 by default).
 2. Ask ChatGPT to check gateway status — it should call `get_gateway_status` first.
 3. Ask for a bounded read-only query (for example EC2 instances in an allowed region).
 

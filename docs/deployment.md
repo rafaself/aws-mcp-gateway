@@ -23,16 +23,22 @@ pnpm install
 Run the following commands before deploying to catch issues early:
 
 ```bash
+pnpm run repo:safety
+pnpm run output:guardrail
+pnpm run verify:connector-contract
 pnpm run typecheck
 pnpm test
 pnpm run test:integrity
 ```
 
+- `pnpm run repo:safety` — Tracked files stay public-safe (no secrets or maintainer defaults).
+- `pnpm run output:guardrail` — Production source routes output through `src/observability/`.
+- `pnpm run verify:connector-contract` — Local ChatGPT Connector contract gate (manifest, policy, capability, exposure, descriptors, `tools/list`).
 - `pnpm run typecheck` — TypeScript type checking.
 - `pnpm test` — Unit tests (offline, no network calls required).
 - `pnpm run test:integrity` — Ensures no focused or unjustified skipped tests.
 
-All three should pass before deploying.
+All six should pass before deploying.
 
 ## Runtime configuration
 
@@ -138,7 +144,9 @@ Open `wrangler.jsonc` and ensure the `[vars]` section contains:
 
 ### Optional tool exposure controls
 
-Configure in `[vars]` or the Cloudflare dashboard. Defaults preserve the current 11-tool public surface.
+Configure in `[vars]` or the Cloudflare dashboard. Defaults expose **11** of **14** registered tools via packs `core`, `cost`, `inventory`, and `observability`. The `aggregates` pack (+3 overview tools) is opt-in.
+
+Disabled or pack-gated tools are omitted from `tools/list` and return a safe validation error if invoked by name. See [README.md](../README.md#tool-exposure-optional) for pack mappings and examples.
 
 ```jsonc
 {
@@ -159,7 +167,7 @@ Configure in `[vars]` or the Cloudflare dashboard. Defaults preserve the current
 
 Packs map to tools as documented in [README.md](../README.md#tool-exposure-optional). Enabling fewer packs is preferred for least privilege — for example, `AWS_MCP_ENABLED_TOOL_PACKS=cost` exposes only the two Cost Explorer tools. Add `core` when ChatGPT `search` / `fetch` helpers are required.
 
-Unknown pack or tool names fail Worker startup validation. Disabled tools do not appear in `tools/list` and return a safe validation error if invoked by name.
+Unknown pack or tool names fail Worker startup validation.
 
 ### Required rate-limiter Durable Object
 
@@ -334,7 +342,7 @@ curl -X POST https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-A successful response includes a `result` object with a `tools` array containing all registered MCP tools.
+A successful response includes a `result` object with a `tools` array containing all **enabled** MCP tools for this deployment (11 by default).
 
 **OAuth mode** — complete authentication through the ChatGPT connector UI. Do not copy OAuth access tokens into shell history. See [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
 
