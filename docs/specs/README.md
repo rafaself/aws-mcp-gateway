@@ -9,15 +9,11 @@ Some files in this directory document **implemented** behavior as living contrac
 Current shipped specs:
 
 - [`oauth-chatgpt-connector.md`](oauth-chatgpt-connector.md) — current OAuth authorization contract for ChatGPT connector deployments.
+- [`secure-tool-platform.md`](secure-tool-platform.md) — current manifest-driven architecture for the secure read-only AWS tool platform.
 
 ## Target architecture specs
 
-These files describe approved architecture direction that implementation issues
-will deliver in later changes.
-
-- [`secure-tool-platform.md`](secure-tool-platform.md) — target manifest-driven architecture for the secure read-only AWS tool platform.
-
-New non-trivial work still copies [`template.md`](template.md) before implementation.
+No target-only architecture specs are currently tracked. New non-trivial work copies [`template.md`](template.md) before implementation when a spec is required.
 
 ## When to write a spec
 

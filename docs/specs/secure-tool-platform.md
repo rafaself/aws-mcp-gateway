@@ -2,16 +2,15 @@
 
 ## Goal
 
-This document defines the target architecture for evolving the current explicit,
-read-only AWS MCP gateway into a manifest-driven tool platform. It preserves the
-current public MCP and ChatGPT Connector behavior while making tool discovery,
-policy checks, AWS capability metadata, and cost controls explicit and
-testable.
+This document defines the **shipped** manifest-driven architecture for the
+read-only AWS MCP gateway. It preserves public MCP and ChatGPT Connector
+behavior while making tool discovery, policy checks, AWS capability metadata,
+and cost controls explicit and testable.
 
-The current implementation already has the correct top-level shape: `/mcp` is
-authenticated before MCP execution, the server builds a fixed tool registry, and
+`/mcp` is authenticated before MCP execution, the server builds a fixed
+manifest-backed tool registry, a central policy gate runs before handlers, and
 AWS-backed tools return normalized `structuredContent` rather than raw provider
-payloads. This spec defines how that same read-only contract scales safely.
+payloads.
 
 ## Non-goals
 
@@ -26,9 +25,9 @@ payloads. This spec defines how that same read-only contract scales safely.
 
 ## Behavior
 
-### Current public surface that must remain stable
+### Registered public tools
 
-The current public tools are:
+The registry defines **14** public tools:
 
 ```text
 search
@@ -39,20 +38,31 @@ get_aws_cost_by_service
 list_ec2_instances
 get_cloudwatch_alarms
 get_recent_log_errors
+list_lambda_functions
+list_s3_buckets
+list_log_groups
+aws_account_overview
+aws_cost_overview
+aws_observability_overview
 ```
 
-Current public behavior that remains authoritative:
+**Default exposure:** 11 tools via packs `core`, `cost`, `inventory`, and
+`observability`. The three `aws_*_overview` tools require the opt-in
+`aggregates` pack.
+
+Authoritative public behavior:
 
 - `/mcp` is the single MCP endpoint.
-- `tools/list` is the source of action discovery for ChatGPT.
+- `tools/list` is the source of action discovery for ChatGPT and returns **enabled** tools only.
 - `search` and `fetch` remain catalog helpers, not alternate action discovery.
+- Disabled or pack-gated tools are omitted from `tools/list` and denied on direct call.
 - AWS-backed tools remain explicit, read-only, and bounded.
 - `structuredContent` remains the stable machine-readable contract.
 - Raw AWS responses are never exposed.
 
-### Target request flow
+### Request flow
 
-Every manifest-backed tool request should follow this flow:
+Every manifest-backed tool request follows this flow:
 
 ```text
 request
@@ -78,8 +88,7 @@ Rules for this flow:
 
 ### Tool manifest contract
 
-The registry should evolve from a minimal tool definition into a richer
-manifest contract that becomes the source of truth for:
+The manifest is the source of truth for:
 
 - MCP registration
 - `tools/list` discovery
@@ -96,7 +105,7 @@ Required manifest fields:
 | `name` | Stable public tool name |
 | `title` | Human-readable display title |
 | `description` | Public tool description |
-| `pack` | Tool pack ownership (`core`, `cost`, `inventory`, `observability`, future `security`) |
+| `pack` | Tool pack ownership (`core`, `cost`, `inventory`, `observability`, `aggregates`, future `security`) |
 | `lifecycle` | Release state such as stable/experimental/internal |
 | `inputSchema` | Input validation contract |
 | `outputSchema` | Declared `structuredContent` contract where applicable |
@@ -104,34 +113,36 @@ Required manifest fields:
 | `auth.requiredScopes` | Required OAuth scopes for execution |
 | `aws.services` | Declared AWS services used by the tool |
 | `aws.actions` | Declared allowlisted AWS actions used by the tool |
+| `aws.capabilities` | Capability IDs aligned with `src/aws/capabilities.ts` |
 | `aws.regionMode` | Global, single-region, or bounded multi-region execution mode |
 | `aws.readonly` | Explicit read-only marker |
 | `safety.riskLevel` | Current allowed value: `read-only` |
 | `safety.cacheTtlSeconds` | Cache TTL metadata |
 | `safety.timeoutMs` | Per-tool timeout budget |
 | `safety.costClass` | Cost-control classification |
-| `catalog` | Search/fetch catalog metadata |
+| `costControl` | Explicit cost-control limits (`class`, `requiresCache`, bounds) |
+| `catalog` | Search/fetch catalog metadata (non-discovery tools) |
 | `audit.sanitizeInput` | Sanitizer used for audit events |
+| `descriptorKind` | Descriptor adapter kind |
 | `handler` | Typed tool handler implementation |
 
 Manifest expectations:
 
 - Every public tool must be represented by exactly one manifest.
-- AWS-backed manifests must declare AWS services and actions explicitly.
+- AWS-backed manifests must declare AWS services, actions, and capabilities explicitly.
 - Non-AWS tools may declare empty AWS metadata, but must still declare
-  read-only risk and audit metadata.
-- Public descriptor compatibility is preserved by deriving the current
-  `tools/list` fields from the manifest rather than changing the external shape.
+  read-only risk, `costControl.class: "free"`, and audit metadata.
+- Public descriptor compatibility is preserved by deriving `tools/list` fields from the manifest.
 
 ### Central policy model
 
-Every manifest-backed tool call must pass a central policy gate before handler
-execution.
+Every manifest-backed tool call passes a central policy gate before handler
+execution (`evaluateToolPolicy()` in `src/mcp/tools/policy.ts`).
 
-The policy model should evaluate:
+The policy model evaluates:
 
 - the tool is registered
-- the tool is enabled
+- the tool is enabled (pack, allowlist, denylist)
 - the tool pack is enabled
 - the tool lifecycle is allowed for exposure
 - the tool risk level is allowed
@@ -142,26 +153,24 @@ The policy model should evaluate:
 - input validation runs before AWS calls
 - cost-control constraints are satisfied before expensive work
 
-Default policy behavior for the current repository:
+Default policy behavior:
 
-- all current public tools are enabled
+- default packs expose 11 tools; `aggregates` is opt-in
 - only `read-only` risk is allowed
 - current AWS services/actions are allowlisted
 - current region allowlist enforcement remains in effect
 - tools with malformed or missing security metadata fail closed
 
-Policy-denied requests should:
+Policy-denied requests:
 
 - fail before handler-side AWS work
-- return normalized safe MCP errors
-- use a safe public code such as `validation_error`
+- return normalized safe MCP errors (`validation_error`)
 - avoid secrets, tokens, raw headers, stack traces, or raw AWS payloads
 - emit sanitized audit metadata for the denied attempt
 
 ### Cost-control model
 
-Cost-control requirements move from implicit per-tool implementation details to
-explicit manifest metadata and policy checks.
+Cost-control requirements are explicit manifest metadata enforced by the policy gate.
 
 Baseline requirements:
 
@@ -172,16 +181,22 @@ Baseline requirements:
 - controlled multi-region fanout
 - no unbounded discovery operations
 
-Current tool mapping that future manifest metadata must preserve:
+Current tool mapping:
 
-| Tool | Cost-control requirements |
-|------|---------------------------|
-| `get_aws_cost_summary` | max 90-day date range, cached, bounded timeout |
-| `get_aws_cost_by_service` | max 90-day date range, max 25 services, cached, bounded timeout |
-| `list_ec2_instances` | bounded allowed-region fanout, cached, bounded timeout |
-| `get_cloudwatch_alarms` | bounded allowed-region fanout, cached, bounded timeout |
-| `get_recent_log_errors` | bounded lookback, bounded event count, cached, bounded timeout |
-| `search` / `fetch` / `get_gateway_status` | no AWS cost, no AWS fanout, still explicit timeout metadata |
+| Tool | Cost-control class | Key limits |
+|------|-------------------|------------|
+| `get_aws_cost_summary` | `paid` | max 90-day date range, cache required |
+| `get_aws_cost_by_service` | `paid` | max 90-day range, max 25 services, cache required |
+| `list_ec2_instances` | `fanout-sensitive` | bounded allowed-region fanout, cache required |
+| `list_lambda_functions` | `fanout-sensitive` | bounded allowed-region fanout, cache required |
+| `list_s3_buckets` | `low` | single-region, cache required |
+| `get_cloudwatch_alarms` | `fanout-sensitive` | bounded allowed-region fanout, cache required |
+| `get_recent_log_errors` | `volume-sensitive` | bounded lookback (24h), max 50 events, cache required |
+| `list_log_groups` | `volume-sensitive` | bounded result count, cache required |
+| `aws_account_overview` | `fanout-sensitive` | composes inventory APIs, bounded samples |
+| `aws_cost_overview` | `paid` | composes cost APIs, bounded date range |
+| `aws_observability_overview` | `fanout-sensitive` | composes observability APIs, bounded samples |
+| `search` / `fetch` / `get_gateway_status` | `free` | no AWS cost, no AWS fanout |
 
 Cost-control policy rules:
 
@@ -196,7 +211,7 @@ Cost-control policy rules:
 All future tool expansion must follow these rules:
 
 1. New tools must be added through manifests, not ad hoc registry entries.
-2. New AWS-backed tools must declare service/action metadata explicitly.
+2. New AWS-backed tools must declare service/action/capability metadata explicitly.
 3. New AWS-backed read-only tools must update IAM docs or the generated
    capability matrix before merge.
 4. New tools must include descriptor, policy, validation, output, and error
@@ -210,8 +225,7 @@ All future tool expansion must follow these rules:
 
 ## Security and safety
 
-The secure tool platform keeps the current defense-in-depth model and makes it
-more explicit:
+The secure tool platform keeps the defense-in-depth model explicit:
 
 - Authentication gates `/mcp` before any MCP or AWS execution.
 - The registry remains explicit and allowlisted.
@@ -232,32 +246,33 @@ The architecture is intentionally incompatible with:
 
 ## Acceptance criteria
 
-- `docs/specs/secure-tool-platform.md` exists as the architecture contract for
-  the manifest-driven tool platform.
-- The spec defines the target request flow from auth/rate limit through
-  normalized output and audit logging.
-- The spec defines the required manifest contract and its mandatory metadata.
-- The spec defines the central policy gate model and its fail-closed behavior.
-- The spec defines cost-control requirements for current and future AWS-backed
-  tools.
-- The spec defines expansion rules for adding new tools safely.
-- The spec preserves the current read-only public MCP and ChatGPT Connector
-  contract.
-- The spec does not introduce broad AWS execution, arbitrary AWS proxying, or
-  write/management behavior.
+- Manifest-backed registry with 14 public tools and pack-based exposure.
+- Central policy gate runs before handler execution and fails closed.
+- Cost-control metadata covers all registered tools.
+- Capability matrix covers all AWS-backed tools.
+- `tools/list` returns enabled tools only; disabled tools are not listed.
+- ChatGPT Connector discovery and descriptor contracts remain stable.
+- No broad AWS execution, arbitrary AWS proxying, or write/management behavior.
 
 ## Test plan
 
-Documentation-only verification for this issue:
+Automated contract verification:
 
-- add the spec file
-- link it from [`docs/specs/README.md`](README.md)
-- verify the spec is consistent with current MCP/public-tool behavior described
-  in [`docs/mcp-tools.md`](../mcp-tools.md)
-- run:
-  - `pnpm run repo:safety`
-  - `pnpm run output:guardrail`
-  - `pnpm run verify:connector-contract`
+```bash
+pnpm run repo:safety
+pnpm run output:guardrail
+pnpm run verify:connector-contract
+```
 
-Implementation follow-up issues should add the automated runtime and contract
-tests described in sprint issue `#112` and child issues `#114` through `#122`.
+Key contract tests:
+
+- `src/mcp/tools/manifest-contract.test.ts`
+- `src/mcp/tools/policy.test.ts`
+- `src/mcp/tools/cost-control-policy.test.ts`
+- `src/mcp/tools/capability-contract.test.ts`
+- `src/mcp/tools/capability-matrix.test.ts`
+- `src/mcp/tools/exposure.test.ts`
+- `src/mcp/tools/descriptor-contract.test.ts`
+- `src/mcp/tools/list-integration.test.ts`
+
+Production acceptance: [chatgpt-connector-production-acceptance.md](../chatgpt-connector-production-acceptance.md).

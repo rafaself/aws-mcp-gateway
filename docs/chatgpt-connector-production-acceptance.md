@@ -2,7 +2,7 @@
 
 Final production gate proving the deployed Worker is ready for integration as a **ChatGPT Connector App**. This checklist validates repository safety, deployment health, MCP transport behavior, tool descriptors, read-only actions, and ChatGPT UI acceptance.
 
-Repository contract checks (pinned dependencies, OAuth URL rules, descriptor shape, `tools/list`, OAuth challenge) are covered by step 1 (`pnpm run verify:connector-contract`).
+Repository contract checks (manifest completeness, policy gates, capability matrix, cost-control metadata, descriptor shape, exposure, `tools/list`, OAuth challenge) are covered by step 1 (`pnpm run verify:connector-contract`).
 
 **Related documentation:**
 
@@ -13,6 +13,22 @@ Repository contract checks (pinned dependencies, OAuth URL rules, descriptor sha
 
 Replace `<worker-host>` with your deployed Worker hostname. Do not paste real OAuth access tokens, AWS keys, or Auth0 client secrets into docs, issues, or terminal history.
 
+## Exposure configuration
+
+Record the deployed tool exposure settings before counting tools in steps 7, 8, and 16:
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `AWS_MCP_ENABLED_TOOL_PACKS` | `core,cost,inventory,observability` | Which tool packs are exposed |
+| `AWS_MCP_ENABLED_TOOLS` | *(empty)* | Optional allowlist within enabled packs |
+| `AWS_MCP_DISABLED_TOOLS` | *(empty)* | Explicit denylist |
+
+**Default path:** 11 enabled tools (all default packs, no denylist).
+
+**Aggregates-enabled path:** add `aggregates` to `AWS_MCP_ENABLED_TOOL_PACKS` for 14 enabled tools (includes `aws_account_overview`, `aws_cost_overview`, `aws_observability_overview`).
+
+Disabled or pack-gated tools must not appear in `tools/list` or as ChatGPT Actions.
+
 ## URL model
 
 Confirm this split before any deployed or ChatGPT checks:
@@ -22,7 +38,7 @@ ChatGPT Connector Server URL: https://<worker-host>/mcp
 MCP_RESOURCE_URL and OAUTH_AUDIENCE: https://<worker-host> (origin only — do not append /mcp)
 Protected resource metadata: https://<worker-host>/.well-known/oauth-protected-resource
 Required scope: aws:read
-Expected public MCP tools: 11
+Expected enabled MCP tools: 11 (default) or 14 (with aggregates pack)
 ```
 
 ---
@@ -32,20 +48,35 @@ Expected public MCP tools: 11
 ### 1. Repository validation passes locally
 
 ```bash
+pnpm run repo:safety
+pnpm run output:guardrail
 pnpm run verify:connector-contract
 ```
 
-This runs `typecheck`, the full test suite (including connector contract tests), and `test:integrity`. No live ChatGPT, Auth0, Cloudflare, or AWS calls are required.
+`verify:connector-contract` runs `typecheck`, the full test suite (including connector contract tests), and `test:integrity`. No live ChatGPT, Auth0, Cloudflare, or AWS calls are required.
 
 | Contract surface | Guarded by |
 |------------------|------------|
 | Pinned runtime dependencies | `src/test/dependency-contract.test.ts` |
 | OAuth URL origin (no `/mcp` on resource/audience) | `src/config/oauth-urls.test.ts` |
+| Manifest completeness, pack mapping, cost-control metadata | `src/mcp/tools/manifest-contract.test.ts` |
 | Public descriptor shape, OAuth security, no `noauth` | `src/mcp/tools/descriptor-contract.test.ts` |
-| HTTP `tools/list` returns 11 public tools | `src/mcp/tools/list-integration.test.ts` |
+| Policy denial before handler/AWS work | `src/mcp/tools/policy.test.ts` |
+| Cost-control metadata and request limits | `src/mcp/tools/cost-control-policy.test.ts` |
+| Capability/IAM alignment | `src/mcp/tools/capability-contract.test.ts` |
+| Generated capability matrix doc | `src/mcp/tools/capability-matrix.test.ts` |
+| Tool pack and disable exposure | `src/mcp/tools/exposure.test.ts` |
+| HTTP `tools/list` returns enabled tools only (11 by default) | `src/mcp/tools/list-integration.test.ts` |
 | `/mcp` 401 challenge and protected-resource metadata | `src/index.oauth.test.ts` |
 
-- [ ] **1.** `pnpm run verify:connector-contract` passes
+Local acceptance (no deploy required):
+
+- [ ] **1a.** `pnpm run repo:safety` passes — no secrets or maintainer defaults in tracked files
+- [ ] **1b.** `pnpm run output:guardrail` passes — production logging uses `src/observability/` only
+- [ ] **1c.** `pnpm run verify:connector-contract` passes — manifest, policy, capability, cost-control, exposure, and connector contracts hold
+- [ ] **1d.** Capability matrix covers all registered AWS tools (`capability-matrix.test.ts`)
+- [ ] **1e.** Cost-control metadata covers all registered tools (`manifest-contract.test.ts`, `cost-control-policy.test.ts`)
+- [ ] **1f.** Disabled tools are omitted from `tools/list` (`exposure.test.ts`, `list-integration.test.ts`)
 
 ### 2. Worker deploy succeeds
 
@@ -111,7 +142,7 @@ curl -i -X POST https://<worker-host>/mcp \
 
 - [ ] **6.** Authenticated `initialize` succeeds
 
-### 7. Authenticated `tools/list` returns exactly 11 public tools
+### 7. Authenticated `tools/list` returns only enabled tools
 
 ```bash
 curl -sS -X POST https://<worker-host>/mcp \
@@ -121,13 +152,31 @@ curl -sS -X POST https://<worker-host>/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
-**Expected:** `result.tools` includes exactly: `search`, `fetch`, `get_gateway_status`, `get_aws_cost_summary`, `get_aws_cost_by_service`, `list_ec2_instances`, `get_cloudwatch_alarms`, `get_recent_log_errors`.
+**Expected (default exposure — 11 tools):** `result.tools` includes exactly:
 
-- [ ] **7.** Authenticated `tools/list` returns 11 public tools
+```text
+search
+fetch
+get_gateway_status
+get_aws_cost_summary
+get_aws_cost_by_service
+list_ec2_instances
+get_cloudwatch_alarms
+get_recent_log_errors
+list_lambda_functions
+list_s3_buckets
+list_log_groups
+```
 
-### 8. Every public tool descriptor has required fields
+**Expected (aggregates pack enabled — 14 tools):** the 11 tools above plus `aws_account_overview`, `aws_cost_overview`, `aws_observability_overview`.
 
-From the `tools/list` response, confirm each of the 11 tools includes:
+**Must not appear** when disabled: pack-gated tools (for example `aggregates` tools when that pack is off), tools in `AWS_MCP_DISABLED_TOOLS`, or tools outside `AWS_MCP_ENABLED_TOOLS` when that allowlist is set.
+
+- [ ] **7.** Authenticated `tools/list` returns the expected enabled tool set for this deployment
+
+### 8. Every listed tool descriptor has required fields
+
+From the `tools/list` response, confirm each **enabled** tool includes:
 
 - `title`
 - `description`
@@ -136,11 +185,11 @@ From the `tools/list` response, confirm each of the 11 tools includes:
 - `securitySchemes`
 - `_meta.securitySchemes`
 
-- [ ] **8.** All descriptors have required ChatGPT-compatible fields
+- [ ] **8.** All enabled tool descriptors have required ChatGPT-compatible fields
 
 ### 9. No tool advertises `noauth`
 
-Confirm no descriptor contains `"type":"noauth"` in `securitySchemes` or `_meta.securitySchemes`. All public tools require OAuth `aws:read`.
+Confirm no descriptor contains `"type":"noauth"` in `securitySchemes` or `_meta.securitySchemes`. All enabled tools require OAuth `aws:read`.
 
 - [ ] **9.** No tool advertises `noauth`
 
@@ -172,7 +221,7 @@ Invoke `fetch` with one id from step 11 (for example `tool/list_ec2_instances`).
 
 Call one bounded read-only tool (preferred: `list_ec2_instances` in a single allowed region from `AWS_ALLOWED_REGIONS`).
 
-**Expected:** Normalized read-only inventory or a public `validation_error`, `configuration_error`, or `aws_error` — never raw AWS JSON or credentials.
+**Expected:** Normalized read-only inventory or a public `validation_error`, `configuration_error`, or `aws_request_failed` — never raw AWS JSON or credentials.
 
 - [ ] **13.** Bounded AWS read-only tool behaves correctly
 
@@ -199,13 +248,13 @@ Complete the OAuth flow in ChatGPT (Auth0 or compatible OIDC user — not ChatGP
 
 - [ ] **15.** OAuth linking succeeds
 
-### 16. ChatGPT Actions list the public tools
+### 16. ChatGPT Actions list the enabled tools
 
 After OAuth linking, open the connector and click **Refresh** if updating after a deploy.
 
-**Expected:** The Actions page lists all 11 public MCP tools — not “No app actions available yet”.
+**Expected:** The Actions page lists all **enabled** MCP tools from step 7 — not “No app actions available yet”. Default deployments show 11 Actions; aggregates-enabled deployments show 14.
 
-- [ ] **16.** ChatGPT Actions list 11 public tools
+- [ ] **16.** ChatGPT Actions match the enabled tool set from `tools/list`
 
 ### 17. A real ChatGPT prompt can call `get_gateway_status`
 
@@ -223,6 +272,13 @@ Ask ChatGPT for a bounded read-only query (for example EC2 instances in one allo
 
 - [ ] **18.** ChatGPT prompt invokes a bounded AWS read-only tool
 
+### 19. (Optional) Aggregate overview tools when `aggregates` pack is enabled
+
+Skip unless `AWS_MCP_ENABLED_TOOL_PACKS` includes `aggregates`.
+
+- [ ] **19a.** `tools/list` includes `aws_account_overview`, `aws_cost_overview`, and `aws_observability_overview`
+- [ ] **19b.** One aggregate tool returns normalized bounded output or a safe public error
+
 ---
 
 ## OAuth success with empty Actions — fallback diagnosis
@@ -232,6 +288,7 @@ If OAuth succeeds but Actions are empty, **verify authenticated `tools/list` (st
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | OAuth OK, no Actions | Empty `tools/list`, invalid descriptors, stale connector cache, wrong deploy | Re-run steps 7–9; refresh or recreate connector |
+| Fewer Actions than expected | Restricted tool packs or denylist | Review `AWS_MCP_ENABLED_TOOL_PACKS` and `AWS_MCP_DISABLED_TOOLS` |
 | Server URL wrong | Missing `/mcp` in ChatGPT | Use `https://<worker-host>/mcp` |
 | Metadata wrong | `MCP_RESOURCE_URL` includes `/mcp` | Use Worker origin only |
 
@@ -248,10 +305,11 @@ Confirm before marking production-ready:
 - [ ] No generic AWS CLI execution tool exists (`run_aws_cli` or equivalent)
 - [ ] No AWS credentials appear in docs, tests, snapshots, logs, or descriptor outputs
 - [ ] No OAuth access tokens appear in docs, tests, snapshots, logs, or descriptor outputs
+- [ ] Public docs and tracked config use placeholders only — no live account IDs, ARNs, worker URLs, or secrets
 - [ ] AWS tools remain region-bounded and read-only (see [mcp-tools.md](mcp-tools.md) and `descriptor-contract.test.ts`)
 
 ---
 
 ## When production-ready
 
-All 18 checklist items pass, final safety checks are confirmed, and the deployed Worker matches the commit that passed `pnpm run verify:connector-contract`. For detailed expected HTTP responses and ChatGPT UI walkthrough, see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md).
+All required checklist items pass for your exposure configuration, final safety checks are confirmed, and the deployed Worker matches the commit that passed `pnpm run verify:connector-contract`. For detailed expected HTTP responses and ChatGPT UI walkthrough, see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md).

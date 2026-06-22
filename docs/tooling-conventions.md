@@ -97,3 +97,25 @@ costControl: {
 ```
 
 Contract tests in `src/mcp/tools/manifest-contract.test.ts` and `src/mcp/tools/cost-control-policy.test.ts` fail when AWS-backed tools are missing cost-control metadata or when limits drift from `src/security/limits.ts`.
+
+## Adding a manifest-backed tool
+
+Follow this workflow when introducing a new public MCP tool:
+
+1. **Definition and handler** — Add `src/mcp/tools/definitions/<tool-name>.ts` with Zod input schema, normalized output, and handler logic.
+2. **Manifest registration** — Register a manifest factory in `src/mcp/tools/registry.ts` with `pack`, `lifecycle`, `descriptorKind`, `visibility`, `auth`, `aws`, `safety`, `costControl`, `audit`, and `catalog` metadata (for non-discovery tools).
+3. **Capability metadata** — Declare `aws.capabilities` from `src/aws/capabilities.ts`; add a new capability entry if introducing a new AWS action.
+4. **Capability matrix** — Update [`docs/aws-capability-matrix.md`](aws-capability-matrix.md) before merge.
+5. **IAM policy** — Extend [`infra/aws/iam-readonly-policy.json`](../infra/aws/iam-readonly-policy.json) only when a new AWS action is required.
+6. **Documentation** — Add the tool contract to [`docs/mcp-tools.md`](mcp-tools.md).
+7. **Tests** — Add or extend contract tests as applicable:
+   - `src/mcp/tools/manifest-contract.test.ts`
+   - `src/mcp/tools/policy.test.ts`
+   - `src/mcp/tools/cost-control-policy.test.ts`
+   - `src/mcp/tools/capability-contract.test.ts`
+   - `src/mcp/tools/descriptor-contract.test.ts`
+   - `src/mcp/tools/exposure.test.ts`
+
+Assign the tool to an existing pack or a new pack in `src/config/tool-exposure.ts`. Opt-in packs require explicit enablement via `AWS_MCP_ENABLED_TOOL_PACKS`.
+
+See also [`docs/specs/secure-tool-platform.md`](specs/secure-tool-platform.md) for the platform architecture contract.

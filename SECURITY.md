@@ -46,7 +46,7 @@ The gateway is a **read-only**, public-facing MCP endpoint for explicit AWS tool
 
 - ChatGPT connector OAuth is documented in [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md).
 - Contract: [docs/specs/oauth-chatgpt-connector.md](docs/specs/oauth-chatgpt-connector.md).
-- ChatGPT action visibility requires authenticated `tools/list` with valid descriptors for all 11 public tools; `search`/`fetch` are catalog helpers only.
+- ChatGPT action visibility requires authenticated `tools/list` with valid descriptors for every **enabled** tool; disabled or pack-gated tools are omitted from `tools/list` and do not appear as ChatGPT Actions. `search`/`fetch` are catalog helpers only.
 - OAuth mode requires the `AUTH_RATE_LIMITER` Durable Object binding so `/mcp` request throttling happens before the MCP runtime or AWS-backed tools execute.
 
 ---
@@ -106,12 +106,14 @@ The canonical read-only policy template is [`infra/aws/iam-readonly-policy.json`
 
 ## Tool allowlist checklist
 
-Tools are registered explicitly in `src/mcp/tools/`. There is no dynamic or runtime tool discovery. ChatGPT action visibility depends on authenticated `tools/list` returning valid descriptors for every public tool.
+Tools are registered explicitly via manifest-backed definitions in `src/mcp/tools/`. There is no dynamic or runtime tool discovery. ChatGPT action visibility depends on authenticated `tools/list` returning valid descriptors for every **enabled** tool.
 
-- [ ] Only registered MCP tools are exposed — currently **11** public tools: `search`, `fetch`, `get_gateway_status`, `get_aws_cost_summary`, `get_aws_cost_by_service`, `list_ec2_instances`, `get_cloudwatch_alarms`, `get_recent_log_errors`, `list_lambda_functions`, `list_s3_buckets`, `list_log_groups`.
-- [ ] Authenticated `tools/list` returns all 11 tools with valid `title`, `description`, `inputSchema`, `outputSchema` (where applicable), read-only annotations, and OAuth `securitySchemes`.
+- [ ] The registry defines **14** public tools (see [docs/mcp-tools.md](docs/mcp-tools.md)).
+- [ ] Default deployments expose **11** tools via packs `core`, `cost`, `inventory`, and `observability`: `search`, `fetch`, `get_gateway_status`, `get_aws_cost_summary`, `get_aws_cost_by_service`, `list_ec2_instances`, `get_cloudwatch_alarms`, `get_recent_log_errors`, `list_lambda_functions`, `list_s3_buckets`, `list_log_groups`.
+- [ ] Three **opt-in** aggregate tools (`aws_account_overview`, `aws_cost_overview`, `aws_observability_overview`) require the `aggregates` pack in `AWS_MCP_ENABLED_TOOL_PACKS`.
+- [ ] Authenticated `tools/list` returns only enabled tools with valid `title`, `description`, `inputSchema`, `outputSchema` (where applicable), read-only annotations, and OAuth `securitySchemes`.
 - [ ] `search` and `fetch` are catalog helpers — they do not replace `tools/list` for ChatGPT action discovery.
-- [ ] New tools are added only through explicit registration and documented contracts in [docs/mcp-tools.md](docs/mcp-tools.md).
+- [ ] New tools are added only through manifest registration, policy/capability/cost-control metadata, and documented contracts in [docs/mcp-tools.md](docs/mcp-tools.md).
 - [ ] No tool accepts arbitrary AWS service names, actions, or CLI commands as input.
 - [ ] `get_gateway_status` makes no AWS calls and reports `mode: "read-only"`.
 - [ ] `search` and `fetch` do not call AWS directly (except `fetch` may embed live `get_gateway_status` JSON for that catalog entry).
@@ -152,6 +154,57 @@ Manifest-backed tools declare explicit `costControl` metadata in `src/mcp/tools/
 - Configure OAuth rate limiting via `AUTH_RATE_LIMITER` with `RATE_LIMIT_MAX_REQUESTS` and `RATE_LIMIT_WINDOW_SECONDS` before exposing `/mcp` publicly.
 
 See also [docs/specs/secure-tool-platform.md](docs/specs/secure-tool-platform.md) for the cost-control model.
+
+---
+
+## Manifest metadata checklist
+
+Every public tool must have exactly one manifest in `src/mcp/tools/manifest.ts` (via definition factories in `src/mcp/tools/registry.ts`).
+
+- [ ] Each manifest declares `name`, `title`, `description`, `pack`, `lifecycle`, `visibility`, `auth`, `aws`, `safety`, `costControl`, `audit`, `descriptorKind`, and `handler`.
+- [ ] AWS-backed manifests declare `aws.services`, `aws.actions`, `aws.capabilities`, `aws.regionMode`, and `aws.readonly: true`.
+- [ ] Non-AWS tools (`search`, `fetch`, `get_gateway_status`) declare empty AWS metadata and `costControl.class: "free"`.
+- [ ] Tools with structured output declare `outputSchema`.
+- [ ] Non-discovery tools declare ChatGPT `catalog` metadata (`keywords`, `docsAnchor`, `inputSummary`).
+- [ ] Contract tests pass: `src/mcp/tools/manifest-contract.test.ts`.
+
+---
+
+## Policy gate checklist
+
+The central policy gate in `src/mcp/tools/policy.ts` evaluates `evaluateToolPolicy()` before handler execution.
+
+- [ ] Disabled tools, disabled packs, and non-read-only risk levels are denied before handler or AWS work.
+- [ ] AWS-backed tools with missing or non-allowlisted service/action metadata fail closed.
+- [ ] Cost-control manifest and request limits are enforced before handler execution.
+- [ ] Region allowlist enforcement remains in effect for regional tools.
+- [ ] Policy denials return normalized `validation_error` MCP responses — not raw stack traces or AWS payloads.
+- [ ] Policy denials emit sanitized audit metadata and do not call AWS.
+- [ ] Contract tests pass: `src/mcp/tools/policy.test.ts`, `src/mcp/tools/cost-control-policy.test.ts`.
+
+---
+
+## Capability metadata checklist
+
+AWS capability metadata links tools to IAM actions and read-only posture.
+
+- [ ] Every AWS-backed manifest declares `aws.capabilities` aligned with `src/aws/capabilities.ts`.
+- [ ] [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md) is updated when tools or capabilities change.
+- [ ] IAM policy template [`infra/aws/iam-readonly-policy.json`](infra/aws/iam-readonly-policy.json) covers actions required by enabled tools.
+- [ ] Aggregate overview tools compose existing APIs — they do not require new IAM actions beyond the read-only policy.
+- [ ] Contract tests pass: `src/mcp/tools/capability-contract.test.ts`, `src/mcp/tools/capability-matrix.test.ts`.
+
+---
+
+## Tool exposure checklist
+
+Tool exposure is configured via environment variables (see [README.md](README.md#tool-exposure-optional)).
+
+- [ ] `AWS_MCP_ENABLED_TOOL_PACKS` controls which packs are exposed (default: `core,cost,inventory,observability`).
+- [ ] `AWS_MCP_DISABLED_TOOLS` and optional `AWS_MCP_ENABLED_TOOLS` further restrict exposure.
+- [ ] Disabled or pack-gated tools are omitted from `tools/list` and denied on direct invocation.
+- [ ] `AWS_MCP_MAX_RISK_LEVEL` is `read-only` (only supported value today).
+- [ ] Contract tests pass: `src/mcp/tools/exposure.test.ts`, `src/mcp/tools/list-integration.test.ts`.
 
 ---
 
@@ -224,7 +277,7 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 - [ ] `GET /health` returns `{ "ok": true, "service": "aws-mcp-gateway" }` without authentication.
 - [ ] With valid runtime configuration, `POST /mcp` without authentication returns HTTP 401 (with `WWW-Authenticate` in `oauth` mode).
 - [ ] Authenticated MCP access works (local bearer token or ChatGPT OAuth flow — see [docs/mcp-testing.md](docs/mcp-testing.md)).
-- [ ] For ChatGPT production connectors, complete the production acceptance checklist in [docs/chatgpt-connector-production-acceptance.md](docs/chatgpt-connector-production-acceptance.md) — including authenticated `tools/list` validation, OAuth login, Actions visible (all 11 tools), `get_gateway_status`, optional `search`/`fetch`, and a bounded AWS tool. Detailed step-by-step responses: [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md).
+- [ ] For ChatGPT production connectors, complete the production acceptance checklist in [docs/chatgpt-connector-production-acceptance.md](docs/chatgpt-connector-production-acceptance.md) — including authenticated `tools/list` validation for **enabled** tools only, OAuth login, Actions visible, `get_gateway_status`, optional `search`/`fetch`, and a bounded AWS tool. Default deployments expect 11 tools; enabling the `aggregates` pack expects 14. Detailed step-by-step responses: [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md).
 - [ ] A smoke test confirms at least one AWS-backed tool returns normalized output in an allowed region.
 
 ---

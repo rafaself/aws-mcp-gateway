@@ -10,14 +10,20 @@ This project is a self-hosted MCP gateway for connecting ChatGPT to AWS account 
 
 Instead of giving ChatGPT broad AWS credentials, shell access, or a generic AWS API proxy, the gateway exposes a small set of audited MCP tools. Each tool has a fixed purpose, validated input, bounded output, and read-only AWS permissions.
 
+Every public tool is **manifest-backed**: a `ToolManifest` in `src/mcp/tools/` is the source of truth for registration, ChatGPT descriptors, AWS capability metadata, and cost-control limits. A central **policy gate** runs before handler execution and fails closed when a tool pack is disabled, cost-control metadata is missing, or request limits are exceeded.
+
 ```text
 ChatGPT Connector
   -> OAuth / bearer authentication
   -> Cloudflare Worker /mcp endpoint
-  -> Explicit MCP tools
+  -> Manifest-backed tool registry
+  -> Policy gate (packs, cost-control, capabilities)
+  -> Typed read-only handlers
   -> Signed read-only AWS API requests
   -> Normalized AWS cost, inventory, alarm, and log data
 ```
+
+The registry defines **14** public tools. Default deployments expose **11** through tool packs (`core`, `cost`, `inventory`, `observability`). Three aggregate overview tools are opt-in via the `aggregates` pack. See [tool exposure](#tool-exposure-optional) and [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md).
 
 ## Current status
 
@@ -46,6 +52,8 @@ Production deployments should still run the verification and acceptance checks d
 
 ## Available MCP tools
 
+Default-exposed tools (11 with built-in pack settings):
+
 | Tool | Purpose | Calls AWS |
 | --- | --- | --- |
 | `search` | Catalog search helper for ChatGPT discovery | No |
@@ -62,7 +70,7 @@ Production deployments should still run the verification and acceptance checks d
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
-Full tool contracts are documented in [`docs/mcp-tools.md`](docs/mcp-tools.md).
+Full tool contracts — including three opt-in aggregate overview tools — are documented in [`docs/mcp-tools.md`](docs/mcp-tools.md). Platform architecture: [`docs/specs/secure-tool-platform.md`](docs/specs/secure-tool-platform.md).
 
 ## When to use it
 
@@ -316,7 +324,7 @@ source .env.deploy.local && pnpm run verify:oauth
 pnpm run verify:oauth:authenticated
 ```
 
-Then create or refresh the ChatGPT connector. The Actions list should expose all 11 public MCP tools.
+Then create or refresh the ChatGPT connector. The Actions list should expose all **enabled** MCP tools from `tools/list` (11 by default; 14 when the `aggregates` pack is enabled). Disabled or pack-gated tools do not appear as Actions.
 
 Detailed setup and troubleshooting:
 
@@ -421,10 +429,14 @@ Never commit:
 Before opening a pull request, run:
 
 ```bash
+pnpm run repo:safety
+pnpm run output:guardrail
 pnpm run typecheck
 pnpm test
 pnpm run test:integrity
 ```
+
+When changing MCP descriptors, tool manifests, or connector discovery, also run `pnpm run verify:connector-contract`.
 
 Use conventional commits:
 
