@@ -190,9 +190,9 @@ AWS capability metadata links tools to IAM actions and read-only posture.
 
 - [ ] Every AWS-backed manifest declares `aws.capabilities` aligned with `src/aws/capabilities.ts`.
 - [ ] [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md) is updated when tools or capabilities change.
-- [ ] IAM policy template [`infra/aws/iam-readonly-policy.json`](infra/aws/iam-readonly-policy.json) covers actions required by enabled tools.
+- [ ] IAM policy template [`infra/aws/iam-readonly-policy.json`](infra/aws/iam-readonly-policy.json) exactly matches declared capabilities — no undocumented actions.
 - [ ] Aggregate overview tools compose existing APIs — they do not require new IAM actions beyond the read-only policy.
-- [ ] Contract tests pass: `src/mcp/tools/capability-contract.test.ts`, `src/mcp/tools/capability-matrix.test.ts`.
+- [ ] Contract tests pass: `src/mcp/tools/capability-contract.test.ts`, `src/mcp/tools/capability-matrix.test.ts`, `src/aws/iam-readonly-policy.test.ts`.
 
 ---
 

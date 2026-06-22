@@ -2,12 +2,10 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "CostAndBudgetRead",
+      "Sid": "CostExplorerRead",
       "Effect": "Allow",
       "Action": [
-        "ce:GetCostAndUsage",
-        "ce:GetCostForecast",
-        "budgets:ViewBudget"
+        "ce:GetCostAndUsage"
       ],
       "Resource": "*"
     },
@@ -15,8 +13,7 @@
       "Sid": "EC2Read",
       "Effect": "Allow",
       "Action": [
-        "ec2:DescribeInstances",
-        "ec2:DescribeInstanceStatus"
+        "ec2:DescribeInstances"
       ],
       "Resource": "*"
     },
@@ -24,8 +21,7 @@
       "Sid": "CloudWatchRead",
       "Effect": "Allow",
       "Action": [
-        "cloudwatch:DescribeAlarms",
-        "cloudwatch:GetMetricData"
+        "cloudwatch:DescribeAlarms"
       ],
       "Resource": "*"
     },
@@ -50,16 +46,7 @@
       "Effect": "Allow",
       "Action": [
         "logs:DescribeLogGroups",
-        "logs:DescribeLogStreams",
         "logs:FilterLogEvents"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ResourceTagRead",
-      "Effect": "Allow",
-      "Action": [
-        "tag:GetResources"
       ],
       "Resource": "*"
     }
