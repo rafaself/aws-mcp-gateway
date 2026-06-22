@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { GatewayContext } from "../../../config/context.js";
 import { getCostByService } from "../../../aws/cost-explorer/index.js";
+import {
+  COST_MAX_DATE_RANGE_DAYS,
+  COST_MAX_SERVICE_ROWS,
+} from "../../../security/limits.js";
 import { summarizeCostDateRangeInput } from "../../audit/tool-input.js";
 import {
   costByServiceOutputSchema,
@@ -69,6 +73,14 @@ export function createCostByServiceToolManifest(
       cacheTtlSeconds: 1800,
       timeoutMs: 15000,
       costClass: "cached-read",
+    },
+    costControl: {
+      class: "paid",
+      requiresCache: true,
+      timeoutMs: 15000,
+      maxDateRangeDays: COST_MAX_DATE_RANGE_DAYS,
+      maxResultCount: COST_MAX_SERVICE_ROWS,
+      minCacheTtlSeconds: 1800,
     },
     audit: {
       awsService: "ce",

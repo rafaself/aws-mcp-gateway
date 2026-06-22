@@ -5,6 +5,10 @@ import { resolveRegions, validateAllowedRegions, validateRegion } from "../../se
 import { ValidationError } from "../../security/errors.js";
 import { DEFAULT_AUTH_SCOPES, type AnyToolManifest, type ToolPack, type ToolRiskLevel } from "./manifest.js";
 import { resolveExposedToolNames } from "./packs.js";
+import {
+  validateCostControlManifest,
+  validateCostControlRequest,
+} from "./cost-control-policy.js";
 
 const VALID_PACKS: ReadonlySet<ToolPack> = new Set([
   "core",
@@ -198,5 +202,15 @@ export function evaluateToolPolicy(
     return awsMetadata;
   }
 
-  return validateRequestedRegions(manifest, policy, args);
+  const costControlManifest = validateCostControlManifest(manifest);
+  if (costControlManifest) {
+    return costControlManifest;
+  }
+
+  const regionDenial = validateRequestedRegions(manifest, policy, args);
+  if (regionDenial) {
+    return regionDenial;
+  }
+
+  return validateCostControlRequest(manifest, policy, args);
 }

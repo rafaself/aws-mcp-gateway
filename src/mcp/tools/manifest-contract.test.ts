@@ -9,6 +9,13 @@ import {
   PUBLIC_TOOL_NAMES,
 } from "./registry.js";
 import type { AnyToolManifest } from "./manifest.js";
+import { isAwsBackedManifest } from "./policy.js";
+import {
+  COST_MAX_DATE_RANGE_DAYS,
+  COST_MAX_SERVICE_ROWS,
+  LOGS_MAX_EVENTS,
+  LOGS_MAX_HOURS,
+} from "../../security/limits.js";
 
 const { mockFetch } = vi.hoisted(() => ({ mockFetch: vi.fn() }));
 
@@ -94,6 +101,9 @@ describe("tool manifest contract", () => {
       expect(typeof manifest.safety.cacheTtlSeconds).toBe("number");
       expect(typeof manifest.safety.timeoutMs).toBe("number");
       expect(manifest.safety.costClass).toMatch(/^(none|cached-read)$/);
+      expect(manifest.safety.timeoutMs).toBe(manifest.costControl.timeoutMs);
+      expect(typeof manifest.costControl.class).toBe("string");
+      expect(typeof manifest.costControl.requiresCache).toBe("boolean");
       expect(typeof manifest.audit.sanitizeInput).toBe("function");
       expect(manifest.aws.readonly).toBe(true);
     });
@@ -106,8 +116,51 @@ describe("tool manifest contract", () => {
       expect(manifest.aws.services).toEqual([]);
       expect(manifest.aws.actions).toEqual([]);
       expect(manifest.aws.regionMode).toBe("none");
+      expect(manifest.costControl.class).toBe("free");
+      expect(manifest.costControl.requiresCache).toBe(false);
     });
   }
+
+  for (const toolName of AWS_BACKED_TOOLS) {
+    it(`${toolName} declares cost-control metadata`, () => {
+      const manifest = byName[toolName];
+
+      expect(isAwsBackedManifest(manifest)).toBe(true);
+      expect(manifest.costControl.class).not.toBe("free");
+      expect(manifest.costControl.requiresCache).toBe(true);
+      expect(manifest.costControl.minCacheTtlSeconds).toBeGreaterThan(0);
+      expect(manifest.safety.cacheTtlSeconds).toBeGreaterThanOrEqual(
+        manifest.costControl.minCacheTtlSeconds!,
+      );
+    });
+  }
+
+  it("maps cost tools to paid cost-control metadata", () => {
+    for (const toolName of ["get_aws_cost_summary", "get_aws_cost_by_service"] as const) {
+      const manifest = byName[toolName];
+      expect(manifest.costControl.class).toBe("paid");
+      expect(manifest.costControl.maxDateRangeDays).toBe(COST_MAX_DATE_RANGE_DAYS);
+    }
+
+    expect(byName.get_aws_cost_by_service.costControl.maxResultCount).toBe(
+      COST_MAX_SERVICE_ROWS,
+    );
+  });
+
+  it("maps fanout-sensitive tools to allowed-region fanout metadata", () => {
+    for (const toolName of ["list_ec2_instances", "get_cloudwatch_alarms"] as const) {
+      const manifest = byName[toolName];
+      expect(manifest.costControl.class).toBe("fanout-sensitive");
+      expect(manifest.costControl.maxRegions).toBe(testContext.allowedRegions.length);
+    }
+  });
+
+  it("maps logs tool to volume-sensitive cost-control metadata", () => {
+    const manifest = byName.get_recent_log_errors;
+    expect(manifest.costControl.class).toBe("volume-sensitive");
+    expect(manifest.costControl.maxLookbackHours).toBe(LOGS_MAX_HOURS);
+    expect(manifest.costControl.maxResultCount).toBe(LOGS_MAX_EVENTS);
+  });
 
   for (const toolName of AWS_BACKED_TOOLS) {
     it(`${toolName} declares AWS service and action metadata`, () => {

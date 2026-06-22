@@ -133,6 +133,28 @@ Limits are enforced in `src/security/` before downstream AWS calls. Constants li
 
 ---
 
+## Cost-control policy checklist
+
+Manifest-backed tools declare explicit `costControl` metadata in `src/mcp/tools/manifest.ts`. The central policy gate in `src/mcp/tools/policy.ts` evaluates cost-control constraints before handler execution and fails closed on missing or invalid metadata.
+
+- [ ] Every AWS-backed tool manifest declares `costControl` with a non-`free` class, `requiresCache: true`, and `minCacheTtlSeconds` for paid, volume-sensitive, or fanout-sensitive tools.
+- [ ] Non-AWS tools (`search`, `fetch`, `get_gateway_status`) declare `costControl.class: "free"` and `requiresCache: false`.
+- [ ] Cost-control policy denials return generic `validation_error` messages without exposing internal numeric limits.
+- [ ] Cost-control denials happen before handler execution and before AWS calls.
+- [ ] Paid cost tools declare `maxDateRangeDays` (90 days) and cache TTL metadata (1800 seconds).
+- [ ] Fanout-sensitive tools declare `maxRegions` bounded by `AWS_ALLOWED_REGIONS`.
+- [ ] Volume-sensitive log tools declare `maxLookbackHours` (24) and `maxResultCount` (50).
+- [ ] New AWS-backed tools must declare appropriate `costControl` metadata before merge (see [docs/tooling-conventions.md](docs/tooling-conventions.md)).
+
+**Recommended deployment defaults:**
+
+- Configure `AWS_MCP_CACHE` in production for expensive repeated reads (cost tools: 30-minute TTL; EC2, CloudWatch, and Logs: 5-minute TTL).
+- Configure OAuth rate limiting via `AUTH_RATE_LIMITER` with `RATE_LIMIT_MAX_REQUESTS` and `RATE_LIMIT_WINDOW_SECONDS` before exposing `/mcp` publicly.
+
+See also [docs/specs/secure-tool-platform.md](docs/specs/secure-tool-platform.md) for the cost-control model.
+
+---
+
 ## Cache safety checklist
 
 Caching is optional via the `AWS_MCP_CACHE` KV binding. See [README.md](README.md#optional-kv-namespace).

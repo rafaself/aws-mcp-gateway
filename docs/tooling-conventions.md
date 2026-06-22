@@ -59,3 +59,33 @@ New AWS-backed tools must:
 - update [`docs/aws-capability-matrix.md`](aws-capability-matrix.md) before merge.
 
 The capability contract tests in `src/mcp/tools/capability-contract.test.ts` fail when capability metadata is missing or unknown.
+
+## Cost-control metadata
+
+Every manifest-backed tool must declare `costControl` metadata on the tool manifest. The policy gate enforces these limits before handler execution.
+
+Non-AWS tools use the safe default:
+
+```ts
+costControl: {
+  class: "free",
+  requiresCache: false,
+  timeoutMs: 5000,
+}
+```
+
+AWS-backed tools must declare a class appropriate to their API shape (`paid`, `fanout-sensitive`, `volume-sensitive`, or `low`), set `requiresCache: true` when reads are expensive or repeated, and declare explicit bounds such as `maxDateRangeDays`, `maxResultCount`, `maxRegions`, or `maxLookbackHours` where applicable.
+
+Example for a paid cost tool:
+
+```ts
+costControl: {
+  class: "paid",
+  requiresCache: true,
+  timeoutMs: 15000,
+  maxDateRangeDays: COST_MAX_DATE_RANGE_DAYS,
+  minCacheTtlSeconds: 1800,
+}
+```
+
+Contract tests in `src/mcp/tools/manifest-contract.test.ts` and `src/mcp/tools/cost-control-policy.test.ts` fail when AWS-backed tools are missing cost-control metadata or when limits drift from `src/security/limits.ts`.

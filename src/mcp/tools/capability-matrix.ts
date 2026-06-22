@@ -16,6 +16,7 @@ export type AwsCapabilityMatrixRow = {
   riskLevel: string;
   cacheTtlSeconds: number;
   costClass: string;
+  costControlClass: string;
   costSensitivity: string;
 };
 
@@ -40,6 +41,7 @@ export function buildAwsCapabilityMatrixRows(
         riskLevel: manifest.safety.riskLevel,
         cacheTtlSeconds: manifest.safety.cacheTtlSeconds,
         costClass: manifest.safety.costClass,
+        costControlClass: manifest.costControl.class,
         costSensitivity: capability.costSensitivity,
       });
     }
@@ -66,13 +68,13 @@ export function renderAwsCapabilityMatrixMarkdown(
     "New AWS-backed tools must update capability metadata and regenerate this document",
     "before merge.",
     "",
-    "| Tool | Pack | AWS service | AWS action | Region mode | Risk level | Cache TTL (s) | Cost class | Cost sensitivity |",
-    "| --- | --- | --- | --- | --- | --- | ---: | --- | --- |",
+    "| Tool | Pack | AWS service | AWS action | Region mode | Risk level | Cache TTL (s) | Cost class | Cost control | Cost sensitivity |",
+    "| --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- |",
   ];
 
   for (const row of rows) {
     lines.push(
-      `| ${row.toolName} | ${row.pack} | ${row.awsService} | ${row.awsAction} | ${row.regionMode} | ${row.riskLevel} | ${row.cacheTtlSeconds} | ${row.costClass} | ${row.costSensitivity} |`,
+      `| ${row.toolName} | ${row.pack} | ${row.awsService} | ${row.awsAction} | ${row.regionMode} | ${row.riskLevel} | ${row.cacheTtlSeconds} | ${row.costClass} | ${row.costControlClass} | ${row.costSensitivity} |`,
     );
   }
 
