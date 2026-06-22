@@ -55,6 +55,14 @@ const AWS_BACKED_TOOLS = [
 
 const CORE_TOOLS = ["search", "fetch", "get_gateway_status"] as const;
 
+const CHATGPT_DYNAMIC_CATALOG_TOOLS = ["search", "fetch"] as const;
+
+const STRUCTURED_OUTPUT_TOOLS = [
+  ...CHATGPT_DYNAMIC_CATALOG_TOOLS,
+  "get_gateway_status",
+  ...AWS_BACKED_TOOLS,
+] as const;
+
 const EXPECTED_PACKS: Record<string, string> = {
   search: "core",
   fetch: "core",
@@ -94,8 +102,13 @@ describe("tool manifest contract", () => {
     it(`${toolName} manifest includes required metadata`, () => {
       const manifest = byName[toolName];
 
+      expect(manifest.name).toBe(toolName);
+      expect(manifest.name.length).toBeGreaterThan(0);
+      expect(manifest.title.length).toBeGreaterThan(0);
+      expect(manifest.description.length).toBeGreaterThan(0);
       expect(manifest.pack).toBe(EXPECTED_PACKS[toolName]);
       expect(manifest.lifecycle).toBe("stable");
+      expect(manifest.visibility.mcp).toBe(true);
       expect(manifest.auth.requiredScopes).toEqual([OAUTH_REQUIRED_SCOPE]);
       expect(manifest.safety.riskLevel).toBe("read-only");
       expect(typeof manifest.safety.cacheTtlSeconds).toBe("number");
@@ -105,7 +118,31 @@ describe("tool manifest contract", () => {
       expect(typeof manifest.costControl.class).toBe("string");
       expect(typeof manifest.costControl.requiresCache).toBe("boolean");
       expect(typeof manifest.audit.sanitizeInput).toBe("function");
+      expect(typeof manifest.handler).toBe("function");
+      expect(manifest.inputSchema).toBeDefined();
       expect(manifest.aws.readonly).toBe(true);
+    });
+  }
+
+  for (const toolName of STRUCTURED_OUTPUT_TOOLS) {
+    it(`${toolName} manifest declares outputSchema`, () => {
+      const manifest = byName[toolName];
+      expect(manifest.outputSchema).toBeDefined();
+    });
+  }
+
+  for (const toolName of PUBLIC_TOOL_NAMES) {
+    if ((CHATGPT_DYNAMIC_CATALOG_TOOLS as readonly string[]).includes(toolName)) {
+      continue;
+    }
+
+    it(`${toolName} manifest declares ChatGPT catalog metadata`, () => {
+      const manifest = byName[toolName];
+
+      expect(manifest.visibility.chatgpt).toBe(true);
+      expect(manifest.catalog).toBeDefined();
+      expect(manifest.catalog!.docsAnchor.length).toBeGreaterThan(0);
+      expect(manifest.catalog!.keywords.length).toBeGreaterThan(0);
     });
   }
 
@@ -168,6 +205,7 @@ describe("tool manifest contract", () => {
 
       expect(manifest.aws.services.length).toBeGreaterThan(0);
       expect(manifest.aws.actions.length).toBeGreaterThan(0);
+      expect(manifest.aws.capabilities.length).toBeGreaterThan(0);
       expect(manifest.aws.regionMode).not.toBe("none");
     });
   }
