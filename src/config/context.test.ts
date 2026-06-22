@@ -47,4 +47,22 @@ describe("buildGatewayContext", () => {
 
     expect(ctx.cache).toBeUndefined();
   });
+
+  it("extracts auth mode and oauth scopes when present", () => {
+    const ctx = buildGatewayContext({
+      ...validConfig,
+      authMode: "oauth",
+      oauth: {
+        MCP_RESOURCE_URL: "https://aws-mcp-gateway.example.workers.dev/mcp",
+        OAUTH_ISSUER: "https://issuer.example.com",
+        OAUTH_AUDIENCE: "https://aws-mcp-gateway.example.workers.dev/mcp",
+        OAUTH_JWKS_URI: "https://issuer.example.com/.well-known/jwks.json",
+        OAUTH_REQUIRED_SCOPES: ["aws:read", "openid"],
+        OAUTH_TOKEN_VALIDATION_MODE: "jwks",
+      },
+    });
+
+    expect(ctx.authMode).toBe("oauth");
+    expect(ctx.oauthRequiredScopes).toEqual(["aws:read", "openid"]);
+  });
 });

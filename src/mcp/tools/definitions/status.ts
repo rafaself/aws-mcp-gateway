@@ -9,7 +9,9 @@ import {
   DEFAULT_AUTH_SCOPES,
   manifestToGatewayDefinition,
   type ToolManifest,
+  type AnyToolManifest,
 } from "../manifest.js";
+import { buildToolPolicyContext } from "../policy.js";
 import type { GatewayToolDefinition } from "../registry.js";
 
 const statusInputSchema = z.object({});
@@ -70,5 +72,7 @@ export function createStatusToolManifest(_ctx: GatewayContext): ToolManifest {
 }
 
 export function createStatusToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
-  return manifestToGatewayDefinition(createStatusToolManifest(ctx));
+  const manifest = createStatusToolManifest(ctx);
+  const policyContext = buildToolPolicyContext(ctx, [manifest as AnyToolManifest]);
+  return manifestToGatewayDefinition(manifest, policyContext);
 }

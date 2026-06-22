@@ -5,6 +5,7 @@ import type { ToolSecurityScheme } from "./descriptor.js";
 import type { McpSuccessResult } from "./response.js";
 import type { mcpErrorResult } from "../../errors/public-error.js";
 import { manifestToGatewayDefinition, type AnyToolManifest } from "./manifest.js";
+import { buildToolPolicyContext } from "./policy.js";
 import {
   createCostByServiceToolManifest,
   createCostSummaryToolManifest,
@@ -84,7 +85,9 @@ export function createToolManifests(ctx: GatewayContext): AnyToolManifest[] {
 }
 
 export function createToolRegistry(ctx: GatewayContext): GatewayToolDefinition[] {
-  return createToolManifests(ctx).map(manifestToGatewayDefinition);
+  const manifests = createToolManifests(ctx);
+  const policyContext = buildToolPolicyContext(ctx, manifests);
+  return manifests.map((manifest) => manifestToGatewayDefinition(manifest, policyContext));
 }
 
 export function getPublicTools(registry: GatewayToolDefinition[]): GatewayToolDefinition[] {

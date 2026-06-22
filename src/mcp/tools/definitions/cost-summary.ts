@@ -10,7 +10,9 @@ import {
   DEFAULT_AUTH_SCOPES,
   manifestToGatewayDefinition,
   type ToolManifest,
+  type AnyToolManifest,
 } from "../manifest.js";
+import { buildToolPolicyContext } from "../policy.js";
 import type { GatewayToolDefinition } from "../registry.js";
 
 const costSummaryInputSchema = z.object({
@@ -96,5 +98,7 @@ export function createCostSummaryToolManifest(ctx: GatewayContext): ToolManifest
 }
 
 export function createCostSummaryToolDefinition(ctx: GatewayContext): GatewayToolDefinition {
-  return manifestToGatewayDefinition(createCostSummaryToolManifest(ctx));
+  const manifest = createCostSummaryToolManifest(ctx);
+  const policyContext = buildToolPolicyContext(ctx, [manifest as AnyToolManifest]);
+  return manifestToGatewayDefinition(manifest, policyContext);
 }
