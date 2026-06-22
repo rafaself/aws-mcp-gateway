@@ -127,6 +127,7 @@ refactor(structure): organize source modules
 Before handing off:
 - The change matches the issue scope.
 - Required checks pass (`pnpm run typecheck`, `pnpm test`), or are skipped with a clear reason.
+- When touching tracked config, scripts, or repository hygiene, `pnpm run repo:safety` passes.
 - No secrets or local-only files were added.
 - Documentation is updated when behavior or setup changed.
 - AGENTS.md remains concise and repository-specific — no architecture docs or issue backlog here.

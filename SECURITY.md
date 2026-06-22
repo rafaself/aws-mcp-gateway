@@ -57,6 +57,7 @@ This repository is intended to be public-safe. Before pushing or opening a PR:
 - [ ] No AWS access keys, secret access keys, or session tokens appear in commits, issues, or PR descriptions.
 - [ ] No MCP bearer tokens, Cloudflare API tokens, or OAuth client secrets appear in commits.
 - [ ] `.env`, `.dev.vars`, and `.wrangler/` are not tracked (see [.gitignore](.gitignore)).
+- [ ] CI runs `pnpm run repo:safety` on every pull request and push to `main` to enforce the rules above.
 - [ ] Only [`.env.example`](.env.example) documents secret names — it contains no real values.
 - [ ] `wrangler.jsonc` `[vars]` contains operational configuration only (regions, app name), not credentials.
 - [ ] Documentation examples use placeholders, not real account IDs, ARNs, log group names, or worker URLs tied to a live deployment.
