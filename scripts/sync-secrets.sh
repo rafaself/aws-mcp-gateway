@@ -33,7 +33,7 @@ require_var() {
 require_var AWS_MCP_GATEWAY_AWS_ACCESS_KEY_ID
 require_var AWS_MCP_GATEWAY_AWS_SECRET_ACCESS_KEY
 
-AUTH_MODE="${AWS_MCP_GATEWAY_AUTH_MODE:-legacy-bearer}"
+AUTH_MODE="${AWS_MCP_GATEWAY_AUTH_MODE:-local-bearer}"
 
 cd "$ROOT"
 

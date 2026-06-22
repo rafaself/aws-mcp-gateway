@@ -1,12 +1,12 @@
 # Post-MVP expansion security boundaries
 
-This document defines the security and product boundaries for capabilities that are intentionally **outside** the current read-only MVP. It exists to prevent gradual scope creep — write operations, generic AWS access, or broader authorization behavior must not be added without a separate design and explicit review.
+This document defines the security and product boundaries for capabilities that are intentionally **outside** the current read-only scope. It exists to prevent gradual scope creep — write operations, generic AWS access, or broader authorization behavior must not be added without a separate design and explicit review.
 
 For repository workflow rules, see [AGENTS.md](../AGENTS.md). For spec-driven development when a change requires a design document, see [docs/specs/README.md](specs/README.md).
 
-## Current MVP contract
+## Current read-only scope
 
-The gateway today is a minimal Cloudflare Worker MCP gateway with **explicit, read-only AWS tools**. The MVP contract is:
+The gateway today is a minimal Cloudflare Worker MCP gateway with **explicit, read-only AWS tools**. The current read-only scope is:
 
 - MCP endpoint protected by bearer authentication.
 - Each tool is named, typed, and allowlisted — no generic executor.
@@ -15,7 +15,7 @@ The gateway today is a minimal Cloudflare Worker MCP gateway with **explicit, re
 - Normalized tool output only — never raw AWS response bodies.
 - Optional KV caching for repeated or costly reads.
 
-**Forbidden in the MVP:**
+**Forbidden in the current read-only scope:**
 
 - Write or management operations.
 
@@ -30,7 +30,7 @@ Post-MVP specs may introduce narrow write or management tools only under the req
 
 ## Management and write operations
 
-Future write or management tools (for example: start/stop instances, modify alarms, change budgets) are **out of scope for the MVP** and require a separate security model.
+Future write or management tools (for example: start/stop instances, modify alarms, change budgets) are **out of scope for the current read-only scope** and require a separate security model.
 
 ### Requirements before implementation
 
@@ -61,13 +61,13 @@ Any write or management capability must:
 
 ## OAuth and multi-user authentication
 
-The MVP uses a **single shared bearer token** (`MCP_AUTH_TOKEN`) suitable for personal or single-tenant deployment. ChatGPT connector OAuth is **designed** in [docs/specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md) and must not weaken the current model unless explicitly replaced by that reviewed design.
+The current read-only scope uses a **single shared bearer token** (`MCP_AUTH_TOKEN`) suitable for personal or single-tenant deployment. ChatGPT connector OAuth is **designed** in [docs/specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md) and must not weaken the current model unless explicitly replaced by that reviewed design.
 
 ### Requirements before implementation
 
 Any OAuth or multi-user auth implementation must follow the spec above. Additionally:
 
-1. **Be designed separately** from the MVP bearer-auth model. Do not bolt OAuth onto the existing token check without a dedicated spec covering identity, storage, and authorization.
+1. **Be designed separately** from the local bearer auth model. Do not bolt OAuth onto the existing token check without a dedicated spec covering identity, storage, and authorization.
 2. **Define user identity, token storage, revocation, and authorization boundaries.** Document how users are identified, how tokens are issued and stored, how revocation works, and which tools each principal may call.
 3. **Not weaken single-token deployment mode** unless explicitly replaced. The current bearer-token path must remain available (or be migrated with a documented cutover) for operators who do not need multi-user auth.
 4. **Include tests for auth edge cases:** unauthorized requests, expired tokens, malformed tokens, and insufficient-scope requests must all fail with safe, normalized errors — never raw provider responses or stack traces.
@@ -80,14 +80,14 @@ Any OAuth or multi-user auth implementation must follow the spec above. Addition
 | Expired | Contract tests reject expired tokens |
 | Malformed | Contract tests reject malformed Authorization headers and tokens |
 | Insufficient scope | Contract tests reject principals without permission for the requested tool |
-| MVP compatibility | Documented behavior for single-token mode unchanged unless spec defines migration |
+| Local bearer compatibility | Documented behavior for single-token mode unchanged unless spec defines migration |
 | Secret safety | Tests prove tokens and credentials never appear in responses or logs |
 
 ---
 
 ## Broader AWS inventory (read-only expansion)
 
-Future read-only tools — such as RDS instance listing, Lambda function listing, budget status, cost forecasts, or service inventory — extend the MVP but **remain within the read-only boundary**.
+Future read-only tools — such as RDS instance listing, Lambda function listing, budget status, cost forecasts, or service inventory — extend the current read-only scope but **remain within the read-only boundary**.
 
 Examples mentioned in the roadmap (not yet implemented):
 
@@ -153,13 +153,13 @@ Any cost or observability expansion must:
 
 1. Open a GitHub issue describing the capability and link to the relevant section of this document.
 2. For non-trivial changes, add a spec under `docs/specs/` before implementation.
-3. Keep PRs small and focused; do not mix MVP fixes with post-MVP features.
+3. Keep PRs small and focused; do not mix read-only scope fixes with post-MVP features.
 4. Update IAM docs (`docs/aws-iam-setup.md`, `infra/aws/iam-readonly-policy.json`) only when the spec approves new read-only actions — never add write permissions to the read-only policy.
 5. Add or extend contract tests for every new boundary introduced.
 
 ## Related documentation
 
-- [README.md](../README.md) — project overview and MVP security model
+- [README.md](../README.md) — project overview and read-only security model
 - [docs/mcp-tools.md](mcp-tools.md) — current tool contracts
 - [docs/tooling-conventions.md](tooling-conventions.md) — naming, validation, and output rules
 - [docs/specs/README.md](specs/README.md) — when and how to write implementation specs

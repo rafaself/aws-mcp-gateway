@@ -4,13 +4,13 @@
 
 Define the OAuth contract required to connect the deployed AWS MCP Gateway to ChatGPT's custom app connector using the **OAuth** authentication option, while preserving the existing read-only, allowlisted AWS tool security model.
 
-The current MVP uses a single static bearer token (`MCP_AUTH_TOKEN`). ChatGPT's connector UI supports only **OAuth** or **No auth**. `No auth` is not acceptable for this gateway because it would expose account-specific AWS cost, EC2, CloudWatch, and CloudWatch Logs data without authentication.
+The current read-only scope uses a single static bearer token (`MCP_AUTH_TOKEN`). ChatGPT's connector UI supports only **OAuth** or **No auth**. `No auth` is not acceptable for this gateway because it would expose account-specific AWS cost, EC2, CloudWatch, and CloudWatch Logs data without authentication.
 
 ## Non-goals
 
 - Do not implement a custom OAuth authorization server in this repository.
 - Do not implement Dynamic Client Registration or Client ID Metadata Documents in the first phase. For the post-MVP CIMD readiness path, see [oauth-client-identification.md](oauth-client-identification.md).
-- Do not remove legacy bearer support (`AUTH_MODE=legacy-bearer`).
+- Do not remove local bearer support (`AUTH_MODE=local-bearer`; `legacy-bearer` remains a deprecated alias).
 - Do not allow unauthenticated `/mcp` in any production mode.
 - Do not implement a generic OAuth provider, user database, password flow, refresh-token storage, or session store.
 - Do not add write-capable AWS permissions or tools.
@@ -30,7 +30,7 @@ ChatGPT connector
   -> Worker executes existing read-only MCP tools
 ```
 
-### Chosen MVP OAuth mode
+### Chosen production OAuth mode
 
 Predefined OAuth client in the external identity provider (no Dynamic Client Registration).
 
@@ -49,8 +49,8 @@ Worker role: protected resource / resource server
 
 | Variable | Mode | Required | Secret |
 |----------|------|----------|--------|
-| `AUTH_MODE` | both | yes (defaults to `legacy-bearer` when absent) | no |
-| `MCP_AUTH_TOKEN` | `legacy-bearer` only | yes | yes (Cloudflare secret) |
+| `AUTH_MODE` | both | yes (defaults to `local-bearer` when absent) | no |
+| `MCP_AUTH_TOKEN` | `local-bearer` only | yes | yes (Cloudflare secret) |
 | `MCP_RESOURCE_URL` | `oauth` only | yes | no |
 | `OAUTH_ISSUER` | `oauth` only | yes | no |
 | `OAUTH_AUDIENCE` | `oauth` only | yes | no |
@@ -66,12 +66,14 @@ Worker role: protected resource / resource server
 
 AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) remain Cloudflare secrets in both modes and are unrelated to OAuth user tokens.
 
-### Legacy local mode
+### Local bearer mode
 
 ```text
-AUTH_MODE=legacy-bearer
+AUTH_MODE=local-bearer
 MCP_AUTH_TOKEN=<local-only-token>
 ```
+
+`legacy-bearer` is accepted as a deprecated alias for `local-bearer`.
 
 ### Production ChatGPT OAuth mode
 
@@ -202,7 +204,7 @@ Tools returning `structuredContent` must include `outputSchema` matching `docs/m
 - [ ] Spec explicitly rejects `No auth` for AWS account data
 - [ ] Spec defines all OAuth config variables and secrets vs non-secrets
 - [ ] Spec defines `aws:read` as the initial required scope
-- [ ] Spec states `MCP_AUTH_TOKEN` is only required in `legacy-bearer` mode
+- [ ] Spec states `MCP_AUTH_TOKEN` is only required in `local-bearer` mode
 - [ ] Spec defines implementation sequence for #76–#79
 - [ ] Spec preserves read-only, allowlisted, no-generic-AWS-proxy contract
 
@@ -213,7 +215,7 @@ Tools returning `structuredContent` must include `outputSchema` matching `docs/m
 | Metadata route | Returns 200 with expected fields in oauth mode; no AWS credentials required |
 | OAuth challenge | 401 on unauthenticated `/mcp` includes `WWW-Authenticate` with `resource_metadata` |
 | JWT validation | Offline tests with fixture JWKS: valid/invalid/expired/wrong-iss/wrong-aud/missing-scope |
-| Legacy bearer | Existing bearer path unchanged when `AUTH_MODE=legacy-bearer` |
+| Local bearer | Existing bearer path unchanged when `AUTH_MODE=local-bearer` (`legacy-bearer` alias supported) |
 | Tool descriptors | Contract tests via `tools/list`: securitySchemes, annotations, outputSchema |
 | Secret safety | No tokens, claims, or credentials in responses or logs |
 

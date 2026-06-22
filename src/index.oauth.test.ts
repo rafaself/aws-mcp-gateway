@@ -60,13 +60,18 @@ const oauthEnvBase = {
   AUTH_RATE_LIMITER: makeRateLimiterBinding(),
 };
 
-const legacyEnv = {
-  AUTH_MODE: "legacy-bearer",
+const localBearerEnv = {
+  AUTH_MODE: "local-bearer",
   AWS_ACCESS_KEY_ID: "key",
   AWS_SECRET_ACCESS_KEY: "secret",
   AWS_REGION: "us-east-1",
   AWS_ALLOWED_REGIONS: "us-east-1",
   MCP_AUTH_TOKEN: "valid-token",
+};
+
+const legacyBearerAliasEnv = {
+  ...localBearerEnv,
+  AUTH_MODE: "legacy-bearer",
 };
 
 beforeEach(() => {
@@ -132,7 +137,7 @@ describe("oauth protected-resource metadata route", () => {
   it("returns 404 when not in oauth mode", async () => {
     const response = await worker.fetch(
       new Request("https://gateway.example.com/.well-known/oauth-protected-resource"),
-      legacyEnv,
+      localBearerEnv,
       {} as ExecutionContext,
     );
 
@@ -399,11 +404,11 @@ describe("/health", () => {
   });
 });
 
-describe("legacy bearer mode", () => {
+describe("local bearer mode", () => {
   it("still rejects missing bearer token", async () => {
     const response = await worker.fetch(
       new Request("https://gateway.example.com/mcp", { method: "POST" }),
-      legacyEnv,
+      localBearerEnv,
       {} as ExecutionContext,
     );
 
@@ -422,7 +427,26 @@ describe("legacy bearer mode", () => {
         },
         body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
       }),
-      legacyEnv,
+      localBearerEnv,
+      {} as ExecutionContext,
+    );
+
+    expect(response.status).not.toBe(401);
+    expect(createStreamableHttpMcpHandlerMock).toHaveBeenCalledTimes(1);
+    expect(streamableHttpHandlerMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("accepts legacy-bearer as a deprecated alias", async () => {
+    const response = await worker.fetch(
+      new Request("https://gateway.example.com/mcp", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer valid-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+      }),
+      legacyBearerAliasEnv,
       {} as ExecutionContext,
     );
 

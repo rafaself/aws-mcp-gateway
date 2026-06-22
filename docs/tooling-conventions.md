@@ -8,7 +8,7 @@ Every MCP tool in this repository must follow the conventions below to keep the 
 - Use action-oriented names that describe what the tool does.
 - Use specific business tools instead of broad executor tools.
 
-Approved MVP tool names:
+Supported AWS tool names:
 
 ```text
 get_aws_cost_summary
@@ -37,7 +37,7 @@ Every AWS tool must return a response with two fields:
 
 - All dates must use `YYYY-MM-DD` format.
 - Cost tools must only accept completed or current billing periods. Future dates must be rejected.
-- Cost tools must enforce a maximum range of 90 days per request during the MVP.
+- Cost tools must enforce a maximum range of 90 days per request in the current read-only scope.
 - Observability tools (alarms, logs) may use broader ranges but must have explicit limits.
 
 ## Region handling

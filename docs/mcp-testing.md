@@ -1,6 +1,6 @@
 # MCP testing
 
-This guide describes how to verify that the deployed MCP gateway is working correctly using manual smoke tests. It covers authentication, endpoint structure, the MVP tool allowlist, and expected failure behavior.
+This guide describes how to verify that the deployed MCP gateway is working correctly using manual smoke tests. It covers authentication, endpoint structure, the supported MCP tool allowlist, and expected failure behavior.
 
 ## Authentication model
 
@@ -8,7 +8,7 @@ The gateway supports two authentication modes (see [deployment.md](deployment.md
 
 | Mode | Use case |
 |------|----------|
-| `legacy-bearer` (default) | Local `pnpm dev` and curl smoke tests |
+| `local-bearer` (default) | Local `pnpm dev` and curl smoke tests |
 | `oauth` | Production ChatGPT connector |
 
 - **Health check** (`GET /health`) — no authentication required.
@@ -17,14 +17,16 @@ The gateway supports two authentication modes (see [deployment.md](deployment.md
 
 For ChatGPT OAuth setup, see [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
 
-## Legacy local flow (`AUTH_MODE=legacy-bearer`)
+## Local bearer mode (`AUTH_MODE=local-bearer`)
 
 Set in `.dev.vars`:
 
 ```text
-AUTH_MODE=legacy-bearer
+AUTH_MODE=local-bearer
 MCP_AUTH_TOKEN=<local-token>
 ```
+
+`legacy-bearer` is accepted as a deprecated alias for `local-bearer`.
 
 Curl uses `Authorization: Bearer <MCP_AUTH_TOKEN>`.
 

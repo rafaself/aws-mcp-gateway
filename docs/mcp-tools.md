@@ -11,7 +11,7 @@ error behavior, caching, region handling, and safety boundaries.
 - All normalized outputs are documented. Raw AWS response fields are never
   exposed.
 - Every tool is read-only. Write and management operations are out of scope for
-  the MVP.
+  the current read-only scope.
 - Invalid input always fails before any downstream AWS call.
 - Generic AWS access (arbitrary API proxy or CLI execution) is outside scope.
 
@@ -34,7 +34,7 @@ error behavior, caching, region handling, and safety boundaries.
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
-All public tools require OAuth (`aws:read`) or legacy bearer authentication and are read-only.
+All public tools require OAuth (`aws:read`) or local bearer authentication and are read-only.
 
 ---
 
@@ -118,7 +118,7 @@ No parameters.
 
 ### Behavior
 
-- Requires a valid MCP session on `/mcp` (legacy bearer token or OAuth access token with `aws:read` scope).
+- Requires a valid MCP session on `/mcp` (local bearer token or OAuth access token with `aws:read` scope).
 - Advertises OAuth `securitySchemes` and read-only annotations in the tool descriptor.
 - Makes no AWS calls.
 - Always succeeds when invoked with valid MCP authentication.
@@ -700,7 +700,7 @@ Parameters are normalized with sorted keys and type-tagged serialization.
    output. Only normalized, documented fields are included.
 6. **Credentials never leaked:** AWS access keys, bearer tokens, signed headers,
    and raw stack traces are never exposed in error payloads or MCP content.
-7. **Bearer token authentication:** The `/mcp` endpoint requires a valid legacy bearer token or OAuth access token with `aws:read` scope.
+7. **Bearer token authentication:** The `/mcp` endpoint requires a valid local bearer token or OAuth access token with `aws:read` scope.
 8. **Result size limits:** Cost results are capped at 25 services, log events
    at 50, and date ranges at 90 days.
 9. **Log message truncation:** Log event messages are truncated to 1000

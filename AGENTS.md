@@ -7,7 +7,7 @@ A minimal Cloudflare Worker MCP gateway for explicit, read-only AWS tools.
 Hard boundaries:
 - No generic AWS CLI execution tool.
 - No arbitrary AWS API proxy.
-- No AWS write/management operations in the MVP.
+- No AWS write/management operations in the current read-only scope.
 - No secrets, local env files, tokens, credentials, or generated Wrangler state committed.
 
 ## Workflow

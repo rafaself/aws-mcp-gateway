@@ -9,7 +9,7 @@ Manual end-to-end validation for a deployed AWS MCP Gateway used as a **ChatGPT 
 - [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md) — Auth0 OAuth setup
 - [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) — production acceptance checklist (start here)
 - [chatgpt-connector.md](chatgpt-connector.md) — connector overview and discovery model
-- [mcp-testing.md](mcp-testing.md) — curl smoke tests (legacy bearer and failure modes)
+- [mcp-testing.md](mcp-testing.md) — curl smoke tests (local bearer mode and failure modes)
 
 **Automated pre-checks (optional):** [`scripts/verify-oauth-deployment.sh`](../scripts/verify-oauth-deployment.sh) validates protected resource metadata and the unauthenticated `/mcp` OAuth challenge over HTTP. It does **not** replace ChatGPT UI validation.
 
@@ -130,7 +130,7 @@ Example JSON-RPC payload (no token required in the body):
 
 If `tools/list` is empty or descriptors are missing required fields, OAuth may still succeed while ChatGPT shows **“No app actions available yet”**. Fix descriptors and redeploy before troubleshooting in the ChatGPT UI.
 
-For local `AUTH_MODE=legacy-bearer` smoke tests, replace the bearer token with `MCP_AUTH_TOKEN`. See [mcp-testing.md](mcp-testing.md).
+For local `AUTH_MODE=local-bearer` smoke tests, replace the bearer token with `MCP_AUTH_TOKEN`. See [mcp-testing.md](mcp-testing.md).
 
 ---
 
@@ -248,5 +248,5 @@ Never paste OAuth access tokens into troubleshooting notes or GitHub issues.
 
 - Do not paste OAuth access tokens, AWS keys, Cloudflare API tokens, or Auth0 client secrets into docs, issues, or screenshots.
 - `/mcp` must never accept unauthenticated requests.
-- This gateway is read-only — no write or management AWS tools in the MVP.
+- This gateway is read-only — no write or management AWS tools in the current read-only scope.
 - Do not widen IAM permissions for smoke testing.

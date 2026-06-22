@@ -1,6 +1,6 @@
 # Operational security checklist
 
-Use this document before deploying the gateway and before merging security-sensitive changes. It consolidates the MVP safety contract into verifiable checklists without replacing detailed tool contracts, deployment steps, or contributor workflow rules.
+Use this document before deploying the gateway and before merging security-sensitive changes. It consolidates the read-only safety contract into verifiable checklists without replacing detailed tool contracts, deployment steps, or contributor workflow rules.
 
 **Related documentation:**
 
@@ -18,9 +18,9 @@ If you discover a security vulnerability in this project, open a private GitHub 
 
 ---
 
-## MVP security scope
+## Read-only security scope
 
-The gateway is a **read-only**, public-facing MCP endpoint for explicit AWS tools. The MVP contract is:
+The gateway is a **read-only**, public-facing MCP endpoint for explicit AWS tools. The current read-only scope is:
 
 - Each MCP tool is named, typed, and allowlisted — AWS access is mediated through project code, not a generic proxy.
 - AWS credentials and MCP auth tokens live only in Cloudflare secrets, never in Git.
@@ -28,9 +28,9 @@ The gateway is a **read-only**, public-facing MCP endpoint for explicit AWS tool
 - Tool output is normalized; raw AWS response bodies are never returned.
 - Optional KV caching stores normalized tool output only.
 
-**MVP guarantees (current):**
+**Read-only guarantees (current):**
 
-- [ ] The gateway remains read-only for the MVP — no write or management AWS actions are exposed as MCP tools.
+- [ ] The gateway remains read-only in the current scope — no write or management AWS actions are exposed as MCP tools.
 - [ ] No generic AWS CLI execution tool (for example, `run_aws_cli`) exists in the codebase.
 - [ ] No arbitrary AWS API proxy tool (for example, `call_any_aws_api`) exists in the codebase.
 - [ ] Every AWS-backed tool maps to a narrow, reviewed action with validated inputs and normalized outputs (see [docs/mcp-tools.md](docs/mcp-tools.md)).
@@ -39,7 +39,7 @@ The gateway is a **read-only**, public-facing MCP endpoint for explicit AWS tool
 
 - Full deployment instructions — see [docs/deployment.md](docs/deployment.md).
 - Write-operation policy — see [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md).
-- Automated vulnerability scanning — not required for the MVP.
+- Automated vulnerability scanning — not required for the current read-only scope.
 
 **OAuth (implemented):**
 
@@ -86,7 +86,7 @@ The canonical read-only policy template is [`infra/aws/iam-readonly-policy.json`
 
 - [ ] The gateway IAM principal uses the project read-only policy — not `AdministratorAccess` or broad AWS-managed policies.
 - [ ] IAM policy actions are limited to read-only APIs required by current MCP tools (Cost Explorer, EC2 describe, CloudWatch, CloudWatch Logs).
-- [ ] No write, create, delete, modify, or `*` actions are granted for the MVP deployment.
+- [ ] No write, create, delete, modify, or `*` actions are granted for the current read-only deployment.
 - [ ] IAM credentials used by the gateway are dedicated to this service — not shared personal admin keys.
 - [ ] Access keys are rotatable without changing application code (update Cloudflare secrets only).
 
@@ -174,7 +174,7 @@ Before merging any PR:
 - [ ] `pnpm test` passes — unit tests do not call live AWS or unmocked external services.
 - [ ] `pnpm run test:integrity` passes — no committed `.only` markers or unjustified skipped tests.
 - [ ] GitHub Actions CI workflow (`.github/workflows/ci.yml`) passes on the PR.
-- [ ] New production dependencies are justified and reviewed — the MVP avoids unnecessary packages.
+- [ ] New production dependencies are justified and reviewed — the project avoids unnecessary packages.
 - [ ] Security, validation, redaction, authentication, region allowlist, and read-only contract tests were not weakened to make unrelated changes pass.
 
 ---
@@ -185,16 +185,16 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 
 - [ ] All sections above relevant to this release are checked.
 - [ ] Secrets are configured in the target Cloudflare environment (`wrangler secret put`).
-- [ ] `AUTH_MODE` is set appropriately: `oauth` for ChatGPT production, `legacy-bearer` for local/single-token deployments.
+- [ ] `AUTH_MODE` is set appropriately: `oauth` for ChatGPT production, `local-bearer` for local/single-token deployments (`legacy-bearer` is accepted as a deprecated alias).
 - [ ] In `oauth` mode: OAuth vars are set and `MCP_AUTH_TOKEN` is **not** required; `GET /.well-known/oauth-protected-resource` returns expected metadata.
-- [ ] In `legacy-bearer` mode: `MCP_AUTH_TOKEN` secret is configured.
+- [ ] In `local-bearer` mode: `MCP_AUTH_TOKEN` secret is configured.
 - [ ] `AWS_ALLOWED_REGIONS` reflects only regions this deployment should serve.
 - [ ] IAM policy attached to the gateway principal matches [`infra/aws/iam-readonly-policy.json`](infra/aws/iam-readonly-policy.json) (or a narrower custom variant).
 - [ ] `pnpm run typecheck`, `pnpm test`, and `pnpm run test:integrity` pass on the commit being deployed.
 - [ ] `pnpm run verify:connector-contract` passes on the commit being deployed (ChatGPT Connector local gate).
 - [ ] `GET /health` returns `{ "ok": true, "service": "aws-mcp-gateway" }` without authentication.
 - [ ] With valid runtime configuration, `POST /mcp` without authentication returns HTTP 401 (with `WWW-Authenticate` in `oauth` mode).
-- [ ] Authenticated MCP access works (legacy bearer token or ChatGPT OAuth flow — see [docs/mcp-testing.md](docs/mcp-testing.md)).
+- [ ] Authenticated MCP access works (local bearer token or ChatGPT OAuth flow — see [docs/mcp-testing.md](docs/mcp-testing.md)).
 - [ ] For ChatGPT production connectors, complete the production acceptance checklist in [docs/chatgpt-connector-production-acceptance.md](docs/chatgpt-connector-production-acceptance.md) — including authenticated `tools/list` validation, OAuth login, Actions visible (all 8 tools), `get_gateway_status`, optional `search`/`fetch`, and a bounded AWS tool. Detailed step-by-step responses: [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md).
 - [ ] A smoke test confirms at least one AWS-backed tool returns normalized output in an allowed region.
 
@@ -207,7 +207,7 @@ The following post-MVP capabilities require a separate issue, spec, and security
 - Write or management AWS operations (start/stop instances, modify alarms, etc.).
 - Broader read-only inventory tools (RDS, Lambda, budgets) — allowed only as explicit new tools with IAM and contract updates.
 
-OAuth for ChatGPT is **implemented** — see [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md). Legacy bearer mode remains available for local development.
+OAuth for ChatGPT is **implemented** — see [docs/auth-chatgpt-oauth.md](docs/auth-chatgpt-oauth.md). Local bearer mode remains available for local development.
 
 The following patterns remain permanently forbidden and must not be routed through the post-MVP process:
 

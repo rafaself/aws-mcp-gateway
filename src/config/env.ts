@@ -16,7 +16,7 @@ import {
 } from "./oauth-urls.js";
 import type { ValidatedRateLimitConfig } from "../security/rate-limit.js";
 
-export type AuthMode = "legacy-bearer" | "oauth";
+export type AuthMode = "local-bearer" | "oauth";
 
 export interface ValidatedGatewayConfig {
   authMode: AuthMode;
@@ -277,7 +277,7 @@ export function validateEnv(env: unknown): EnvValidationResult {
   const allowedRegionsRaw = readRequiredString(bindings, "AWS_ALLOWED_REGIONS", errors);
 
   let authToken: string | null = null;
-  if (authMode === "legacy-bearer") {
+  if (authMode === "local-bearer") {
     authToken = readRequiredString(bindings, "MCP_AUTH_TOKEN", errors);
   }
 
@@ -325,7 +325,7 @@ export function validateEnv(env: unknown): EnvValidationResult {
     AWS_MCP_CACHE: bindings.AWS_MCP_CACHE as KVNamespace | undefined,
   };
 
-  if (authMode === "legacy-bearer") {
+  if (authMode === "local-bearer") {
     config.MCP_AUTH_TOKEN = authToken!;
   } else {
     config.oauth = oauthConfig;

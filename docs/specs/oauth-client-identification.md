@@ -2,7 +2,7 @@
 
 ## Goal
 
-Define how ChatGPT identifies itself to the external authorization server when connecting to the AWS MCP Gateway, without changing the current Auth0 predefined-client MVP path prematurely.
+Define how ChatGPT identifies itself to the external authorization server when connecting to the AWS MCP Gateway, without changing the current Auth0 predefined-client production path prematurely.
 
 The Worker acts as an **OAuth resource server only**. Client registration and identification belong to the external authorization server and ChatGPT connector — not to this repository.
 
@@ -20,14 +20,14 @@ CIMD (Client ID Metadata Document), if used, is handled on the **authorization s
 
 Related specs:
 
-- [oauth-chatgpt-connector.md](oauth-chatgpt-connector.md) — MVP OAuth resource-server contract
+- [oauth-chatgpt-connector.md](oauth-chatgpt-connector.md) — OAuth resource-server contract
 - [auth-chatgpt-oauth.md](../auth-chatgpt-oauth.md) — Auth0 predefined-client setup guide
 
 ## Client identification modes
 
 ### 1. Current supported mode: predefined OAuth client
 
-**Status:** Production-supported MVP path.
+**Status:** Production-supported path.
 
 ```text
 AUTH_MODE=oauth
@@ -58,7 +58,7 @@ Worker token validation remains unchanged
 
 ### 3. Explicitly unsupported mode: custom DCR server inside the Worker
 
-**Status:** Out of scope for MVP and hardening phases.
+**Status:** Out of scope for the current read-only scope and hardening phases.
 
 This project will **not** implement:
 
@@ -75,9 +75,9 @@ CIMD-related work is allowed only under these constraints:
 - Do **not** weaken JWT validation to support CIMD.
 - Do **not** accept unsigned tokens or opaque tokens without a separately specified validation strategy such as RFC 7662 introspection.
 - Keep `OAUTH_AUDIENCE` equal to `MCP_RESOURCE_URL` unless a new spec explicitly changes the resource model.
-- Do **not** add broader scopes than `aws:read` for the MVP read-only gateway.
+- Do **not** add broader scopes than `aws:read` for the read-only gateway.
 
-If the ChatGPT connector works with the current Auth0 predefined client flow, **no CIMD migration is needed** for MVP.
+If the ChatGPT connector works with the current Auth0 predefined client flow, **no CIMD migration is needed**.
 
 ## Security constraints
 

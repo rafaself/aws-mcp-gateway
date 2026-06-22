@@ -212,7 +212,7 @@ describe("validateEnv", () => {
     expect(result.config.rateLimit?.namespace).toBe(rateLimiterBinding);
   });
 
-  it("defaults to legacy-bearer when AUTH_MODE is absent", () => {
+  it("defaults to local-bearer when AUTH_MODE is absent", () => {
     const env = {
       AWS_ACCESS_KEY_ID: "key",
       AWS_SECRET_ACCESS_KEY: "secret",
@@ -223,7 +223,22 @@ describe("validateEnv", () => {
 
     const result = validateEnv(env) as EnvValidationSuccess;
 
-    expect(result.config.authMode).toBe("legacy-bearer");
+    expect(result.config.authMode).toBe("local-bearer");
+  });
+
+  it("accepts legacy-bearer as a deprecated alias for local-bearer", () => {
+    const env = {
+      AUTH_MODE: "legacy-bearer",
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+      MCP_AUTH_TOKEN: "token",
+    };
+
+    const result = validateEnv(env) as EnvValidationSuccess;
+
+    expect(result.config.authMode).toBe("local-bearer");
   });
 
   it("rejects invalid AUTH_MODE values", () => {
@@ -237,7 +252,7 @@ describe("validateEnv", () => {
     });
 
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain("AUTH_MODE (must be legacy-bearer or oauth)");
+    expect(result.errors).toContain("AUTH_MODE (must be local-bearer or oauth)");
   });
 
   it("rejects non-https OAuth URLs in oauth mode", () => {
