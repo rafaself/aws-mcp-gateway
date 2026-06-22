@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getCostSummary, getCostByService } from "./client.js";
-import { CostExplorerError } from "./types.js";
 import { ValidationError } from "../../security/errors.js";
 import type { AwsCredentials } from "../types.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
