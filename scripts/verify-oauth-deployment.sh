@@ -7,11 +7,27 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/lib/oauth-url-checks.sh"
 
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-WORKER_URL="${1:-https://aws-mcp-gateway.rafaondjango.workers.dev}"
-AUTH0_DOMAIN="${2:-dev-e11vv5o0nhbqsq70.us.auth0.com}"
+WORKER_URL="${1:-${AWS_MCP_GATEWAY_WORKER_URL:-}}"
+AUTH0_DOMAIN="${2:-${AWS_MCP_GATEWAY_AUTH0_DOMAIN:-}}"
 WRANGLER_FILE="${ROOT}/wrangler.jsonc"
 
+if [[ -z "$WORKER_URL" || -z "$AUTH0_DOMAIN" ]]; then
+  echo "Missing deployment targets." >&2
+  echo "" >&2
+  echo "Usage: verify-oauth-deployment.sh <worker-url> <auth0-domain>" >&2
+  echo "  or set AWS_MCP_GATEWAY_WORKER_URL and AWS_MCP_GATEWAY_AUTH0_DOMAIN" >&2
+  echo "" >&2
+  echo "Example:" >&2
+  echo "  bash scripts/verify-oauth-deployment.sh https://<worker-host> <auth0-tenant>.us.auth0.com" >&2
+  echo "  source .env.deploy.local && pnpm run verify:oauth" >&2
+  exit 1
+fi
+
 WORKER_URL="$(validate_oauth_origin_url "WORKER_URL" "$WORKER_URL")"
+
+if [[ "$AUTH0_DOMAIN" == *"<your-"* ]]; then
+  oauth_url_fail "AUTH0_DOMAIN still contains a placeholder — replace it with your Auth0 tenant domain"
+fi
 
 if [[ -f "$WRANGLER_FILE" ]] && command -v jq >/dev/null 2>&1; then
   MCP_RESOURCE_URL="$(jq -r '.vars.MCP_RESOURCE_URL // empty' "$WRANGLER_FILE")"

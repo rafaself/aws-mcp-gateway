@@ -87,7 +87,7 @@ OAUTH_INTROSPECTION_URL=https://<auth-provider-domain>/oauth/introspect
 
 and set `OAUTH_INTROSPECTION_CLIENT_ID` / `OAUTH_INTROSPECTION_CLIENT_SECRET` as Worker secrets. `hybrid` keeps JWKS validation for JWTs and falls back to introspection for opaque tokens.
 
-To create the Auth0 API, `aws:read` scope, and ChatGPT application automatically, add Management API credentials to `.env.deploy.local` (see `.env.deploy.example`) and run:
+To create the Auth0 API, `aws:read` scope, and ChatGPT application automatically, add Management API credentials and `AWS_MCP_GATEWAY_WORKER_URL` to `.env.deploy.local` (see `.env.deploy.example`) and run:
 
 ```bash
 pnpm run setup:auth0
@@ -114,10 +114,14 @@ OAuth mode also requires the `AUTH_RATE_LIMITER` Durable Object binding and migr
 
 ### 8. Verify protected-resource metadata
 
+Set deployment targets in `.env.deploy.local` (`AWS_MCP_GATEWAY_WORKER_URL`, `AWS_MCP_GATEWAY_AUTH0_DOMAIN`) or pass them as script arguments, then run:
+
 ```bash
-pnpm run verify:oauth
+source .env.deploy.local && pnpm run verify:oauth
 pnpm run verify:oauth:authenticated
-# or manually:
+# or pass targets explicitly:
+bash scripts/verify-oauth-deployment.sh https://<worker-host> <auth0-tenant>.us.auth0.com
+# manual metadata check:
 curl https://<worker-host>/.well-known/oauth-protected-resource
 ```
 

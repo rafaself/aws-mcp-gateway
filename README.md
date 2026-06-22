@@ -252,11 +252,11 @@ The Worker OAuth resource and audience must be the origin only:
 https://<worker-host>
 ```
 
-After deploying, run:
+After deploying, configure deployment targets (`AWS_MCP_GATEWAY_WORKER_URL`, `AWS_MCP_GATEWAY_AUTH0_DOMAIN` in `.env.deploy.local` or as script arguments), then run:
 
 ```bash
 pnpm run verify:connector-contract
-pnpm run verify:oauth
+source .env.deploy.local && pnpm run verify:oauth
 pnpm run verify:oauth:authenticated
 ```
 
