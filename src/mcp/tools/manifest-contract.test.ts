@@ -256,6 +256,10 @@ describe("tool manifest contract", () => {
     });
   }
 
+  it("list_s3_buckets declares global region mode for account-level API", () => {
+    expect(byName.list_s3_buckets.aws.regionMode).toBe("global");
+  });
+
   it("createToolRegistry derives the same public tool names", () => {
     const registry = createToolRegistry(testContext);
     expect(registry.map((tool) => tool.name).sort()).toEqual([...PUBLIC_TOOL_NAMES].sort());

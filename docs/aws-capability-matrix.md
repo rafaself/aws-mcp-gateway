@@ -26,4 +26,4 @@ the unique IAM actions listed in this matrix. Drift is enforced by
 | list_ec2_instances | inventory | ec2 | ec2:DescribeInstances | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |
 | list_lambda_functions | inventory | lambda | lambda:ListFunctions | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |
 | list_log_groups | observability | logs | logs:DescribeLogGroups | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |
-| list_s3_buckets | inventory | s3 | s3:ListAllMyBuckets | single-region | read-only | 300 | cached-read | low | low |
+| list_s3_buckets | inventory | s3 | s3:ListAllMyBuckets | global | read-only | 300 | cached-read | low | low |

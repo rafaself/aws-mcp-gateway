@@ -114,7 +114,7 @@ Required manifest fields:
 | `aws.services` | Declared AWS services used by the tool |
 | `aws.actions` | Declared allowlisted AWS actions used by the tool |
 | `aws.capabilities` | Capability IDs aligned with `src/aws/capabilities.ts` |
-| `aws.regionMode` | Global, single-region, or bounded multi-region execution mode |
+| `aws.regionMode` | `none`, `global`, `single-region`, or `bounded-multi-region` execution mode |
 | `aws.readonly` | Explicit read-only marker |
 | `safety.riskLevel` | Current allowed value: `read-only` |
 | `safety.cacheTtlSeconds` | Cache TTL metadata |
@@ -133,6 +133,15 @@ Manifest expectations:
 - Non-AWS tools may declare empty AWS metadata, but must still declare
   read-only risk, `costControl.class: "free"`, and audit metadata.
 - Public descriptor compatibility is preserved by deriving `tools/list` fields from the manifest.
+
+`aws.regionMode` values:
+
+| Value | Use case | Policy behavior |
+|-------|----------|-----------------|
+| `none` | Non-AWS tools (`search`, `fetch`, `get_gateway_status`) | Skip region validation |
+| `global` | AWS account-level APIs (`list_s3_buckets`) | Skip request-region validation; still require AWS metadata and cost-control |
+| `single-region` | AWS calls targeting one region | Validate optional `region` / `audit.getRegion` against allowlist |
+| `bounded-multi-region` | AWS calls that may fan out over allowed regions | Validate `regions[]` and fanout limits |
 
 ### Central policy model
 
@@ -189,7 +198,7 @@ Current tool mapping:
 | `get_aws_cost_by_service` | `paid` | max 90-day range, max 25 services, cache required |
 | `list_ec2_instances` | `fanout-sensitive` | bounded allowed-region fanout, cache required |
 | `list_lambda_functions` | `fanout-sensitive` | bounded allowed-region fanout, cache required |
-| `list_s3_buckets` | `low` | single-region, cache required |
+| `list_s3_buckets` | `low` | global, cache required |
 | `get_cloudwatch_alarms` | `fanout-sensitive` | bounded allowed-region fanout, cache required |
 | `get_recent_log_errors` | `volume-sensitive` | bounded lookback (24h), max 50 events, cache required |
 | `list_log_groups` | `volume-sensitive` | bounded result count, cache required |

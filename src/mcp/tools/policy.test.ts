@@ -378,4 +378,31 @@ describe("tool policy gate", () => {
     expect(result.structuredContent?.error.code).toBe("validation_error");
     expect(mockFetch).not.toHaveBeenCalled();
   });
+
+  it("allows global AWS tools without request region input", () => {
+    const manifest = manifests.find((candidate) => candidate.name === "list_s3_buckets")!;
+
+    expect(evaluateToolPolicy(manifest, defaultPolicy, {})).toBeNull();
+  });
+
+  it("allows global AWS tools when extraneous region args are present", () => {
+    const manifest = manifests.find((candidate) => candidate.name === "list_s3_buckets")!;
+
+    expect(
+      evaluateToolPolicy(manifest, defaultPolicy, { region: "eu-west-1" }),
+    ).toBeNull();
+  });
+
+  it("denies global AWS tools missing cost-control metadata", () => {
+    const manifest = manifests.find((candidate) => candidate.name === "list_s3_buckets")!;
+    const missingCostControl: AnyToolManifest = {
+      ...manifest,
+      costControl: undefined as never,
+    };
+
+    const denial = evaluateToolPolicy(missingCostControl, defaultPolicy, {});
+
+    expect(denial?.code).toBe("validation_error");
+    expect(denial?.message).toBe("Tool is missing required cost-control metadata.");
+  });
 });
