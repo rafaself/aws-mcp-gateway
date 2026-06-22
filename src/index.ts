@@ -68,14 +68,14 @@ export default {
         return rateLimitResponse;
       }
 
-      const authResponse = await authenticateRequest(request, env);
-      if (authResponse) {
+      const authResult = await authenticateRequest(request, env);
+      if (!authResult.ok) {
         logWarn({
           ...reqDiag,
           phase: "mcp_auth_failed",
-          status: authResponse.status,
+          status: authResult.response.status,
         });
-        return authResponse;
+        return authResult.response;
       }
 
       const envResult = validateEnv(env);
@@ -84,7 +84,9 @@ export default {
         return envErrorResponse(envResult, true);
       }
 
-      const gatewayCtx = buildGatewayContext(envResult.config);
+      const gatewayCtx = buildGatewayContext(envResult.config, {
+        grantedScopes: authResult.grantedScopes,
+      });
       const handler = createStreamableHttpMcpHandler({
         createServer: () => createServer(gatewayCtx),
       });

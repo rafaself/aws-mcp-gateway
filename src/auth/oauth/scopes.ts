@@ -1,3 +1,5 @@
+export const LOCAL_BEARER_GRANTED_SCOPES = ["aws:read"] as const;
+
 function appendStringScopes(scopes: Set<string>, value: unknown): void {
   if (typeof value !== "string" || value.length === 0) {
     return;

@@ -18,14 +18,23 @@ export interface GatewayContext {
   mcpResourceUrl?: string;
   authMode?: AuthMode;
   oauthRequiredScopes?: string[];
+  /** OAuth token scopes or local-bearer default scopes granted for this request. */
+  grantedScopes?: readonly string[];
   toolExposure: ValidatedToolExposureConfig;
 }
+
+export type BuildGatewayContextOptions = {
+  grantedScopes?: readonly string[];
+};
 
 export function defaultGatewayToolExposure(): ValidatedToolExposureConfig {
   return defaultResolvedToolExposure();
 }
 
-export function buildGatewayContext(config: ValidatedGatewayConfig): GatewayContext {
+export function buildGatewayContext(
+  config: ValidatedGatewayConfig,
+  options?: BuildGatewayContextOptions,
+): GatewayContext {
   return {
     credentials: {
       accessKeyId: config.AWS_ACCESS_KEY_ID,
@@ -37,6 +46,7 @@ export function buildGatewayContext(config: ValidatedGatewayConfig): GatewayCont
     mcpResourceUrl: config.oauth?.MCP_RESOURCE_URL,
     authMode: config.authMode,
     oauthRequiredScopes: config.oauth?.OAUTH_REQUIRED_SCOPES,
+    grantedScopes: options?.grantedScopes,
     toolExposure: config.toolExposure,
   };
 }

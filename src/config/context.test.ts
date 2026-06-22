@@ -68,6 +68,12 @@ describe("buildGatewayContext", () => {
     expect(ctx.oauthRequiredScopes).toEqual(["aws:read", "openid"]);
   });
 
+  it("passes granted scopes from build options", () => {
+    const ctx = buildGatewayContext(validConfig, { grantedScopes: ["aws:read", "openid"] });
+
+    expect(ctx.grantedScopes).toEqual(["aws:read", "openid"]);
+  });
+
   it("passes tool exposure from validated configuration", () => {
     const ctx = buildGatewayContext({
       ...validConfig,
