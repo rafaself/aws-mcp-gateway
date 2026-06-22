@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { GatewayContext } from "../../config/context.js";
+import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
 import {
   catalogCitationUrl,
   catalogEntryId,
@@ -10,11 +10,7 @@ import { createToolRegistry, getChatGptCatalogEntries } from "../tools/registry.
 
 const RESOURCE_URL = "https://aws-mcp-gateway.example.workers.dev";
 
-const testContext: GatewayContext = {
-  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
-  region: "us-east-1",
-  allowedRegions: ["us-east-1", "us-west-2"],
-};
+const testContext = createTestGatewayContext();
 
 const catalogEntries = getChatGptCatalogEntries(createToolRegistry(testContext));
 

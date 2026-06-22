@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { GatewayContext } from "../config/context.js";
+import { createTestGatewayContext } from "../test/gateway-context-fixture.js";
 import { createServer } from "./server.js";
 import { createStreamableHttpMcpHandler } from "./streamable-http-handler.js";
 
-const testContext: GatewayContext = {
-  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
-  region: "us-east-1",
-  allowedRegions: ["us-east-1", "us-west-2"],
-};
+const testContext = createTestGatewayContext();
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

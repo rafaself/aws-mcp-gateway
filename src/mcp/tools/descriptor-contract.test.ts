@@ -1,15 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { GatewayContext } from "../../config/context.js";
+import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
 import { PUBLIC_TOOL_TITLES } from "./descriptor.js";
 import { createToolRegistry, PUBLIC_TOOL_NAMES } from "./registry.js";
 import { buildPublicToolList } from "./public-list.js";
 
-const testContext: GatewayContext = {
-  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
-  region: "us-east-1",
-  allowedRegions: ["us-east-1", "us-west-2"],
+const testContext = createTestGatewayContext({
   mcpResourceUrl: "https://aws-mcp-gateway.example.workers.dev",
-};
+});
 
 const CHATGPT_CONNECTOR_TOOLS = ["search", "fetch"] as const;
 

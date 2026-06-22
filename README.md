@@ -173,6 +173,48 @@ OAuth protected metadata:      https://<worker-host>/.well-known/oauth-protected
 
 `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE` must use the Worker origin only. Do not append `/mcp` to those values.
 
+### Tool exposure (optional)
+
+Self-hosted deployments can limit which MCP tools are exposed without changing source code. Prefer enabling fewer tools for least privilege.
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `AWS_MCP_ENABLED_TOOL_PACKS` | `core,cost,inventory,observability` | Comma-separated packs to expose |
+| `AWS_MCP_ENABLED_TOOLS` | *(empty — all tools in enabled packs)* | Optional allowlist of tool names |
+| `AWS_MCP_DISABLED_TOOLS` | *(empty)* | Tool names to hide and deny |
+| `AWS_MCP_MAX_RISK_LEVEL` | `read-only` | Maximum allowed tool risk level |
+
+Tool packs:
+
+```text
+core:           search, fetch, get_gateway_status
+cost:           get_aws_cost_summary, get_aws_cost_by_service
+inventory:      list_ec2_instances
+observability:  get_cloudwatch_alarms, get_recent_log_errors
+security:       (no tools yet)
+```
+
+Exposure rules:
+
+1. The tool's pack must be enabled.
+2. The tool must not appear in `AWS_MCP_DISABLED_TOOLS`.
+3. When `AWS_MCP_ENABLED_TOOLS` is set, only listed tools are exposed (within enabled packs).
+4. The tool's risk level must match `AWS_MCP_MAX_RISK_LEVEL`.
+
+Disabled tools are omitted from `tools/list` and fail safely if called directly. Unknown pack or tool names fail configuration validation.
+
+Example — cost tools only (no core helpers):
+
+```text
+AWS_MCP_ENABLED_TOOL_PACKS=cost
+```
+
+Example — cost tools plus ChatGPT catalog helpers:
+
+```text
+AWS_MCP_ENABLED_TOOL_PACKS=core,cost
+```
+
 ## AWS IAM setup
 
 Use a dedicated IAM user with only the permissions required by the gateway.

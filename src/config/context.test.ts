@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { ValidatedGatewayConfig } from "./env.js";
 import { buildGatewayContext } from "./context.js";
+import { defaultResolvedToolExposure } from "./tool-exposure.js";
 
 const validConfig: ValidatedGatewayConfig = {
   authMode: "local-bearer",
@@ -9,6 +10,7 @@ const validConfig: ValidatedGatewayConfig = {
   AWS_REGION: "us-east-1",
   AWS_ALLOWED_REGIONS: "us-east-1,us-west-2",
   MCP_AUTH_TOKEN: "token",
+  toolExposure: defaultResolvedToolExposure(),
 };
 
 describe("buildGatewayContext", () => {
@@ -64,5 +66,19 @@ describe("buildGatewayContext", () => {
 
     expect(ctx.authMode).toBe("oauth");
     expect(ctx.oauthRequiredScopes).toEqual(["aws:read", "openid"]);
+  });
+
+  it("passes tool exposure from validated configuration", () => {
+    const ctx = buildGatewayContext({
+      ...validConfig,
+      toolExposure: {
+        enabledToolPacks: new Set(["cost"]),
+        enabledTools: [],
+        disabledTools: new Set(),
+        maxRiskLevel: "read-only",
+      },
+    });
+
+    expect([...ctx.toolExposure.enabledToolPacks]).toEqual(["cost"]);
   });
 });

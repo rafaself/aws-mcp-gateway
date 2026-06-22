@@ -136,6 +136,31 @@ Open `wrangler.jsonc` and ensure the `[vars]` section contains:
 - `AWS_ALLOWED_REGIONS` — A comma-separated list of regions that regional tools may query. The default region must be included.
 - `RATE_LIMIT_MAX_REQUESTS` / `RATE_LIMIT_WINDOW_SECONDS` — request budget enforced before the MCP runtime in OAuth mode.
 
+### Optional tool exposure controls
+
+Configure in `[vars]` or the Cloudflare dashboard. Defaults preserve the current 8-tool public surface.
+
+```jsonc
+{
+  "vars": {
+    // Recommended default (omit to use built-in defaults):
+    // "AWS_MCP_ENABLED_TOOL_PACKS": "core,cost,inventory,observability",
+    // "AWS_MCP_MAX_RISK_LEVEL": "read-only"
+  }
+}
+```
+
+| Variable | Default | Notes |
+|----------|---------|-------|
+| `AWS_MCP_ENABLED_TOOL_PACKS` | `core,cost,inventory,observability` | Comma-separated pack names |
+| `AWS_MCP_ENABLED_TOOLS` | *(empty)* | Optional explicit allowlist |
+| `AWS_MCP_DISABLED_TOOLS` | *(empty)* | Deny specific tools |
+| `AWS_MCP_MAX_RISK_LEVEL` | `read-only` | Only `read-only` is supported today |
+
+Packs map to tools as documented in [README.md](../README.md#tool-exposure-optional). Enabling fewer packs is preferred for least privilege — for example, `AWS_MCP_ENABLED_TOOL_PACKS=cost` exposes only the two Cost Explorer tools. Add `core` when ChatGPT `search` / `fetch` helpers are required.
+
+Unknown pack or tool names fail Worker startup validation. Disabled tools do not appear in `tools/list` and return a safe validation error if invoked by name.
+
 ### Required rate-limiter Durable Object
 
 OAuth deployments must bind the `AUTH_RATE_LIMITER` Durable Object and include the matching migration:

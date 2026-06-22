@@ -4,12 +4,14 @@ import { GatewayError } from "../../errors/public-error.js";
 import { resolveRegions, validateAllowedRegions, validateRegion } from "../../security/regions.js";
 import { ValidationError } from "../../security/errors.js";
 import { DEFAULT_AUTH_SCOPES, type AnyToolManifest, type ToolPack, type ToolRiskLevel } from "./manifest.js";
+import { resolveExposedToolNames } from "./packs.js";
 
 const VALID_PACKS: ReadonlySet<ToolPack> = new Set([
   "core",
   "cost",
   "inventory",
   "observability",
+  "security",
 ]);
 
 export type ToolPolicyContext = {
@@ -40,18 +42,24 @@ export function buildToolPolicyContext(
   manifests: ReadonlyArray<AnyToolManifest>,
   overrides?: ToolPolicyContextOverrides,
 ): ToolPolicyContext {
+  const exposure = ctx.toolExposure;
+  const enabledToolNames =
+    overrides?.enabledToolNames ?? resolveExposedToolNames(manifests, exposure);
+  const enabledPacks = overrides?.enabledPacks ?? exposure.enabledToolPacks;
+  const maxRiskLevel = overrides?.maxRiskLevel ?? exposure.maxRiskLevel;
+
+  const exposedManifests = manifests.filter((manifest) => enabledToolNames.has(manifest.name));
+
   return {
-    enabledToolNames:
-      overrides?.enabledToolNames ?? new Set(manifests.map((manifest) => manifest.name)),
-    enabledPacks:
-      overrides?.enabledPacks ?? new Set(manifests.map((manifest) => manifest.pack)),
-    maxRiskLevel: overrides?.maxRiskLevel ?? "read-only",
+    enabledToolNames,
+    enabledPacks,
+    maxRiskLevel,
     allowedAwsServices:
       overrides?.allowedAwsServices ??
-      new Set(manifests.flatMap((manifest) => manifest.aws.services)),
+      new Set(exposedManifests.flatMap((manifest) => manifest.aws.services)),
     allowedAwsActions:
       overrides?.allowedAwsActions ??
-      new Set(manifests.flatMap((manifest) => manifest.aws.actions)),
+      new Set(exposedManifests.flatMap((manifest) => manifest.aws.actions)),
     allowedRegions: ctx.allowedRegions,
     authMode: ctx.authMode ?? "local-bearer",
     requiredScopes: ctx.oauthRequiredScopes ?? [...DEFAULT_AUTH_SCOPES],

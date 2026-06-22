@@ -1,13 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GatewayContext } from "../../config/context.js";
 import { registerMcpToolForTest } from "../../test/register-mcp-tool-for-test.js";
 
-const testContext: GatewayContext = {
-  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
-  region: "us-east-1",
-  allowedRegions: ["us-east-1"],
-};
+const testContext = createTestGatewayContext({ allowedRegions: ["us-east-1"] });
 
 describe("registerStatusTool", () => {
   let capturedName: string | undefined;

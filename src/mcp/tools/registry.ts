@@ -5,7 +5,8 @@ import type { ToolSecurityScheme } from "./descriptor.js";
 import type { McpSuccessResult } from "./response.js";
 import type { mcpErrorResult } from "../../errors/public-error.js";
 import { manifestToGatewayDefinition, type AnyToolManifest } from "./manifest.js";
-import { buildToolPolicyContext } from "./policy.js";
+import { buildToolPolicyContext, type ToolPolicyContext } from "./policy.js";
+import { PUBLIC_TOOL_NAMES, type PublicToolName } from "../../config/tool-exposure.js";
 import {
   createCostByServiceToolManifest,
   createCostSummaryToolManifest,
@@ -58,18 +59,7 @@ export type ChatGptCatalogEntry = {
   awsService?: string;
 };
 
-export const PUBLIC_TOOL_NAMES = [
-  "search",
-  "fetch",
-  "get_gateway_status",
-  "get_aws_cost_summary",
-  "get_aws_cost_by_service",
-  "list_ec2_instances",
-  "get_cloudwatch_alarms",
-  "get_recent_log_errors",
-] as const;
-
-export type PublicToolName = (typeof PUBLIC_TOOL_NAMES)[number];
+export { PUBLIC_TOOL_NAMES, type PublicToolName };
 
 export function createToolManifests(ctx: GatewayContext): AnyToolManifest[] {
   return [
@@ -90,12 +80,37 @@ export function createToolRegistry(ctx: GatewayContext): GatewayToolDefinition[]
   return manifests.map((manifest) => manifestToGatewayDefinition(manifest, policyContext));
 }
 
-export function getPublicTools(registry: GatewayToolDefinition[]): GatewayToolDefinition[] {
-  return registry.filter((tool) => tool.visibility.mcp);
+export function buildToolRegistryState(ctx: GatewayContext): {
+  manifests: AnyToolManifest[];
+  policyContext: ToolPolicyContext;
+  registry: GatewayToolDefinition[];
+} {
+  const manifests = createToolManifests(ctx);
+  const policyContext = buildToolPolicyContext(ctx, manifests);
+  const registry = manifests.map((manifest) => manifestToGatewayDefinition(manifest, policyContext));
+  return { manifests, policyContext, registry };
 }
 
-export function getChatGptCatalogEntries(registry: GatewayToolDefinition[]): ChatGptCatalogEntry[] {
-  return registry
+export function getPublicTools(
+  registry: GatewayToolDefinition[],
+  enabledToolNames?: ReadonlySet<string>,
+): GatewayToolDefinition[] {
+  return registry.filter((tool) => {
+    if (!tool.visibility.mcp) {
+      return false;
+    }
+    if (enabledToolNames && !enabledToolNames.has(tool.name)) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export function getChatGptCatalogEntries(
+  registry: GatewayToolDefinition[],
+  enabledToolNames?: ReadonlySet<string>,
+): ChatGptCatalogEntry[] {
+  return getPublicTools(registry, enabledToolNames)
     .filter((tool) => tool.catalog !== undefined)
     .map((tool) => ({
       toolName: tool.name,
@@ -106,6 +121,15 @@ export function getChatGptCatalogEntries(registry: GatewayToolDefinition[]): Cha
       inputSummary: tool.catalog!.inputSummary,
       awsService: tool.catalog!.awsService,
     }));
+}
+
+export function manifestToGatewayDefinitionForContext(
+  ctx: GatewayContext,
+  manifest: AnyToolManifest,
+): GatewayToolDefinition {
+  const manifests = createToolManifests(ctx);
+  const policyContext = buildToolPolicyContext(ctx, manifests);
+  return manifestToGatewayDefinition(manifest, policyContext);
 }
 
 export function findToolDefinition(

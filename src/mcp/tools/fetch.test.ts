@@ -1,14 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GatewayContext } from "../../config/context.js";
 import { registerMcpToolForTest } from "../../test/register-mcp-tool-for-test.js";
 
-const testContext: GatewayContext = {
-  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
-  region: "us-east-1",
-  allowedRegions: ["us-east-1", "us-west-2"],
+const testContext = createTestGatewayContext({
   mcpResourceUrl: "https://aws-mcp-gateway.example.workers.dev",
-};
+});
 
 describe("registerFetchTool", () => {
   let capturedName: string | undefined;

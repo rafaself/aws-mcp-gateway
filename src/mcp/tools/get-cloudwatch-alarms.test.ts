@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GatewayContext } from "../../config/context.js";
 import { registerMcpToolForTest } from "../../test/register-mcp-tool-for-test.js";
 import { cwAlarmsResponse } from "../../test/fixtures.js";
 
@@ -30,17 +30,9 @@ vi.mock("aws4fetch", () => ({
   },
 }));
 
-const testContext: GatewayContext = {
-  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
-  region: "us-east-1",
-  allowedRegions: ["us-east-1", "us-west-2"],
-};
+const testContext = createTestGatewayContext();
 
-const singleRegionContext: GatewayContext = {
-  credentials: { accessKeyId: "AKIA-test", secretAccessKey: "test-secret" },
-  region: "us-east-1",
-  allowedRegions: ["us-east-1"],
-};
+const singleRegionContext = createTestGatewayContext({ allowedRegions: ["us-east-1"] });
 
 interface CapturedTool {
   name: string;
