@@ -8,8 +8,6 @@ import {
   PUBLIC_TOOL_TITLES,
   getSnsTopicStatusOutputSchema,
 } from "../descriptor.js";
-import { resolveToolCredentials } from "../resolve-tool-credentials.js";
-import { assumeRoleInputFields } from "../schemas/assume-role.js";
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
@@ -22,7 +20,6 @@ const getSnsTopicStatusInputSchema = z.object({
     .string()
     .optional()
     .describe("AWS region (defaults to gateway AWS_REGION)."),
-  ...assumeRoleInputFields,
 });
 
 type GetSnsTopicStatusInput = z.infer<typeof getSnsTopicStatusInputSchema>;
@@ -35,7 +32,8 @@ export function createGetSnsTopicStatusToolManifest(
     title: PUBLIC_TOOL_TITLES.get_sns_topic_status,
     description:
       "Returns SNS topic status including subscription count, protocols, confirmation state, " +
-      "and masked subscription endpoints. Topic policy is summarized without exposing principals.",
+      "and masked subscription endpoints. Topic policy is summarized without exposing principals. " +
+      "Uses default gateway credentials only.",
     pack: "observability",
     lifecycle: "stable",
     inputSchema: getSnsTopicStatusInputSchema,
@@ -44,7 +42,7 @@ export function createGetSnsTopicStatusToolManifest(
     catalog: {
       keywords: ["sns", "topic", "alerting", "subscription", "notifications"],
       docsAnchor: "25-get_sns_topic_status",
-      inputSummary: "topicName or topicArn, optional region, optional roleArn.",
+      inputSummary: "topicName or topicArn, optional region.",
       awsService: "sns",
     },
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
@@ -77,21 +75,15 @@ export function createGetSnsTopicStatusToolManifest(
       const region = args.region ?? ctx.region;
       validateRegion(region, ctx.allowedRegions);
 
-      const credentials = await resolveToolCredentials(ctx, {
-        roleArn: args.roleArn,
-        externalId: args.externalId,
-      });
-
       const status = await getTopicStatus(
         {
           topicName: args.topicName,
           topicArn: args.topicArn,
           region,
         },
-        credentials,
+        ctx.credentials,
         ctx.cache,
         ctx.execution,
-        { roleArn: args.roleArn },
       );
 
       const text = status.topicExists

@@ -213,27 +213,19 @@ export function summarizeS3BucketPostureInput(args: {
 
 export function summarizeSesConfigurationStatusInput(args: {
   configurationSetName?: string;
-  roleArn?: string;
-  externalId?: string;
 }): Record<string, unknown> {
   return {
     configurationSetNameLength: args.configurationSetName?.length ?? 0,
-    hasRoleArn: Boolean(args.roleArn),
-    hasExternalId: Boolean(args.externalId),
   };
 }
 
 export function summarizeSnsTopicStatusInput(args: {
   topicName?: string;
   topicArn?: string;
-  roleArn?: string;
-  externalId?: string;
 }): Record<string, unknown> {
   return {
     hasTopicName: Boolean(args.topicName),
     hasTopicArn: Boolean(args.topicArn),
-    hasRoleArn: Boolean(args.roleArn),
-    hasExternalId: Boolean(args.externalId),
   };
 }
 
@@ -241,29 +233,21 @@ export function summarizeEventBridgeRulesStatusInput(args: {
   ruleNamePrefix?: string;
   scheduleNamePrefix?: string;
   limit?: number;
-  roleArn?: string;
-  externalId?: string;
 }): Record<string, unknown> {
   return {
     rulePrefixLength: args.ruleNamePrefix?.length ?? 0,
     schedulePrefixLength: args.scheduleNamePrefix?.length ?? 0,
     ...(args.limit !== undefined ? { limit: args.limit } : {}),
-    hasRoleArn: Boolean(args.roleArn),
-    hasExternalId: Boolean(args.externalId),
   };
 }
 
 export function summarizeBudgetStatusInput(args: {
   budgetName?: string;
   accountId?: string;
-  roleArn?: string;
-  externalId?: string;
 }): Record<string, unknown> {
   return {
     budgetNameLength: args.budgetName?.length ?? 0,
     hasAccountId: Boolean(args.accountId),
-    hasRoleArn: Boolean(args.roleArn),
-    hasExternalId: Boolean(args.externalId),
   };
 }
 

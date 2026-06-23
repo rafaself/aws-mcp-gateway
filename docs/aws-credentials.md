@@ -26,13 +26,13 @@ These are loaded at startup into `GatewayContext.credentials`. Existing MCP tool
 The default IAM user needs:
 
 1. Permissions for the read-only MCP tool actions (see [`infra/aws/iam-readonly-policy.json`](../infra/aws/iam-readonly-policy.json)).
-2. `sts:AssumeRole` on the target roles you intend to use.
+2. When using profile-configured cross-account access: `sts:AssumeRole` on trusted target roles via the optional add-on at [`infra/aws/iam-assume-role-policy.example.json`](../infra/aws/iam-assume-role-policy.example.json).
 
-Restrict `sts:AssumeRole` `Resource` values in production to trusted role ARNs instead of `*`.
+Restrict `sts:AssumeRole` `Resource` values in production to explicit trusted role ARNs — never use `"*"`.
 
 ## AssumeRole resolver
 
-`GatewayContext.credentialResolver` resolves credentials for infrastructure use and future profile/resource configuration.
+`GatewayContext.credentialResolver` resolves credentials for profile-configured cross-account access. Public direct tools use default credentials only.
 
 ### Strategies
 
@@ -80,19 +80,25 @@ Resolved credentials include:
 
 Pass resolved credentials to existing AWS client helpers (`awsRequest`, service clients). The shared `createAwsClient` helper includes `X-Amz-Security-Token` when `sessionToken` is set.
 
-### Cross-account SES example
+### Cross-account access via application profiles
 
-When SES configuration sets live in a different AWS account, pass `roleArn` to tools that support optional assume-role input (for example `get_ses_configuration_status`):
+When SES configuration sets or other resources live in a different AWS account, configure the trusted role in a KV-backed application profile — not as a public tool input:
 
 ```json
 {
-  "configurationSetName": "prod-mail",
-  "region": "us-east-1",
-  "roleArn": "arn:aws:iam::123456789012:role/SesReadOnly"
+  "auth": {
+    "strategy": "assume-role",
+    "roleArn": "arn:aws:iam::123456789012:role/SesReadOnly"
+  },
+  "resources": {
+    "ses": {
+      "configurationSetName": "prod-mail"
+    }
+  }
 }
 ```
 
-The gateway user must have `sts:AssumeRole` on the target role, and the target role must grant the SES read actions required by the tool. `externalId` is never logged or returned in tool output.
+Use `application-ops` tools (for example `get_application_environment_overview`) to read profile-backed resources with the configured role. The gateway user must have `sts:AssumeRole` on the target role, and the target role must grant the read actions required by the tool. `externalId` is never logged or returned in tool output.
 
 ## In-memory credential cache
 
@@ -133,7 +139,7 @@ Attach a read-only policy on the target role with only the actions required for 
 
 ## Security boundaries
 
-- `roleArn` is configuration metadata and may appear in operational context when needed.
+- `roleArn` in application profiles is configuration metadata — not a public tool input.
 - `externalId` must never be logged, returned in tool output, or included in error payloads.
 - Temporary credentials must never appear in tool output, structured content, logs, or errors.
 - STS failures are normalized through `AwsRequestError` without leaking signed request details or raw AWS responses.

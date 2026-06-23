@@ -11,6 +11,10 @@ The checked-in IAM policy at `infra/aws/iam-readonly-policy.json` must contain e
 the unique IAM actions listed in this matrix. Drift is enforced by
 `src/aws/iam-readonly-policy.test.ts`.
 
+`sts:AssumeRole` is excluded from the canonical readonly policy. When profile-configured
+cross-account access is required, attach the optional add-on at
+`infra/aws/iam-assume-role-policy.example.json` with explicit trusted role ARNs.
+
 | Tool | Pack | AWS service | AWS action | Region mode | Risk level | Cache TTL (s) | Cost class | Cost control | Cost sensitivity | Estimated unit cost (USD) |
 | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | ---: |
 | aws_account_overview | aggregates | ec2 | ec2:DescribeInstances | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |

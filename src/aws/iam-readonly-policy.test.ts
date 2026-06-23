@@ -41,4 +41,8 @@ describe("readonly IAM policy contract", () => {
     expect(committedPolicy).not.toMatch(/arn:aws/);
     expect(committedPolicy).not.toMatch(/\d{12}/);
   });
+
+  it("does not include sts:AssumeRole in the canonical readonly policy", () => {
+    expect(policyActions).not.toContain("sts:AssumeRole");
+  });
 });

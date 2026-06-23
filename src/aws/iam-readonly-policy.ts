@@ -1,7 +1,16 @@
 import {
   AWS_CAPABILITY_IDS,
   awsActionsForCapabilities,
+  type AwsCapabilityId,
 } from "./capabilities.js";
+
+/**
+ * Capabilities used internally (for example profile-configured AssumeRole) but not
+ * included in the canonical readonly IAM policy template.
+ */
+export const IAM_READONLY_POLICY_EXCLUDED_CAPABILITIES: readonly AwsCapabilityId[] = [
+  "sts:AssumeRole",
+];
 
 /**
  * IAM actions allowed in the checked-in readonly policy without a matching capability.
@@ -18,6 +27,12 @@ export type IamPolicyDocument = {
     Sid?: string;
   }>;
 };
+
+export function iamPolicyCapabilityIds(): AwsCapabilityId[] {
+  return AWS_CAPABILITY_IDS.filter(
+    (id) => !IAM_READONLY_POLICY_EXCLUDED_CAPABILITIES.includes(id),
+  );
+}
 
 export function extractIamPolicyActions(policy: IamPolicyDocument): string[] {
   const actions = new Set<string>();
@@ -38,7 +53,7 @@ export function extractIamPolicyActions(policy: IamPolicyDocument): string[] {
 }
 
 export function expectedIamReadonlyActions(): string[] {
-  return awsActionsForCapabilities(AWS_CAPABILITY_IDS);
+  return awsActionsForCapabilities(iamPolicyCapabilityIds());
 }
 
 export function allowedIamReadonlyPolicyActions(): string[] {

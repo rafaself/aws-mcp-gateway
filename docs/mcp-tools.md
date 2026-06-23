@@ -1931,8 +1931,8 @@ is returned in the output.
 ## 24. `get_ses_configuration_status`
 
 **Purpose:** Returns SES configuration set status including sending enabled state,
-reputation metrics, TLS policy, and event destination summaries. Supports optional
-`AssumeRole` for SES resources in another AWS account.
+reputation metrics, TLS policy, and event destination summaries. Uses default gateway
+credentials only. For cross-account SES, use application profiles with `assume-role` auth.
 
 **Pack:** `security` (disabled by default)
 
@@ -1942,8 +1942,6 @@ reputation metrics, TLS policy, and event destination summaries. Supports option
 |-------|------|----------|---------|------------|
 | `configurationSetName` | `string` | yes | — | Alphanumeric, hyphen, underscore; max 64 characters. |
 | `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
-| `roleArn` | `string` | no | — | Valid IAM role ARN for cross-account access. |
-| `externalId` | `string` | no | — | Optional external ID for the trust policy (never logged). |
 
 ### AWS API
 
@@ -1976,8 +1974,6 @@ confirmation state, masked subscription endpoints, and a summarized topic policy
 | `topicName` | `string` | one of name/ARN | — | Short topic name when ARN is unknown. |
 | `topicArn` | `string` | one of name/ARN | — | Valid SNS topic ARN. |
 | `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
-| `roleArn` | `string` | no | — | Optional cross-account role ARN. |
-| `externalId` | `string` | no | — | Optional external ID (never logged). |
 
 ### AWS API
 
@@ -2006,8 +2002,6 @@ safe target summaries. Raw target input payloads are never returned.
 | `scheduleNamePrefix` | `string` | no | — | Max 256 characters. |
 | `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
 | `limit` | `number` | no | `25` | Integer 1–50. |
-| `roleArn` | `string` | no | — | Optional cross-account role ARN. |
-| `externalId` | `string` | no | — | Optional external ID (never logged). |
 
 ### AWS API
 
@@ -2034,8 +2028,6 @@ thresholds, and masked subscriber addresses.
 |-------|------|----------|---------|------------|
 | `budgetName` | `string` | yes | — | Max 100 characters. |
 | `accountId` | `string` | yes | — | 12-digit AWS account ID. |
-| `roleArn` | `string` | no | — | Optional cross-account role ARN. |
-| `externalId` | `string` | no | — | Optional external ID (never logged). |
 
 ### AWS API
 
@@ -2184,10 +2176,10 @@ Every tool handler is wrapped in `safeMcpHandler` which:
 | `get_ecr_image_status` | Yes | repositoryName, region, imageTag or imageDigest | 300s (5 min) |
 | `compare_ecs_task_image_with_ecr` | Yes | clusterName, serviceName, repositoryName, region | 300s (5 min) |
 | `get_s3_bucket_posture` | Yes | bucketName, region | 300s (5 min) |
-| `get_ses_configuration_status` | Yes | configurationSetName, region, roleArn | 300s (5 min) |
-| `get_sns_topic_status` | Yes | topicName or topicArn, region, roleArn | 300s (5 min) |
-| `get_eventbridge_rules_status` | Yes | ruleNamePrefix, scheduleNamePrefix, region, limit, roleArn | 300s (5 min) |
-| `get_budget_status` | Yes | budgetName, accountId, roleArn | 300s (5 min) |
+| `get_ses_configuration_status` | Yes | configurationSetName, region | 300s (5 min) |
+| `get_sns_topic_status` | Yes | topicName or topicArn, region | 300s (5 min) |
+| `get_eventbridge_rules_status` | Yes | ruleNamePrefix, scheduleNamePrefix, region, limit | 300s (5 min) |
+| `get_budget_status` | Yes | budgetName, accountId | 300s (5 min) |
 | `aws_account_overview` | Yes | per composed client keys | 300s (5 min) |
 | `aws_cost_overview` | Yes | startDate, endDate, granularity (×2 CE calls) | 1800s (30 min) |
 | `aws_observability_overview` | Yes | per composed client keys | 300s (5 min) |
