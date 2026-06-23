@@ -37,6 +37,15 @@ import {
   createGetSnsTopicStatusToolManifest,
   createGetEventBridgeRulesStatusToolManifest,
   createGetBudgetStatusToolManifest,
+  createListApplicationProfilesToolManifest,
+  createGetApplicationEnvironmentOverviewToolManifest,
+  createGetApplicationComputeStatusToolManifest,
+  createGetApplicationDatabaseStatusToolManifest,
+  createGetApplicationLogsToolManifest,
+  createGetApplicationSecretInventoryToolManifest,
+  createGetApplicationArtifactStatusToolManifest,
+  createGetApplicationAlertingStatusToolManifest,
+  createGetApplicationCostStatusToolManifest,
 } from "./definitions/index.js";
 
 export type GatewayToolCatalogMetadata = {
@@ -113,6 +122,15 @@ export function createToolManifests(ctx: GatewayContext): AnyToolManifest[] {
     createGetSnsTopicStatusToolManifest(ctx),
     createGetEventBridgeRulesStatusToolManifest(ctx),
     createGetBudgetStatusToolManifest(ctx),
+    createListApplicationProfilesToolManifest(ctx),
+    createGetApplicationEnvironmentOverviewToolManifest(ctx),
+    createGetApplicationComputeStatusToolManifest(ctx),
+    createGetApplicationDatabaseStatusToolManifest(ctx),
+    createGetApplicationLogsToolManifest(ctx),
+    createGetApplicationSecretInventoryToolManifest(ctx),
+    createGetApplicationArtifactStatusToolManifest(ctx),
+    createGetApplicationAlertingStatusToolManifest(ctx),
+    createGetApplicationCostStatusToolManifest(ctx),
   ] as AnyToolManifest[];
 }
 

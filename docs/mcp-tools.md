@@ -120,6 +120,15 @@ See [`docs/specs/tool-execution-metadata.md`](specs/tool-execution-metadata.md) 
 | 25 | `get_sns_topic_status` | SNS topic and subscription status | Yes | [↓](#25-get_sns_topic_status) |
 | 26 | `get_eventbridge_rules_status` | EventBridge and Scheduler status | Yes | [↓](#26-get_eventbridge_rules_status) |
 | 27 | `get_budget_status` | AWS Budget status | Yes | [↓](#27-get_budget_status) |
+| 28 | `list_application_profiles` | Application profile index | No | [↓](#28-list_application_profiles) |
+| 29 | `get_application_environment_overview` | Profile environment overview | Yes | [↓](#29-get_application_environment_overview) |
+| 30 | `get_application_compute_status` | Profile ECS compute status | Yes | [↓](#30-get_application_compute_status) |
+| 31 | `get_application_database_status` | Profile RDS database status | Yes | [↓](#31-get_application_database_status) |
+| 32 | `get_application_logs` | Profile recent log errors | Yes | [↓](#32-get_application_logs) |
+| 33 | `get_application_secret_inventory` | Profile SSM inventory | Yes | [↓](#33-get_application_secret_inventory) |
+| 34 | `get_application_artifact_status` | Profile ECR/ECS artifacts | Yes | [↓](#34-get_application_artifact_status) |
+| 35 | `get_application_alerting_status` | Profile alerting summary | Yes | [↓](#35-get_application_alerting_status) |
+| 36 | `get_application_cost_status` | Profile budget status | Yes | [↓](#36-get_application_cost_status) |
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
@@ -130,6 +139,8 @@ All public tools require OAuth (`aws:read`) or local bearer authentication and a
 **Security tools (20, 23–24)** are in the `security` tool pack, which is **disabled by default**. Enable with `AWS_MCP_ENABLED_TOOL_PACKS=...,security` when you need SSM parameter inventory, S3 posture, or SES configuration checks. These tools return metadata only and mask sensitive endpoints.
 
 **Observability tools (25–26)** for SNS and EventBridge/Scheduler are in the default `observability` pack. **Budget tool (27)** is in the default `cost` pack.
+
+**Application-ops tools (28–36)** are in the `application-ops` pack, which is **disabled by default**. Enable with `AWS_MCP_ENABLED_TOOL_PACKS=...,application-ops` when `AWS_MCP_APP_CONFIG` stores application profiles. Call `list_application_profiles` first, then pass `profileId` explicitly to aggregate tools. Profiles are saved operational context only — not secrets and not authorization.
 
 ---
 
@@ -2038,6 +2049,46 @@ thresholds, and masked subscriber addresses.
 
 ---
 
+## Application-ops tools (28–36)
+
+These tools require the `application-ops` pack and optional KV-backed profiles (`AWS_MCP_APP_CONFIG`). See [application-profiles.md](application-profiles.md).
+
+### Common input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `profileId` | `string` | yes | Profile id from `list_application_profiles` |
+
+`list_application_profiles` has no required input.
+
+### 28. `list_application_profiles`
+
+Returns safe profile metadata only: `id`, `displayName`, `environment`, `region`, `enabled`, `aliases`, `capabilities`, and `profileConfigAvailable`. Does not call AWS. Missing KV binding returns `storeStatus: "disabled"` with an empty list.
+
+### 29. `get_application_environment_overview`
+
+Composes all configured profile resource blocks (compute, database, logs, SSM inventory, artifacts, S3, SES, alerting, budget) into one normalized overview. Each section reports `configured`, `status`, optional `authStrategy`, and bounded data or a controlled error.
+
+### 30–36. Focused profile aggregators
+
+| Tool | Profile block | Primitive composition |
+|------|---------------|----------------------|
+| `get_application_compute_status` | `ecs` | ECS service health + running task sample |
+| `get_application_database_status` | `rds` | RDS instance health |
+| `get_application_logs` | `ecs.logGroupName` | Recent CloudWatch log errors |
+| `get_application_secret_inventory` | `ssm` with `requiredParameterNames` | SSM parameter inventory metadata |
+| `get_application_artifact_status` | `ecr` (+ optional `ecs`) | ECR image status or ECS/ECR compare |
+| `get_application_alerting_status` | `sns`, `eventbridge`, region | SNS, EventBridge, CloudWatch alarms |
+| `get_application_cost_status` | `budget` with `accountId` | AWS Budget status |
+
+### Safety boundaries
+
+- Disabled or missing profiles return controlled `validation_error` responses.
+- Profile auth overrides may use AssumeRole per resource block; only non-sensitive `authStrategy` metadata is returned.
+- Aggregators reuse primitive redaction guarantees (for example masked SNS endpoints and SES destination ARNs).
+
+---
+
 ## Error codes reference
 
 All tool errors use the `GatewayError` class hierarchy and return a consistent
@@ -2140,6 +2191,15 @@ Every tool handler is wrapped in `safeMcpHandler` which:
 | `aws_account_overview` | Yes | per composed client keys | 300s (5 min) |
 | `aws_cost_overview` | Yes | startDate, endDate, granularity (×2 CE calls) | 1800s (30 min) |
 | `aws_observability_overview` | Yes | per composed client keys | 300s (5 min) |
+| `list_application_profiles` | No | N/A | N/A |
+| `get_application_environment_overview` | Yes | profileId + per composed client keys | 300s (5 min) |
+| `get_application_compute_status` | Yes | profileId + ECS keys | 300s (5 min) |
+| `get_application_database_status` | Yes | profileId + RDS keys | 300s (5 min) |
+| `get_application_logs` | Yes | profileId + log group keys | 300s (5 min) |
+| `get_application_secret_inventory` | Yes | profileId + SSM keys | 300s (5 min) |
+| `get_application_artifact_status` | Yes | profileId + ECR/ECS keys | 300s (5 min) |
+| `get_application_alerting_status` | Yes | profileId + alerting keys | 300s (5 min) |
+| `get_application_cost_status` | Yes | profileId + budget keys | 300s (5 min) |
 
 **Key generation:** `SHA-256(toolName:normalizedParams)` → `ce:{64-hex-chars}`.
 Parameters are normalized with sorted keys and type-tagged serialization.

@@ -78,6 +78,14 @@ const AWS_BACKED_TOOLS = [
   "aws_account_overview",
   "aws_cost_overview",
   "aws_observability_overview",
+  "get_application_environment_overview",
+  "get_application_compute_status",
+  "get_application_database_status",
+  "get_application_logs",
+  "get_application_secret_inventory",
+  "get_application_artifact_status",
+  "get_application_alerting_status",
+  "get_application_cost_status",
 ] as const;
 
 const CORE_TOOLS = ["search", "fetch", "get_gateway_status"] as const;
@@ -87,6 +95,7 @@ const CHATGPT_DYNAMIC_CATALOG_TOOLS = ["search", "fetch"] as const;
 const STRUCTURED_OUTPUT_TOOLS = [
   ...CHATGPT_DYNAMIC_CATALOG_TOOLS,
   "get_gateway_status",
+  "list_application_profiles",
   ...AWS_BACKED_TOOLS,
 ] as const;
 
@@ -120,6 +129,15 @@ const EXPECTED_PACKS: Record<string, string> = {
   aws_account_overview: "aggregates",
   aws_cost_overview: "aggregates",
   aws_observability_overview: "aggregates",
+  list_application_profiles: "application-ops",
+  get_application_environment_overview: "application-ops",
+  get_application_compute_status: "application-ops",
+  get_application_database_status: "application-ops",
+  get_application_logs: "application-ops",
+  get_application_secret_inventory: "application-ops",
+  get_application_artifact_status: "application-ops",
+  get_application_alerting_status: "application-ops",
+  get_application_cost_status: "application-ops",
 };
 
 const EXPECTED_CATALOG_ANCHORS = [
@@ -150,11 +168,22 @@ const EXPECTED_CATALOG_ANCHORS = [
   { toolName: "aws_account_overview", docsAnchor: "10-aws_account_overview" },
   { toolName: "aws_cost_overview", docsAnchor: "11-aws_cost_overview" },
   { toolName: "aws_observability_overview", docsAnchor: "12-aws_observability_overview" },
+  { toolName: "list_application_profiles", docsAnchor: "28-list_application_profiles" },
+  { toolName: "get_application_environment_overview", docsAnchor: "29-get_application_environment_overview" },
+  { toolName: "get_application_compute_status", docsAnchor: "30-get_application_compute_status" },
+  { toolName: "get_application_database_status", docsAnchor: "31-get_application_database_status" },
+  { toolName: "get_application_logs", docsAnchor: "32-get_application_logs" },
+  { toolName: "get_application_secret_inventory", docsAnchor: "33-get_application_secret_inventory" },
+  { toolName: "get_application_artifact_status", docsAnchor: "34-get_application_artifact_status" },
+  { toolName: "get_application_alerting_status", docsAnchor: "35-get_application_alerting_status" },
+  { toolName: "get_application_cost_status", docsAnchor: "36-get_application_cost_status" },
 ] as const;
 
 const DEFAULT_EXPOSED_CATALOG_ANCHORS = EXPECTED_CATALOG_ANCHORS.filter(
   ({ toolName }) =>
-    EXPECTED_PACKS[toolName] !== "aggregates" && EXPECTED_PACKS[toolName] !== "security",
+    EXPECTED_PACKS[toolName] !== "aggregates" &&
+    EXPECTED_PACKS[toolName] !== "security" &&
+    EXPECTED_PACKS[toolName] !== "application-ops",
 );
 
 function defaultExposedToolNames(manifests: AnyToolManifest[]): string[] {
@@ -375,6 +404,7 @@ describe("tool manifest contract", () => {
           ...DEFAULT_ENABLED_TOOL_PACKS,
           "aggregates",
           "security",
+          "application-ops",
         ]),
       },
     });

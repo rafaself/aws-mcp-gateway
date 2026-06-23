@@ -42,6 +42,15 @@ export const PUBLIC_TOOL_TITLES = {
   aws_account_overview: "AWS Account Overview",
   aws_cost_overview: "AWS Cost Overview",
   aws_observability_overview: "AWS Observability Overview",
+  list_application_profiles: "List Application Profiles",
+  get_application_environment_overview: "Get Application Environment Overview",
+  get_application_compute_status: "Get Application Compute Status",
+  get_application_database_status: "Get Application Database Status",
+  get_application_logs: "Get Application Logs",
+  get_application_secret_inventory: "Get Application Secret Inventory",
+  get_application_artifact_status: "Get Application Artifact Status",
+  get_application_alerting_status: "Get Application Alerting Status",
+  get_application_cost_status: "Get Application Cost Status",
 } as const;
 
 export type PublicToolTitleName = keyof typeof PUBLIC_TOOL_TITLES;
@@ -671,4 +680,83 @@ export const awsObservabilityOverviewOutputSchema = withOptionalExecutionMetadat
   regions: z.array(z.string()),
   alarms: overviewAlarmsSectionSchema.optional(),
   logGroups: overviewLogGroupsSectionSchema.optional(),
+});
+
+const applicationProfileSummarySchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  environment: z.string(),
+  region: z.string(),
+});
+
+const applicationProfileListEntrySchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  environment: z.string(),
+  region: z.string(),
+  enabled: z.boolean(),
+  aliases: z.array(z.string()),
+  capabilities: z.array(z.string()),
+  profileConfigAvailable: z.boolean(),
+});
+
+export const listApplicationProfilesOutputSchema = withOptionalExecutionMetadata({
+  storeStatus: z.enum(["disabled", "available", "unavailable"]),
+  profiles: z.array(applicationProfileListEntrySchema),
+});
+
+const applicationSectionSchema = z.object({
+  configured: z.boolean(),
+  status: z.enum(["ok", "skipped", "error"]),
+  authStrategy: z.enum(["default", "assume-role"]).optional(),
+  data: z.unknown().optional(),
+  error: z.string().optional(),
+});
+
+export const getApplicationEnvironmentOverviewOutputSchema = withOptionalExecutionMetadata({
+  profile: applicationProfileSummarySchema,
+  compute: applicationSectionSchema,
+  database: applicationSectionSchema,
+  logs: applicationSectionSchema,
+  ssm: applicationSectionSchema,
+  artifacts: applicationSectionSchema,
+  s3: applicationSectionSchema,
+  ses: applicationSectionSchema,
+  alerting: applicationSectionSchema,
+  budget: applicationSectionSchema,
+});
+
+export const getApplicationComputeStatusOutputSchema = withOptionalExecutionMetadata({
+  profile: applicationProfileSummarySchema,
+  compute: applicationSectionSchema,
+});
+
+export const getApplicationDatabaseStatusOutputSchema = withOptionalExecutionMetadata({
+  profile: applicationProfileSummarySchema,
+  database: applicationSectionSchema,
+});
+
+export const getApplicationLogsOutputSchema = withOptionalExecutionMetadata({
+  profile: applicationProfileSummarySchema,
+  logs: applicationSectionSchema,
+});
+
+export const getApplicationSecretInventoryOutputSchema = withOptionalExecutionMetadata({
+  profile: applicationProfileSummarySchema,
+  ssm: applicationSectionSchema,
+});
+
+export const getApplicationArtifactStatusOutputSchema = withOptionalExecutionMetadata({
+  profile: applicationProfileSummarySchema,
+  artifacts: applicationSectionSchema,
+});
+
+export const getApplicationAlertingStatusOutputSchema = withOptionalExecutionMetadata({
+  profile: applicationProfileSummarySchema,
+  alerting: applicationSectionSchema,
+});
+
+export const getApplicationCostStatusOutputSchema = withOptionalExecutionMetadata({
+  profile: applicationProfileSummarySchema,
+  budget: applicationSectionSchema,
 });

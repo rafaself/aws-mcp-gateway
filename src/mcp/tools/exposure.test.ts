@@ -37,6 +37,25 @@ describe("tool exposure configuration", () => {
     expect(exposed.has("aws_account_overview")).toBe(false);
     expect(exposed.has("aws_cost_overview")).toBe(false);
     expect(exposed.has("aws_observability_overview")).toBe(false);
+    expect(exposed.has("list_application_profiles")).toBe(false);
+    expect(exposed.has("get_application_environment_overview")).toBe(false);
+  });
+
+  it("enabling application-ops pack exposes profile tools", () => {
+    const ctx = createTestGatewayContext({
+      toolExposure: {
+        ...defaultResolvedToolExposure(),
+        enabledToolPacks: new Set<ToolPack>([
+          ...DEFAULT_ENABLED_TOOL_PACKS,
+          "application-ops",
+        ]),
+      },
+    });
+    const exposed = resolveExposedToolNames(createToolManifests(ctx), ctx.toolExposure);
+
+    expect(exposed.has("list_application_profiles")).toBe(true);
+    expect(exposed.has("get_application_environment_overview")).toBe(true);
+    expect(exposed.has("get_application_compute_status")).toBe(true);
   });
 
   it("enabling aggregates pack exposes aggregate overview tools", () => {

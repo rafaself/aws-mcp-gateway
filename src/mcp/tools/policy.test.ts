@@ -57,6 +57,20 @@ describe("tool policy gate", () => {
     }
   });
 
+  it("denies application-ops tools when pack is disabled", () => {
+    for (const toolName of [
+      "list_application_profiles",
+      "get_application_environment_overview",
+      "get_application_compute_status",
+    ] as const) {
+      const manifest = manifests.find((candidate) => candidate.name === toolName)!;
+      expect(evaluateToolPolicy(manifest, defaultPolicy, {})).toMatchObject({
+        code: "validation_error",
+        message: "Tool is not enabled.",
+      });
+    }
+  });
+
   it("denies aggregate tools when aggregates pack is disabled", () => {
     for (const toolName of [
       "aws_account_overview",
