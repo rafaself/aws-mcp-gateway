@@ -241,7 +241,9 @@ If the KV binding is absent, all tool calls proceed without caching. This is acc
 
 ### Optional application profile KV
 
-Application profiles are optional operational context stored in a **separate** KV namespace from `AWS_MCP_CACHE`.
+Application profiles are optional. Do not configure `AWS_MCP_APP_CONFIG` unless you use the application-ops profile workflow.
+
+Profiles are optional operational context stored in a **separate** KV namespace from `AWS_MCP_CACHE`. You can add this binding later without code changes when you need profile-driven tools or the `app-profile:*` CLI.
 
 Create the namespace:
 

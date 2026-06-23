@@ -6,7 +6,12 @@ describe("wrangler config loader", () => {
     const config = loadAppProfileCliConfig("wrangler.example.jsonc");
     expect(config.allowedRegions).toEqual(["us-east-1", "sa-east-1"]);
     expect(config.indexKey).toBe("app-profiles/index.json");
-    expect(config.hasAppConfigBinding).toBe(true);
+    expect(config.hasAppConfigBinding).toBe(false);
+  });
+
+  it("does not require AWS_MCP_APP_CONFIG binding in wrangler.jsonc", () => {
+    const config = loadAppProfileCliConfig("wrangler.jsonc");
+    expect(config.hasAppConfigBinding).toBe(false);
   });
 
   it("parses jsonc comments and trailing commas", () => {
