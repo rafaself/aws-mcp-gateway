@@ -74,6 +74,15 @@ AWS-backed tools attach an `execution` object to successful `structuredContent` 
 
 Non-paid tools include structured billing metadata but do not append visible billing notes by default.
 
+**Non-paid tools:** `billing.estimatedCostUsd` is typically `0`. Prefer `billing.costClass` (`low`, `fanout-sensitive`, or `volume-sensitive`) over dollar precision — the gateway does not publish fixed per-request prices for these APIs.
+
+**Limitations — execution metadata does not imply:**
+
+- Final AWS billing or invoice totals (only gateway-side estimates where modeled).
+- A durable audit ledger or billing reconciliation record.
+- That non-paid tools are free at high volume (provider and platform costs may still apply).
+- Cloudflare Worker, KV, Durable Object, or bandwidth costs (AWS estimates only).
+
 See [`docs/specs/tool-execution-metadata.md`](specs/tool-execution-metadata.md) for the full contract.
 
 ---

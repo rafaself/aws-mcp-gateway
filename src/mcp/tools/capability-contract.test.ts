@@ -23,6 +23,15 @@ const AWS_BACKED_TOOLS = [
   "list_lambda_functions",
   "list_s3_buckets",
   "list_log_groups",
+  "aws_account_overview",
+  "aws_cost_overview",
+  "aws_observability_overview",
+] as const;
+
+const PAID_TOOLS = [
+  "get_aws_cost_summary",
+  "get_aws_cost_by_service",
+  "aws_cost_overview",
 ] as const;
 
 const NON_AWS_TOOLS = ["search", "fetch", "get_gateway_status"] as const;
@@ -87,5 +96,18 @@ describe("aws capability contract", () => {
     expect(serialized).not.toMatch(/AKIA/);
     expect(serialized).not.toMatch(/arn:aws/);
     expect(serialized).not.toMatch(/\d{12}/);
+  });
+
+  it("maps paid Cost Explorer tools to modeled unit costs in the capability matrix", () => {
+    const rows = buildAwsCapabilityMatrixRows(manifests);
+
+    for (const toolName of PAID_TOOLS) {
+      const paidRows = rows.filter((row) => row.toolName === toolName);
+      expect(paidRows.length).toBeGreaterThan(0);
+      for (const row of paidRows) {
+        expect(row.costControlClass).toBe("paid");
+        expect(row.estimatedUnitCostUsd).toBe("0.01");
+      }
+    }
   });
 });
