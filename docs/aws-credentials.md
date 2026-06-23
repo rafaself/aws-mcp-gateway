@@ -64,6 +64,8 @@ Future resource profiles can declare the same shape:
 }
 ```
 
+KV-backed application profiles store this metadata per environment. Profiles are optional operational context — not authorization and not secret storage. See [`application-profiles.md`](application-profiles.md).
+
 ### Returned credential shape
 
 Resolved credentials include:

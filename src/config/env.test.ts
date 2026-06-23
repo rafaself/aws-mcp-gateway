@@ -87,6 +87,8 @@ describe("validateEnv", () => {
     expect(config.AWS_ALLOWED_REGIONS).toBe("us-east-1,us-west-2");
     expect(config.MCP_AUTH_TOKEN).toBe("token");
     expect(config.AWS_MCP_CACHE).toBeUndefined();
+    expect(config.AWS_MCP_APP_CONFIG).toBeUndefined();
+    expect(config.AWS_MCP_APP_PROFILE_INDEX_KEY).toBe("app-profiles/index.json");
   });
 
   it("applies default tool exposure config when vars are absent", () => {
@@ -206,6 +208,39 @@ describe("validateEnv", () => {
 
     expect(result.valid).toBe(true);
     expect(result.config.AWS_MCP_CACHE).toBe(cache);
+  });
+
+  it("includes AWS_MCP_APP_CONFIG when present in environment", () => {
+    const appConfig = {} as never;
+    const env = {
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+      MCP_AUTH_TOKEN: "token",
+      AWS_MCP_APP_CONFIG: appConfig,
+    };
+
+    const result = validateEnv(env) as EnvValidationSuccess;
+
+    expect(result.valid).toBe(true);
+    expect(result.config.AWS_MCP_APP_CONFIG).toBe(appConfig);
+  });
+
+  it("uses custom AWS_MCP_APP_PROFILE_INDEX_KEY when provided", () => {
+    const env = {
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+      MCP_AUTH_TOKEN: "token",
+      AWS_MCP_APP_PROFILE_INDEX_KEY: "custom/index.json",
+    };
+
+    const result = validateEnv(env) as EnvValidationSuccess;
+
+    expect(result.valid).toBe(true);
+    expect(result.config.AWS_MCP_APP_PROFILE_INDEX_KEY).toBe("custom/index.json");
   });
 
   it("rejects non-string values for required bindings", () => {

@@ -2,6 +2,7 @@ import type { GatewayContext } from "../config/context.js";
 import { createCredentialResolver } from "../aws/credentials/resolver.js";
 import { createExecutionCollector } from "../telemetry/collector.js";
 import { defaultGatewayToolExposure } from "../config/context.js";
+import { APP_PROFILE_DEFAULT_INDEX_KEY } from "../security/limits.js";
 
 const DEFAULT_TEST_CREDENTIALS = {
   accessKeyId: "AKIA-test",
@@ -17,6 +18,7 @@ export function createTestGatewayContext(
     allowedRegions: ["us-east-1", "us-west-2"],
     execution: createExecutionCollector(),
     toolExposure: defaultGatewayToolExposure(),
+    appProfileIndexKey: APP_PROFILE_DEFAULT_INDEX_KEY,
     ...overrides,
   };
 

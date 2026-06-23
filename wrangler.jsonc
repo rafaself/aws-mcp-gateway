@@ -30,6 +30,8 @@
 		// Optional tool exposure (defaults expose all current public tools):
 		// "AWS_MCP_ENABLED_TOOL_PACKS": "core,cost,inventory,observability",
 		// "AWS_MCP_MAX_RISK_LEVEL": "read-only"
+		// Optional application profile index key (default: app-profiles/index.json):
+		// "AWS_MCP_APP_PROFILE_INDEX_KEY": "app-profiles/index.json"
 	},
 	"durable_objects": {
 		"bindings": [
@@ -43,6 +45,11 @@
 		{
 			"binding": "AWS_MCP_CACHE",
 			"id": "<your-kv-namespace-id>",
+			"remote": true
+		},
+		{
+			"binding": "AWS_MCP_APP_CONFIG",
+			"id": "<your-app-config-kv-namespace-id>",
 			"remote": true
 		}
 	],
