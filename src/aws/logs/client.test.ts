@@ -426,6 +426,26 @@ describe("filterLogEvents", () => {
     expect(result.events[0].message).toBe("auth failed Bearer [REDACTED]");
   });
 
+  it("redacts JSON-style secrets in log messages", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(
+        logsFilterEventsResponse([
+          makeEvent({ message: '{"token":"leaked-secret","status":"failed"}' }),
+        ]),
+      ),
+    );
+
+    const result = await filterLogEvents(
+      "/aws/lambda/example",
+      {},
+      "us-east-1",
+      credentials,
+    );
+
+    expect(result.events[0].message).toBe('{"token":"[REDACTED]","status":"failed"}');
+    expect(result.events[0].message).not.toContain("leaked-secret");
+  });
+
   it("returns truncated true when response hits limit", async () => {
     mockFetch.mockImplementation(() =>
       Promise.resolve(logsFilterEventsResponse(Array.from({ length: 5 }, () => makeEvent()))),
