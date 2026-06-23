@@ -266,3 +266,23 @@ export function summarizeBudgetStatusInput(args: {
     hasExternalId: Boolean(args.externalId),
   };
 }
+
+export function summarizeApplicationProfileInput(args: {
+  profileId?: string;
+}): Record<string, unknown> {
+  return {
+    profileIdLength: args.profileId?.length ?? 0,
+  };
+}
+
+export function summarizeApplicationLogsInput(args: {
+  profileId?: string;
+  hours?: number;
+  limit?: number;
+}): Record<string, unknown> {
+  return {
+    profileIdLength: args.profileId?.length ?? 0,
+    ...(args.hours !== undefined ? { hours: args.hours } : {}),
+    ...(args.limit !== undefined ? { limit: args.limit } : {}),
+  };
+}

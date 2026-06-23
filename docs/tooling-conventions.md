@@ -33,9 +33,18 @@ get_s3_bucket_posture
 aws_account_overview
 aws_cost_overview
 aws_observability_overview
+list_application_profiles
+get_application_environment_overview
+get_application_compute_status
+get_application_database_status
+get_application_logs
+get_application_secret_inventory
+get_application_artifact_status
+get_application_alerting_status
+get_application_cost_status
 ```
 
-Aggregate overview tools (`aws_*_overview`) live in the `aggregates` pack and are disabled by default. They compose existing AWS clients and return bounded counts plus short samples — not full account crawls. Enable the pack explicitly when needed.
+Aggregate overview tools (`aws_*_overview`) live in the `aggregates` pack and are disabled by default. Application profile tools live in the `application-ops` pack and are disabled by default. They compose existing AWS clients using KV-backed profile context and require an explicit `profileId`. Enable packs explicitly when needed.
 
 ## Input validation
 

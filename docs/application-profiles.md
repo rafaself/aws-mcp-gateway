@@ -19,7 +19,21 @@ Profiles are:
 - **Not authorization** — OAuth scopes, tool manifest policy, allowed regions, and IAM remain the security boundary
 - **Not secret storage** — never put credentials, tokens, passwords, or connection strings in profile JSON
 
-Future `application-ops` tools (#158) will consume profiles through `listApplicationProfiles` and `loadApplicationProfile`. Generic tools remain independent.
+The optional `application-ops` tool pack consumes profiles through `list_application_profiles` and profile-driven aggregate tools. Generic tools remain independent and do not require profiles.
+
+## Application-ops pack
+
+Enable the pack when KV profiles are configured:
+
+```text
+AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,database,application-ops
+```
+
+Workflow:
+
+1. Call `list_application_profiles` to discover safe profile metadata (`id`, `displayName`, `environment`, `region`, `enabled`, `capabilities`, `profileConfigAvailable`).
+2. Pass `profileId` explicitly to aggregate tools such as `get_application_environment_overview`.
+3. Profiles are operational context only — not authorization. OAuth scopes, tool packs, allowed regions, and IAM remain the security boundary.
 
 ## KV binding
 

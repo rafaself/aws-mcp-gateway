@@ -29,3 +29,11 @@ export {
 } from "./validation.js";
 
 export { listApplicationProfiles, loadApplicationProfile } from "./loader.js";
+
+export {
+  authStrategyLabel,
+  isProfileConfigAvailable,
+  resolveApplicationProfileForTool,
+  resolveBlockCredentials,
+  type AuthStrategyLabel,
+} from "./access.js";

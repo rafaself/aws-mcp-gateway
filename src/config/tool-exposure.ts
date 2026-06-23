@@ -6,6 +6,7 @@ export const TOOL_PACKS = [
   "database",
   "security",
   "aggregates",
+  "application-ops",
 ] as const;
 
 export type ConfigToolPack = (typeof TOOL_PACKS)[number];
@@ -48,6 +49,15 @@ export const PUBLIC_TOOL_NAMES = [
   "aws_account_overview",
   "aws_cost_overview",
   "aws_observability_overview",
+  "list_application_profiles",
+  "get_application_environment_overview",
+  "get_application_compute_status",
+  "get_application_database_status",
+  "get_application_logs",
+  "get_application_secret_inventory",
+  "get_application_artifact_status",
+  "get_application_alerting_status",
+  "get_application_cost_status",
 ] as const;
 
 export type PublicToolName = (typeof PUBLIC_TOOL_NAMES)[number];
