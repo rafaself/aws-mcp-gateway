@@ -5,7 +5,8 @@ export type AwsCapabilityId =
   | "logs:FilterLogEvents"
   | "lambda:ListFunctions"
   | "s3:ListAllMyBuckets"
-  | "logs:DescribeLogGroups";
+  | "logs:DescribeLogGroups"
+  | "sts:AssumeRole";
 
 export type AwsCapabilityCostSensitivity =
   | "paid"
@@ -92,6 +93,13 @@ export const AWS_CAPABILITY_REGISTRY: Readonly<Record<AwsCapabilityId, AwsCapabi
       iamAction: "logs:DescribeLogGroups",
       readonly: true,
       costSensitivity: "volume-sensitive",
+    },
+    "sts:AssumeRole": {
+      id: "sts:AssumeRole",
+      iamService: "sts",
+      iamAction: "sts:AssumeRole",
+      readonly: true,
+      costSensitivity: "low",
     },
   };
 

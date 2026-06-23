@@ -1,4 +1,4 @@
-import { AwsClient } from "aws4fetch";
+import { createAwsClient } from "../aws-client.js";
 import type { ExecutionTelemetry } from "../../telemetry/types.js";
 import { assertAwsCapability, AwsCapabilityError, type AwsCapabilityId } from "../capabilities.js";
 import { AwsRequestError } from "../errors.js";
@@ -24,12 +24,7 @@ export async function ec2Fetch<T>(
     throw new AwsCapabilityError(`Unsupported EC2 action for capability ${capability}: ${action}`);
   }
 
-  const client = new AwsClient({
-    accessKeyId: credentials.accessKeyId,
-    secretAccessKey: credentials.secretAccessKey,
-    service: "ec2",
-    region,
-  });
+  const client = createAwsClient(credentials, "ec2", region);
 
   const url = new URL(`https://ec2.${region}.amazonaws.com/`);
 

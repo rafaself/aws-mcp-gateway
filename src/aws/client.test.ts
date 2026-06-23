@@ -217,6 +217,24 @@ describe("awsRequest", () => {
     expect(err.retryable).toBe(false);
   });
 
+  it("passes sessionToken to AwsClient when using temporary credentials", async () => {
+    mockFetch.mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 }),
+    );
+
+    await awsRequest(ec2Request(), {
+      accessKeyId: "ASIA-test",
+      secretAccessKey: "temp-secret",
+      sessionToken: "session-token-value",
+    });
+
+    expect(awsClientConstructors[0]).toEqual(
+      expect.objectContaining({
+        sessionToken: "session-token-value",
+      }),
+    );
+  });
+
   it("passes credentials, service and region to AwsClient constructor", async () => {
     mockFetch.mockResolvedValue(
       new Response(JSON.stringify({}), { status: 200 }),
