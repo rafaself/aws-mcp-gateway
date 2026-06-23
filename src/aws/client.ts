@@ -70,6 +70,8 @@ export async function awsRequest<T = Record<string, unknown>>(
       });
     }
 
+    options.execution?.recordAwsRequest(capabilityId, region);
+
     const text = await response.text();
 
     if (text.length === 0) {

@@ -101,6 +101,7 @@ export function createGetRecentLogErrorsToolManifest(
         args.region,
         ctx.credentials,
         ctx.cache,
+        ctx.execution,
       );
 
       const count = events.length;

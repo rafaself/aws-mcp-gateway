@@ -1,8 +1,10 @@
 import { resolveRegions } from "../../security/regions.js";
 import { AwsRequestError } from "../errors.js";
 import { buildCacheKey } from "../../cache/keys.js";
-import { cacheGet, cacheSet } from "../../cache/kv.js";
+import { cacheReadWithStatus } from "../../cache/read.js";
+import { cacheSet } from "../../cache/kv.js";
 import { CW_CACHE_TTL_SECONDS } from "../../security/limits.js";
+import type { ExecutionTelemetry } from "../../telemetry/types.js";
 import type { AwsCredentials } from "../types.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
 import { describeAlarmsInRegion } from "./describe.js";
@@ -31,6 +33,7 @@ export async function listAlarms(
   allowedRegions: string[],
   credentials: AwsCredentials,
   cache?: KVNamespace,
+  execution?: ExecutionTelemetry,
 ): Promise<CloudWatchAlarm[]> {
   if (options.stateFilter && options.stateFilter.length > 0) {
     validateStateFilters(options.stateFilter);
@@ -41,18 +44,16 @@ export async function listAlarms(
   const sortedStateFilter = (options.stateFilter ?? []).slice().sort();
   const stateFilter = options.stateFilter ?? [];
 
-  if (cache) {
-    const cacheKey = await buildCacheKey("get_cloudwatch_alarms", {
-      regions: sortedRegions,
-      stateFilter: sortedStateFilter,
-    });
-    const cached = await cacheGet<CloudWatchAlarm[]>(cache, cacheKey);
-    if (cached) return cached;
-  }
+  const cacheKey = await buildCacheKey("get_cloudwatch_alarms", {
+    regions: sortedRegions,
+    stateFilter: sortedStateFilter,
+  });
+  const { value: cached } = await cacheReadWithStatus<CloudWatchAlarm[]>(cache, cacheKey, execution);
+  if (cached) return cached;
 
   const outcomes = await Promise.allSettled(
     regions.map((region) =>
-      describeAlarmsInRegion(region, stateFilter, credentials),
+      describeAlarmsInRegion(region, stateFilter, credentials, execution),
     ),
   );
 

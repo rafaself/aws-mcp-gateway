@@ -96,6 +96,7 @@ export function createCostByServiceToolManifest(
         ctx.credentials,
         ctx.region,
         ctx.cache,
+        ctx.execution,
       );
 
       const services = result.services.slice(0, args.limit);

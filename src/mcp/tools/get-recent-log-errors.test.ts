@@ -117,7 +117,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     const content = (result.content as Array<{ type: string; text: string }>)[0];
     expect(content.text).toContain("Found 1 error log event(s) in /aws/lambda/example");
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       region: "us-east-1",
       logGroupName: "/aws/lambda/example",
       count: 1,
@@ -144,7 +144,7 @@ describe("registerGetRecentLogErrorsTool", () => {
       logGroupName: "/aws/lambda/example",
     }) as Record<string, unknown>;
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       region: "us-east-1",
       logGroupName: "/aws/lambda/example",
       count: 0,
@@ -210,7 +210,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
   });
@@ -229,7 +229,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
   });
@@ -298,7 +298,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
     expect(mockFetch).not.toHaveBeenCalled();
@@ -319,7 +319,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
     expect(mockFetch).not.toHaveBeenCalled();
@@ -358,7 +358,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
     expect(mockFetch).not.toHaveBeenCalled();
@@ -379,7 +379,7 @@ describe("registerGetRecentLogErrorsTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
     expect(mockFetch).not.toHaveBeenCalled();

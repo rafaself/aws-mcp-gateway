@@ -82,6 +82,7 @@ export function createCostSummaryToolManifest(ctx: GatewayContext): ToolManifest
         ctx.credentials,
         ctx.region,
         ctx.cache,
+        ctx.execution,
       );
 
       return {

@@ -7,10 +7,12 @@ import type {
   CostByServiceResult,
   CeResponse,
 } from "./types.js";
-import { validateCostDates } from "../../security/dates.js";
 import { buildCacheKey } from "../../cache/keys.js";
-import { cacheGet, cacheSet } from "../../cache/kv.js";
+import { cacheReadWithStatus } from "../../cache/read.js";
+import { cacheSet } from "../../cache/kv.js";
+import type { ExecutionTelemetry } from "../../telemetry/types.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
+import { validateCostDates } from "../../security/dates.js";
 import { validateGranularity, validateMetric, buildRequest } from "./requests.js";
 import { parseAmount, getMetric } from "./parse.js";
 
@@ -22,6 +24,7 @@ export async function getCostSummary(
   credentials: AwsCredentials,
   signingRegion = DEFAULT_REGION,
   cache?: KVNamespace,
+  execution?: ExecutionTelemetry,
 ): Promise<CostSummary> {
   const {
     startDate,
@@ -34,16 +37,14 @@ export async function getCostSummary(
   validateGranularity(granularity);
   validateMetric(metric);
 
-  if (cache) {
-    const cacheKey = await buildCacheKey("get_aws_cost_summary", {
-      startDate,
-      endDate,
-      granularity,
-      metric,
-    });
-    const cached = await cacheGet<CostSummary>(cache, cacheKey);
-    if (cached) return cached;
-  }
+  const cacheKey = await buildCacheKey("get_aws_cost_summary", {
+    startDate,
+    endDate,
+    granularity,
+    metric,
+  });
+  const { value: cached } = await cacheReadWithStatus<CostSummary>(cache, cacheKey, execution);
+  if (cached) return cached;
 
   const body = buildRequest(startDate, endDate, granularity, metric);
 
@@ -59,6 +60,7 @@ export async function getCostSummary(
         "Content-Type": "application/x-amz-json-1.1",
       },
       body,
+      execution,
     },
     credentials,
   );
@@ -99,6 +101,7 @@ export async function getCostByService(
   credentials: AwsCredentials,
   signingRegion = DEFAULT_REGION,
   cache?: KVNamespace,
+  execution?: ExecutionTelemetry,
 ): Promise<CostByServiceResult> {
   const {
     startDate,
@@ -111,16 +114,14 @@ export async function getCostByService(
   validateGranularity(granularity);
   validateMetric(metric);
 
-  if (cache) {
-    const cacheKey = await buildCacheKey("get_aws_cost_by_service", {
-      startDate,
-      endDate,
-      granularity,
-      metric,
-    });
-    const cached = await cacheGet<CostByServiceResult>(cache, cacheKey);
-    if (cached) return cached;
-  }
+  const cacheKey = await buildCacheKey("get_aws_cost_by_service", {
+    startDate,
+    endDate,
+    granularity,
+    metric,
+  });
+  const { value: cached } = await cacheReadWithStatus<CostByServiceResult>(cache, cacheKey, execution);
+  if (cached) return cached;
 
   const body = buildRequest(startDate, endDate, granularity, metric, [
     { Type: "DIMENSION", Key: "SERVICE" },
@@ -138,6 +139,7 @@ export async function getCostByService(
         "Content-Type": "application/x-amz-json-1.1",
       },
       body,
+      execution,
     },
     credentials,
   );

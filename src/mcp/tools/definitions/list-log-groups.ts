@@ -88,6 +88,7 @@ export function createListLogGroupsToolManifest(
         args.region,
         ctx.credentials,
         ctx.cache,
+        ctx.execution,
       );
 
       const count = logGroups.length;

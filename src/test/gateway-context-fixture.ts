@@ -1,4 +1,5 @@
 import type { GatewayContext } from "../config/context.js";
+import { createExecutionCollector } from "../telemetry/collector.js";
 import { defaultGatewayToolExposure } from "../config/context.js";
 
 const DEFAULT_TEST_CREDENTIALS = {
@@ -13,6 +14,7 @@ export function createTestGatewayContext(
     credentials: DEFAULT_TEST_CREDENTIALS,
     region: "us-east-1",
     allowedRegions: ["us-east-1", "us-west-2"],
+    execution: createExecutionCollector(),
     toolExposure: defaultGatewayToolExposure(),
     ...overrides,
   };

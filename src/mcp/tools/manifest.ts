@@ -1,13 +1,16 @@
 import type { z } from "zod";
 import type { AwsCapabilityId } from "../../aws/capabilities.js";
 import type { GatewayContext } from "../../config/context.js";
+import { attachExecutionMetadata } from "../execution/attach.js";
+import { buildAwsExecutionMetadataFromManifest } from "../execution/build.js";
+import { buildRuntimeFactsFromSnapshot } from "../execution/runtime-facts.js";
 import {
   chatgptDiscoveryToolDescriptor,
   localStatusToolDescriptor,
   OAUTH_REQUIRED_SCOPE,
   readOnlyAwsToolDescriptor,
 } from "./descriptor.js";
-import { evaluateToolPolicy, type ToolPolicyContext } from "./policy.js";
+import { evaluateToolPolicy, isAwsBackedManifest, type ToolPolicyContext } from "./policy.js";
 import { safeMcpHandler } from "./response.js";
 import type {
   GatewayToolCatalogMetadata,
@@ -99,6 +102,7 @@ export const DEFAULT_AUTH_SCOPES = [OAUTH_REQUIRED_SCOPE] as const;
 export function manifestToGatewayDefinition<TInput>(
   manifest: ToolManifest<TInput>,
   policyContext: ToolPolicyContext,
+  ctx: GatewayContext,
 ): GatewayToolDefinition {
   const descriptor = {
     name: manifest.name,
@@ -108,7 +112,7 @@ export function manifestToGatewayDefinition<TInput>(
     outputSchema: manifest.outputSchema,
     visibility: manifest.visibility,
     catalog: manifest.catalog,
-    handler: wrapManifestHandler(manifest, policyContext),
+    handler: wrapManifestHandler(manifest, policyContext, ctx),
   };
 
   switch (manifest.descriptorKind) {
@@ -124,6 +128,7 @@ export function manifestToGatewayDefinition<TInput>(
 function wrapManifestHandler<TInput>(
   manifest: ToolManifest<TInput>,
   policyContext: ToolPolicyContext,
+  ctx: GatewayContext,
 ): GatewayToolHandler {
   return safeMcpHandler(
     {
@@ -142,7 +147,21 @@ function wrapManifestHandler<TInput>(
         throw denial;
       }
 
-      return (manifest.handler as (args: TInput) => Promise<McpSuccessResult>)(args);
+      ctx.execution.reset();
+
+      const result = await (manifest.handler as (args: TInput) => Promise<McpSuccessResult>)(args);
+
+      if (
+        isAwsBackedManifest(manifest as AnyToolManifest) &&
+        result.structuredContent &&
+        !("error" in result.structuredContent)
+      ) {
+        const facts = buildRuntimeFactsFromSnapshot(manifest as AnyToolManifest, ctx.execution.snapshot());
+        const execution = buildAwsExecutionMetadataFromManifest(manifest as AnyToolManifest, facts);
+        result.structuredContent = attachExecutionMetadata(result.structuredContent, execution);
+      }
+
+      return result;
     },
   );
 }

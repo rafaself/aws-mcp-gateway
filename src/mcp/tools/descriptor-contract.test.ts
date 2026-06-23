@@ -129,7 +129,9 @@ describe("MCP tool descriptor contract", () => {
     expect(serialized).not.toContain("management");
     expect(serialized).not.toContain("AKIA");
     expect(serialized).not.toContain("secret");
-    expect(serialized).not.toContain("execution");
+    for (const tool of tools) {
+      expect(tool).not.toHaveProperty("execution");
+    }
     expect(serialized).not.toContain("run_aws_cli");
     expect(serialized).not.toContain("call_any_aws_api");
   });

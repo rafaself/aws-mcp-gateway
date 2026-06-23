@@ -121,7 +121,7 @@ describe("registerCostByServiceTool", () => {
     expect(content.text).toContain("Amazon EC2: 100.00 USD");
     expect(content.text).toContain("Amazon S3: 50.00 USD");
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       period: { startDate: "2025-01-01", endDate: "2025-02-01" },
       granularity: "MONTHLY",
       total: 150,
@@ -261,7 +261,7 @@ describe("registerCostByServiceTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
   });
@@ -280,7 +280,7 @@ describe("registerCostByServiceTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
   });
@@ -299,7 +299,7 @@ describe("registerCostByServiceTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
   });
@@ -392,7 +392,7 @@ describe("registerCostByServiceTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBeUndefined();
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       period: { startDate: "2025-01-01", endDate: "2025-04-01" },
       granularity: "MONTHLY",
       total: 50,
@@ -422,7 +422,7 @@ describe("registerCostByServiceTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
     expect(mockFetch).not.toHaveBeenCalled();
@@ -440,7 +440,7 @@ describe("registerCostByServiceTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "aws_request_failed", retryable: false },
     });
   });

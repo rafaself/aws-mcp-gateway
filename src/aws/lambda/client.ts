@@ -1,7 +1,9 @@
 import { resolveRegions } from "../../security/regions.js";
 import { buildCacheKey } from "../../cache/keys.js";
-import { cacheGet, cacheSet } from "../../cache/kv.js";
+import { cacheReadWithStatus } from "../../cache/read.js";
+import { cacheSet } from "../../cache/kv.js";
 import { LAMBDA_CACHE_TTL_SECONDS, LAMBDA_MAX_FUNCTIONS } from "../../security/limits.js";
+import type { ExecutionTelemetry } from "../../telemetry/types.js";
 import { awsRequest } from "../client.js";
 import { AwsRequestError } from "../errors.js";
 import type { AwsCredentials } from "../types.js";
@@ -29,19 +31,18 @@ export async function listFunctions(
   allowedRegions: string[],
   credentials: AwsCredentials,
   cache?: KVNamespace,
+  execution?: ExecutionTelemetry,
 ): Promise<LambdaFunction[]> {
   const limit = options.limit ?? LAMBDA_MAX_FUNCTIONS;
   const regions = resolveRegions(options.regions, allowedRegions);
   const sortedRegions = [...regions].sort();
 
-  if (cache) {
-    const cacheKey = await buildCacheKey("list_lambda_functions", {
-      regions: sortedRegions,
-      limit,
-    });
-    const cached = await cacheGet<LambdaFunction[]>(cache, cacheKey);
-    if (cached) return cached;
-  }
+  const cacheKey = await buildCacheKey("list_lambda_functions", {
+    regions: sortedRegions,
+    limit,
+  });
+  const { value: cached } = await cacheReadWithStatus<LambdaFunction[]>(cache, cacheKey, execution);
+  if (cached) return cached;
 
   const outcomes = await Promise.allSettled(
     regions.map((region) =>
@@ -57,6 +58,7 @@ export async function listFunctions(
             "Content-Type": "application/x-amz-json-1.0",
           },
           body: { MaxItems: LAMBDA_MAX_FUNCTIONS },
+          execution,
         },
         credentials,
       ).then((response) => {

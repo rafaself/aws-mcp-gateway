@@ -79,6 +79,7 @@ export function createListLambdaFunctionsToolManifest(
         ctx.allowedRegions,
         ctx.credentials,
         ctx.cache,
+        ctx.execution,
       );
 
       const resultRegions = [...new Set(functions.map((f) => f.region))].sort();

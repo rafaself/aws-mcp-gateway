@@ -1,7 +1,9 @@
 import { resolveRegions } from "../../security/regions.js";
 import { buildCacheKey } from "../../cache/keys.js";
-import { cacheGet, cacheSet } from "../../cache/kv.js";
+import { cacheReadWithStatus } from "../../cache/read.js";
+import { cacheSet } from "../../cache/kv.js";
 import { EC2_CACHE_TTL_SECONDS } from "../../security/limits.js";
+import type { ExecutionTelemetry } from "../../telemetry/types.js";
 import { AwsRequestError } from "../errors.js";
 import type { AwsCredentials } from "../types.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
@@ -19,6 +21,7 @@ export async function listInstances(
   allowedRegions: string[],
   credentials: AwsCredentials,
   cache?: KVNamespace,
+  execution?: ExecutionTelemetry,
 ): Promise<Ec2Instance[]> {
   if (options.stateFilter && options.stateFilter.length > 0) {
     validateStateFilters(options.stateFilter);
@@ -28,14 +31,12 @@ export async function listInstances(
   const sortedRegions = [...regions].sort();
   const sortedStateFilter = options.stateFilter?.slice().sort() ?? [];
 
-  if (cache) {
-    const cacheKey = await buildCacheKey("list_ec2_instances", {
-      regions: sortedRegions,
-      stateFilter: sortedStateFilter,
-    });
-    const cached = await cacheGet<Ec2Instance[]>(cache, cacheKey);
-    if (cached) return cached;
-  }
+  const cacheKey = await buildCacheKey("list_ec2_instances", {
+    regions: sortedRegions,
+    stateFilter: sortedStateFilter,
+  });
+  const { value: cached } = await cacheReadWithStatus<Ec2Instance[]>(cache, cacheKey, execution);
+  if (cached) return cached;
 
   const params = buildDescribeInstancesParams(options.stateFilter ?? []);
 
@@ -47,6 +48,7 @@ export async function listInstances(
         params,
         region,
         credentials,
+        execution,
       )
         .then((response) => {
           const reservations =

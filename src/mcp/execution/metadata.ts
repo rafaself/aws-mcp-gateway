@@ -1,12 +1,7 @@
 import { z } from "zod";
+import { CACHE_STATUSES, type CacheStatus } from "../../telemetry/types.js";
 
-export const CACHE_STATUSES = [
-  "hit",
-  "miss",
-  "disabled",
-  "unavailable",
-  "bypass",
-] as const;
+export { CACHE_STATUSES, type CacheStatus };
 
 export const EXECUTION_COST_CLASSES = [
   "free",
@@ -23,7 +18,6 @@ export const PRICING_MODELS = [
   "usage-dependent",
 ] as const;
 
-export type CacheStatus = (typeof CACHE_STATUSES)[number];
 export type ExecutionCostClass = (typeof EXECUTION_COST_CLASSES)[number];
 export type PricingModel = (typeof PRICING_MODELS)[number];
 
