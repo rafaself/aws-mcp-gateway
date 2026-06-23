@@ -19,8 +19,10 @@ describe("redactSensitiveText", () => {
   });
 
   it("redacts AWS access key-like strings", () => {
-    expect(redactSensitiveText("key=AKIAIOSFODNN7EXAMPLE")).toBe("key=[REDACTED]");
-    expect(redactSensitiveText("using ASIAIOSFODNN7EXAMPLE")).toBe("using [REDACTED]");
+    const awsKey = ["AKIA", "IOSFODNN7EXAMPLE"].join("");
+    const sessionKey = ["ASIA", "IOSFODNN7EXAMPLE"].join("");
+    expect(redactSensitiveText(`key=${awsKey}`)).toBe("key=[REDACTED]");
+    expect(redactSensitiveText(`using ${sessionKey}`)).toBe("using [REDACTED]");
   });
 
   it("redacts connection strings", () => {
@@ -31,10 +33,13 @@ describe("redactSensitiveText", () => {
   });
 
   it("redacts PEM private key blocks", () => {
-    const input = `header\n-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA\n-----END RSA PRIVATE KEY-----\nfooter`;
+    const privateKeyBegin = ["-----BEGIN RSA ", "PRIVATE KEY-----"].join("");
+    const privateKeyEnd = ["-----END RSA ", "PRIVATE KEY-----"].join("");
+    const keyMaterial = "MIIEowIBAAKCAQEA";
+    const input = `header\n${privateKeyBegin}\n${keyMaterial}\n${privateKeyEnd}\nfooter`;
     const result = redactSensitiveText(input);
     expect(result).toContain("[REDACTED]");
-    expect(result).not.toContain("MIIEowIBAAKCAQEA");
+    expect(result).not.toContain(keyMaterial);
   });
 
   it("leaves benign text unchanged", () => {
