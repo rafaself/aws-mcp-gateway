@@ -27,6 +27,8 @@ import {
   createGetEcsServiceHealthToolManifest,
   createListEcsTasksToolManifest,
   createGetRecentStoppedEcsTasksToolManifest,
+  createGetRdsInstanceHealthToolManifest,
+  createGetRdsMetricsToolManifest,
 } from "./definitions/index.js";
 
 export type GatewayToolCatalogMetadata = {
@@ -93,6 +95,8 @@ export function createToolManifests(ctx: GatewayContext): AnyToolManifest[] {
     createGetEcsServiceHealthToolManifest(ctx),
     createListEcsTasksToolManifest(ctx),
     createGetRecentStoppedEcsTasksToolManifest(ctx),
+    createGetRdsInstanceHealthToolManifest(ctx),
+    createGetRdsMetricsToolManifest(ctx),
   ] as AnyToolManifest[];
 }
 

@@ -27,7 +27,7 @@ ChatGPT Connector
   -> Normalized AWS cost, inventory, alarm, and log data
 ```
 
-The registry defines **17** public tools. Default deployments expose **14** through tool packs (`core`, `cost`, `inventory`, `observability`). Three aggregate overview tools are opt-in via the `aggregates` pack. See [tool exposure](#tool-exposure-optional) and [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md).
+The registry defines **21** public tools. Default deployments expose **18** through tool packs (`core`, `cost`, `inventory`, `observability`, `database`). Three aggregate overview tools are opt-in via the `aggregates` pack. See [tool exposure](#tool-exposure-optional) and [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md).
 
 ## Current status
 
@@ -222,7 +222,7 @@ Self-hosted deployments can limit which MCP tools are exposed without changing s
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `AWS_MCP_ENABLED_TOOL_PACKS` | `core,cost,inventory,observability` | Comma-separated packs to expose |
+| `AWS_MCP_ENABLED_TOOL_PACKS` | `core,cost,inventory,observability,database` | Comma-separated packs to expose |
 | `AWS_MCP_ENABLED_TOOLS` | *(empty — all tools in enabled packs)* | Optional allowlist of tool names |
 | `AWS_MCP_DISABLED_TOOLS` | *(empty)* | Tool names to hide and deny |
 | `AWS_MCP_MAX_RISK_LEVEL` | `read-only` | Maximum allowed tool risk level |
@@ -233,12 +233,13 @@ Tool packs:
 core:           search, fetch, get_gateway_status
 cost:           get_aws_cost_summary, get_aws_cost_by_service
 inventory:      list_ec2_instances, list_lambda_functions, list_s3_buckets
-observability:  get_cloudwatch_alarms, get_recent_log_errors, list_log_groups, get_ecs_service_health, list_ecs_tasks, get_recent_stopped_ecs_tasks
+observability:  get_cloudwatch_alarms, get_cloudwatch_logs, get_cloudwatch_alarm_summary, get_recent_log_errors, list_log_groups, get_ecs_service_health, list_ecs_tasks, get_recent_stopped_ecs_tasks
+database:       get_rds_instance_health, get_rds_metrics
 aggregates:     aws_account_overview, aws_cost_overview, aws_observability_overview (disabled by default)
 security:       (no tools yet)
 ```
 
-The `aggregates` pack is opt-in. Enable it when you want bounded overview tools that compose existing inventory, cost, and observability capabilities. Default deployments expose 11 tools; enabling `aggregates` adds three more.
+The `aggregates` pack is opt-in. Enable it when you want bounded overview tools that compose existing inventory, cost, observability, and database capabilities. Default deployments expose 18 tools; enabling `aggregates` adds three more.
 
 Exposure rules:
 
@@ -361,7 +362,7 @@ source .env.deploy.local && pnpm run verify:oauth
 pnpm run verify:oauth:authenticated
 ```
 
-Then create or refresh the ChatGPT connector. The Actions list should expose all **enabled** MCP tools from `tools/list` (14 by default; 17 when the `aggregates` pack is enabled). Disabled or pack-gated tools do not appear as Actions.
+Then create or refresh the ChatGPT connector. The Actions list should expose all **enabled** MCP tools from `tools/list` (18 by default; 21 when the `aggregates` pack is enabled). Disabled or pack-gated tools do not appear as Actions.
 
 Detailed setup and troubleshooting:
 

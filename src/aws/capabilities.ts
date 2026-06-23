@@ -12,6 +12,9 @@ export type AwsCapabilityId =
   | "ecs:ListTasks"
   | "ecs:DescribeTasks"
   | "ecs:DescribeTaskDefinition"
+  | "rds:DescribeDBInstances"
+  | "rds:DescribeDBSubnetGroups"
+  | "cloudwatch:GetMetricData"
   | "sts:AssumeRole";
 
 export type AwsCapabilityCostSensitivity =
@@ -141,6 +144,28 @@ export const AWS_CAPABILITY_REGISTRY: Readonly<Record<AwsCapabilityId, AwsCapabi
       iamAction: "ecs:DescribeTaskDefinition",
       readonly: true,
       costSensitivity: "low",
+    },
+    "rds:DescribeDBInstances": {
+      id: "rds:DescribeDBInstances",
+      iamService: "rds",
+      iamAction: "rds:DescribeDBInstances",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "rds:DescribeDBSubnetGroups": {
+      id: "rds:DescribeDBSubnetGroups",
+      iamService: "rds",
+      iamAction: "rds:DescribeDBSubnetGroups",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "cloudwatch:GetMetricData": {
+      id: "cloudwatch:GetMetricData",
+      iamService: "cloudwatch",
+      iamAction: "cloudwatch:GetMetricData",
+      requestService: "monitoring",
+      readonly: true,
+      costSensitivity: "volume-sensitive",
     },
     "sts:AssumeRole": {
       id: "sts:AssumeRole",

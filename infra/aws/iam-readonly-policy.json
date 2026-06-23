@@ -64,6 +64,23 @@
       "Resource": "*"
     },
     {
+      "Sid": "RDSRead",
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBSubnetGroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudWatchMetricsRead",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:GetMetricData"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "StsAssumeRole",
       "Effect": "Allow",
       "Action": [

@@ -3,6 +3,7 @@ export const TOOL_PACKS = [
   "cost",
   "inventory",
   "observability",
+  "database",
   "security",
   "aggregates",
 ] as const;
@@ -14,6 +15,7 @@ export const DEFAULT_ENABLED_TOOL_PACKS: readonly ConfigToolPack[] = [
   "cost",
   "inventory",
   "observability",
+  "database",
 ];
 
 export const PUBLIC_TOOL_NAMES = [
@@ -33,6 +35,8 @@ export const PUBLIC_TOOL_NAMES = [
   "get_ecs_service_health",
   "list_ecs_tasks",
   "get_recent_stopped_ecs_tasks",
+  "get_rds_instance_health",
+  "get_rds_metrics",
   "aws_account_overview",
   "aws_cost_overview",
   "aws_observability_overview",
