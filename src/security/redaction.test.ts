@@ -16,6 +16,25 @@ describe("redactSensitiveText", () => {
     expect(redactSensitiveText("password=supersecret")).toBe("password=[REDACTED]");
     expect(redactSensitiveText("API_KEY=abc123")).toBe("API_KEY=[REDACTED]");
     expect(redactSensitiveText("token=my-token-value")).toBe("token=[REDACTED]");
+    expect(redactSensitiveText("client_secret=xyz")).toBe("client_secret=[REDACTED]");
+    expect(redactSensitiveText("refresh_token=rt-123")).toBe("refresh_token=[REDACTED]");
+  });
+
+  it("redacts colon-separated secret patterns", () => {
+    expect(redactSensitiveText("password: abc")).toBe("password: [REDACTED]");
+    expect(redactSensitiveText("x-api-key: abc")).toBe("x-api-key: [REDACTED]");
+    expect(redactSensitiveText("client_secret: xyz")).toBe("client_secret: [REDACTED]");
+    expect(redactSensitiveText("refresh_token: rt-123")).toBe("refresh_token: [REDACTED]");
+  });
+
+  it("redacts JSON-style secret values", () => {
+    expect(redactSensitiveText('{"token":"abc"}')).toBe('{"token":"[REDACTED]"}');
+    expect(redactSensitiveText('{"password":"abc"}')).toBe('{"password":"[REDACTED]"}');
+    expect(redactSensitiveText('{"apiKey":"abc"}')).toBe('{"apiKey":"[REDACTED]"}');
+    expect(redactSensitiveText('{"secret":"abc"}')).toBe('{"secret":"[REDACTED]"}');
+    expect(redactSensitiveText('{"authorization":"Bearer abc"}')).toBe(
+      '{"authorization":"[REDACTED]"}',
+    );
   });
 
   it("redacts AWS access key-like strings", () => {
@@ -45,5 +64,13 @@ describe("redactSensitiveText", () => {
   it("leaves benign text unchanged", () => {
     const input = "INFO: request completed status=200 duration=12ms";
     expect(redactSensitiveText(input)).toBe(input);
+  });
+
+  it("does not over-redact resource metadata field names", () => {
+    expect(redactSensitiveText("secretName=prod/my-secret")).toBe("secretName=prod/my-secret");
+    expect(redactSensitiveText("tokenCount=42")).toBe("tokenCount=42");
+    expect(redactSensitiveText('{"secretName":"prod/my-secret"}')).toBe(
+      '{"secretName":"prod/my-secret"}',
+    );
   });
 });
