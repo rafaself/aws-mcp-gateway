@@ -91,7 +91,7 @@ export function createGetRecentLogErrorsToolManifest(
       const now = Date.now();
       const startTime = now - args.hours * 60 * 60 * 1000;
 
-      const events = await filterLogEvents(
+      const { events } = await filterLogEvents(
         args.logGroupName,
         {
           startTime,

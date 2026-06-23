@@ -3,9 +3,16 @@ export const COST_MAX_SERVICE_ROWS = 25;
 export const LOGS_MAX_HOURS = 24;
 export const LOGS_MAX_EVENTS = 50;
 export const LOGS_MAX_MESSAGE_LENGTH = 1_000;
+export const LOGS_MAX_LOOKBACK_MINUTES = 1_440;
+export const LOGS_DEFAULT_LOOKBACK_MINUTES = 30;
+export const LOGS_MAX_FILTER_PATTERN_LENGTH = 256;
+export const LOG_STREAM_PREFIX_MAX_LENGTH = 512;
 
 export const EC2_CACHE_TTL_SECONDS = 300;
 export const CW_CACHE_TTL_SECONDS = 300;
+export const CW_MAX_ALARMS = 100;
+export const CW_ALARM_PREFIX_MAX_LENGTH = 256;
+export const CW_ALARM_REASON_MAX_LENGTH = 500;
 export const LOGS_CACHE_TTL_SECONDS = 300;
 
 export const LAMBDA_MAX_FUNCTIONS = 100;

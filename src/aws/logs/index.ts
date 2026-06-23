@@ -1,3 +1,9 @@
-export { filterLogEvents, describeLogGroups } from "./client.js";
+export { filterLogEvents, describeLogGroups, describeLogStreams } from "./client.js";
 export { LogsError } from "./types.js";
-export type { LogEvent, FilterLogEventsOptions, LogGroup } from "./types.js";
+export type {
+  LogEvent,
+  FilterLogEventsOptions,
+  FilterLogEventsResult,
+  LogGroup,
+  LogStream,
+} from "./types.js";

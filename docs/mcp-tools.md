@@ -108,6 +108,8 @@ See [`docs/specs/tool-execution-metadata.md`](specs/tool-execution-metadata.md) 
 | 13 | `get_ecs_service_health` | ECS service health | Yes | [↓](#13-get_ecs_service_health) |
 | 14 | `list_ecs_tasks` | ECS task inventory | Yes | [↓](#14-list_ecs_tasks) |
 | 15 | `get_recent_stopped_ecs_tasks` | Stopped ECS task diagnostics | Yes | [↓](#15-get_recent_stopped_ecs_tasks) |
+| 16 | `get_cloudwatch_logs` | Generic bounded log query | Yes | [↓](#16-get_cloudwatch_logs) |
+| 17 | `get_cloudwatch_alarm_summary` | Single-region alarm summary | Yes | [↓](#17-get_cloudwatch_alarm_summary) |
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
@@ -675,6 +677,9 @@ MCP output:
 - `eventId`
 - `ingestionTime`
 
+Log message bodies are scanned for likely secrets (tokens, passwords, connection
+strings, AWS key-like strings, PEM blocks) and masked before truncation.
+
 ### Error codes
 
 | Condition | Code | Retryable |
@@ -690,6 +695,7 @@ MCP output:
 
 - No AWS call if validation fails (region, hours, limit, logGroupName).
 - Log messages are truncated to 1000 characters to prevent oversized responses.
+- Log messages are redacted for likely secrets before truncation.
 - Timestamps are normalized to ISO 8601 strings.
 - The filter pattern is fixed and cannot be overridden by the caller.
 
@@ -1260,6 +1266,175 @@ and container exit codes within a bounded lookback window.
 
 ---
 
+## 16. `get_cloudwatch_logs`
+
+**Purpose:** Returns bounded, redacted CloudWatch log events from a log group
+with optional stream prefix and filter pattern. Use this for generic log
+investigation across any allowed region. CloudWatch Logs Insights queries are
+not supported.
+
+**Pack:** `observability`
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `logGroupName` | `string` | yes | — | Non-empty log group name. |
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+| `logStreamNamePrefix` | `string` | no | — | Max **512** characters. When set, the gateway verifies at least one matching stream exists before filtering. |
+| `query` | `string` | no | `""` (no filter) | CloudWatch Logs filter pattern, max **256** characters. |
+| `lookbackMinutes` | `number` | no | `30` | Integer 1–**1440**. |
+| `limit` | `number` | no | `20` | Integer 1–**50**. |
+
+### AWS API
+
+- **Service:** CloudWatch Logs (`logs`)
+- **Actions:** `FilterLogEvents`, `DescribeLogStreams`
+- **Time range:** `startTime = now - (lookbackMinutes * 60000)`, `endTime = now`
+- **Truncation:** `truncated: true` when the result count reaches `limit` or AWS returns `nextToken`
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `logGroupName`, `region`, `filterPattern`, `logStreamNamePrefix`, `startTime`, `endTime`, `limit` |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    region: string,
+    logGroupName: string,
+    count: number,
+    lookbackMinutes: number,
+    query: string,
+    logStreamNamePrefix?: string,
+    truncated: boolean,
+    events: [{
+      timestamp: string,
+      logStreamName: string,
+      message: string  // redacted and truncated to 1000 characters
+    }]
+  }
+}
+```
+
+### Redaction guarantees
+
+Before truncation, log messages are scanned for likely secrets:
+
+- Bearer tokens and `Authorization:` headers
+- `password=`, `secret=`, `token=`, `api_key=` style key/value pairs
+- AWS access key-like strings (`AKIA…`, `ASIA…`)
+- Database connection strings (`postgres://`, `mysql://`, `mongodb://`, `redis://`)
+- PEM private key blocks
+
+Matched content is replaced with `[REDACTED]`. Redaction is best-effort — never
+treat log output as a guarantee that no sensitive data remains.
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Region not in allowlist | `validation_error` | false |
+| Empty `logGroupName` | `validation_error` | false |
+| `lookbackMinutes` or `limit` out of range | `validation_error` | false |
+| `query` or `logStreamNamePrefix` too long | `validation_error` | false |
+| Missing log group | `not_found` | false |
+| AWS API failure | `aws_request_failed` | varies |
+
+### Safety boundaries
+
+- No AWS call if validation fails.
+- Default lookback is short (30 minutes).
+- No CloudWatch Logs Insights queries.
+- Empty stream-prefix matches return an empty result without error.
+
+---
+
+## 17. `get_cloudwatch_alarm_summary`
+
+**Purpose:** Returns a normalized CloudWatch alarm summary for a single region,
+including grouped state counts and metric metadata. Complements
+`get_cloudwatch_alarms` (multi-region list) with a region-scoped summary view.
+
+**Pack:** `observability`
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+| `alarmNamePrefix` | `string` | no | — | Max **256** characters. |
+| `stateValue` | `string` | no | All states | `ALARM`, `OK`, or `INSUFFICIENT_DATA`. |
+| `limit` | `number` | no | `50` | Integer 1–**100**. |
+
+### AWS API
+
+- **Service:** CloudWatch (`monitoring`)
+- **Action:** `DescribeAlarms`
+- **Alarm type:** `MetricAlarm` only
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `region`, `alarmNamePrefix`, `stateValue`, `limit` |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    region: string,
+    count: number,
+    stateCounts: {
+      ALARM: number,
+      OK: number,
+      INSUFFICIENT_DATA: number
+    },
+    alarms: [{
+      name: string,
+      state: "ALARM" | "INSUFFICIENT_DATA" | "OK",
+      metricNamespace: string,
+      metricName: string,
+      reason: string,    // truncated; action ARNs masked
+      updatedAt: string
+    }]
+  }
+}
+```
+
+### Redacted fields
+
+Alarm action targets (`AlarmActions`, `OKActions`, `InsufficientDataActions`)
+are never exposed. ARNs appearing in `StateReason` are masked as
+`[REDACTED_ARN]`.
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Region not in allowlist | `validation_error` | false |
+| Invalid `stateValue` | `validation_error` | false |
+| `limit` or `alarmNamePrefix` out of range | `validation_error` | false |
+| AWS API failure | `aws_request_failed` | varies |
+
+### Safety boundaries
+
+- Single-region only (defaults to gateway `AWS_REGION`).
+- Empty prefix matches return an empty summary, not an error.
+- Reason text is truncated to **500** characters.
+
+---
+
 ## Error codes reference
 
 All tool errors use the `GatewayError` class hierarchy and return a consistent
@@ -1339,6 +1514,8 @@ Every tool handler is wrapped in `safeMcpHandler` which:
 | `get_aws_cost_by_service` | Yes | startDate, endDate, granularity, metric | 1800s (30 min) |
 | `list_ec2_instances` | Yes | regions, stateFilter | 300s (5 min) |
 | `get_cloudwatch_alarms` | Yes | regions, stateFilter | 300s (5 min) |
+| `get_cloudwatch_logs` | Yes | logGroupName, region, filterPattern, logStreamNamePrefix, startTime, endTime, limit | 300s (5 min) |
+| `get_cloudwatch_alarm_summary` | Yes | region, alarmNamePrefix, stateValue, limit | 300s (5 min) |
 | `get_recent_log_errors` | Yes | logGroupName, region, filterPattern, startTime, endTime, limit | 300s (5 min) |
 | `list_lambda_functions` | Yes | regions, limit | 300s (5 min) |
 | `list_s3_buckets` | Yes | limit | 300s (5 min) |

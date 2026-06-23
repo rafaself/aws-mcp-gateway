@@ -7,14 +7,18 @@ import { CW_CACHE_TTL_SECONDS } from "../../security/limits.js";
 import type { ExecutionTelemetry } from "../../telemetry/types.js";
 import type { AwsCredentials } from "../types.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
-import { describeAlarmsInRegion } from "./describe.js";
-import { compareAlarms } from "./parse.js";
+import { describeAlarmsInRegion, summarizeAlarmsInRegion } from "./describe.js";
+import { buildStateCounts, compareAlarmSummaries, compareAlarms } from "./parse.js";
 import {
   CloudWatchError,
   VALID_ALARM_STATES,
+  type AlarmState,
   type CloudWatchAlarm,
+  type CloudWatchAlarmSummaryResult,
   type ListAlarmsOptions,
+  type SummarizeAlarmsOptions,
 } from "./types.js";
+import { validateAlarmLimit, validateAlarmNamePrefix } from "./validation.js";
 
 function validateStateFilters(states: string[]): void {
   const valid = VALID_ALARM_STATES as readonly string[];
@@ -94,4 +98,67 @@ export async function listAlarms(
   }
 
   return allAlarms;
+}
+
+function validateStateValue(stateValue: AlarmState | undefined): void {
+  if (stateValue === undefined) {
+    return;
+  }
+
+  if (!VALID_ALARM_STATES.includes(stateValue)) {
+    throw new CloudWatchError(
+      "validation_error",
+      `Invalid alarm state "${stateValue}". Valid states: ${VALID_ALARM_STATES.join(", ")}`,
+    );
+  }
+}
+
+export async function summarizeAlarms(
+  region: string,
+  options: SummarizeAlarmsOptions,
+  credentials: AwsCredentials,
+  cache?: KVNamespace,
+  execution?: ExecutionTelemetry,
+): Promise<CloudWatchAlarmSummaryResult> {
+  const limit = options.limit ?? 50;
+  validateAlarmLimit(limit);
+  validateAlarmNamePrefix(options.alarmNamePrefix);
+  validateStateValue(options.stateValue);
+
+  const cacheKey = await buildCacheKey("get_cloudwatch_alarm_summary", {
+    region,
+    alarmNamePrefix: options.alarmNamePrefix ?? "",
+    stateValue: options.stateValue ?? "",
+    limit,
+  });
+  const { value: cached } = await cacheReadWithStatus<CloudWatchAlarmSummaryResult>(
+    cache,
+    cacheKey,
+    execution,
+  );
+  if (cached) return cached;
+
+  const alarms = await summarizeAlarmsInRegion(
+    region,
+    {
+      alarmNamePrefix: options.alarmNamePrefix,
+      stateValue: options.stateValue,
+      limit,
+    },
+    credentials,
+    execution,
+  );
+
+  alarms.sort(compareAlarmSummaries);
+
+  const result: CloudWatchAlarmSummaryResult = {
+    alarms,
+    stateCounts: buildStateCounts(alarms),
+  };
+
+  if (cache) {
+    await cacheSet(cache, cacheKey, result, CW_CACHE_TTL_SECONDS);
+  }
+
+  return result;
 }

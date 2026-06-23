@@ -41,6 +41,8 @@ const AWS_BACKED_TOOLS = [
   "get_aws_cost_by_service",
   "list_ec2_instances",
   "get_cloudwatch_alarms",
+  "get_cloudwatch_logs",
+  "get_cloudwatch_alarm_summary",
   "get_recent_log_errors",
   "list_lambda_functions",
   "list_s3_buckets",
@@ -255,6 +257,56 @@ const TOOL_SUCCESS_SCENARIOS: ToolSuccessScenario[] = [
     },
     billingExpect: {
       costClass: "volume-sensitive",
+      pricingModel: "usage-dependent",
+      estimatedCostUsd: 0,
+    },
+    expectVisibleBillingNote: false,
+  },
+  {
+    toolName: "get_cloudwatch_logs",
+    setupMocks: () => {
+      mockFetch.mockResolvedValue(
+        logsFilterEventsResponse([
+          {
+            logStreamName: "2026/06/19/[$LATEST]abcdef",
+            timestamp: 1718798400000,
+            message: "INFO request completed",
+          },
+        ]),
+      );
+    },
+    args: {
+      region: "us-east-1",
+      logGroupName: "/aws/lambda/example",
+      lookbackMinutes: 30,
+      limit: 20,
+    },
+    billingExpect: {
+      costClass: "volume-sensitive",
+      pricingModel: "usage-dependent",
+      estimatedCostUsd: 0,
+    },
+    expectVisibleBillingNote: false,
+  },
+  {
+    toolName: "get_cloudwatch_alarm_summary",
+    setupMocks: () => {
+      mockFetch.mockResolvedValue(
+        cwAlarmsResponse([
+          {
+            AlarmName: "HighCPU",
+            StateValue: "ALARM",
+            StateReason: "Threshold Crossed",
+            StateUpdatedTimestamp: "2026-06-19T12:00:00.000Z",
+            Namespace: "AWS/EC2",
+            MetricName: "CPUUtilization",
+          },
+        ]),
+      );
+    },
+    args: { region: "us-east-1", limit: 10 },
+    billingExpect: {
+      costClass: "fanout-sensitive",
       pricingModel: "usage-dependent",
       estimatedCostUsd: 0,
     },

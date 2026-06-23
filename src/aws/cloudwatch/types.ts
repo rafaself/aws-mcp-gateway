@@ -14,6 +14,32 @@ export interface ListAlarmsOptions {
   stateFilter?: AlarmState[];
 }
 
+export interface SummarizeAlarmsOptions {
+  alarmNamePrefix?: string;
+  stateValue?: AlarmState;
+  limit?: number;
+}
+
+export interface AlarmStateCounts {
+  ALARM: number;
+  OK: number;
+  INSUFFICIENT_DATA: number;
+}
+
+export interface CloudWatchAlarmSummary {
+  name: string;
+  state: AlarmState;
+  metricNamespace: string;
+  metricName: string;
+  reason: string;
+  updatedAt: string;
+}
+
+export interface CloudWatchAlarmSummaryResult {
+  alarms: CloudWatchAlarmSummary[];
+  stateCounts: AlarmStateCounts;
+}
+
 export interface CloudWatchAlarm {
   name: string;
   region: string;
@@ -32,6 +58,9 @@ export interface DescribeAlarmsResponse {
     StateUpdatedTimestamp?: string;
     MetricName?: string;
     Namespace?: string;
+    AlarmActions?: string[];
+    OKActions?: string[];
+    InsufficientDataActions?: string[];
   }>;
   NextToken?: string;
 }

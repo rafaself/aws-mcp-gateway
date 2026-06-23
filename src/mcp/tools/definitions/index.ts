@@ -12,6 +12,12 @@ export {
   createGetCloudwatchAlarmsToolManifest,
 } from "./get-cloudwatch-alarms.js";
 export {
+  createGetCloudwatchLogsToolManifest,
+} from "./get-cloudwatch-logs.js";
+export {
+  createGetCloudwatchAlarmSummaryToolManifest,
+} from "./get-cloudwatch-alarm-summary.js";
+export {
   createGetRecentLogErrorsToolManifest,
 } from "./get-recent-log-errors.js";
 export {

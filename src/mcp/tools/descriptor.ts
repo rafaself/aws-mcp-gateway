@@ -20,6 +20,8 @@ export const PUBLIC_TOOL_TITLES = {
   get_aws_cost_by_service: "Get AWS Cost by Service",
   list_ec2_instances: "List EC2 Instances",
   get_cloudwatch_alarms: "Get CloudWatch Alarms",
+  get_cloudwatch_logs: "Get CloudWatch Logs",
+  get_cloudwatch_alarm_summary: "Get CloudWatch Alarm Summary",
   get_recent_log_errors: "Get Recent Log Errors",
   list_lambda_functions: "List Lambda Functions",
   list_s3_buckets: "List S3 Buckets",
@@ -200,6 +202,43 @@ export const recentLogErrorsOutputSchema = withOptionalExecutionMetadata({
       timestamp: z.string(),
       logStreamName: z.string(),
       message: z.string(),
+    }),
+  ),
+});
+
+export const cloudwatchLogsOutputSchema = withOptionalExecutionMetadata({
+  region: z.string(),
+  logGroupName: z.string(),
+  count: z.number(),
+  lookbackMinutes: z.number(),
+  query: z.string(),
+  logStreamNamePrefix: z.string().optional(),
+  truncated: z.boolean(),
+  events: z.array(
+    z.object({
+      timestamp: z.string(),
+      logStreamName: z.string(),
+      message: z.string(),
+    }),
+  ),
+});
+
+export const cloudwatchAlarmSummaryOutputSchema = withOptionalExecutionMetadata({
+  region: z.string(),
+  count: z.number(),
+  stateCounts: z.object({
+    ALARM: z.number(),
+    OK: z.number(),
+    INSUFFICIENT_DATA: z.number(),
+  }),
+  alarms: z.array(
+    z.object({
+      name: z.string(),
+      state: z.enum(["ALARM", "INSUFFICIENT_DATA", "OK"]),
+      metricNamespace: z.string(),
+      metricName: z.string(),
+      reason: z.string(),
+      updatedAt: z.string(),
     }),
   ),
 });

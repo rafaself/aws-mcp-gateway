@@ -9,6 +9,15 @@ export interface LogEvent {
   region: string;
 }
 
+export interface FilterLogEventsResult {
+  events: LogEvent[];
+  truncated: boolean;
+}
+
+export interface LogStream {
+  name: string;
+}
+
 export interface FilterLogEventsResponse {
   events?: Array<{
     logStreamName?: string;
@@ -35,6 +44,13 @@ export interface DescribeLogGroupsResponse {
     creationTime?: number;
     retentionInDays?: number;
     storedBytes?: number;
+  }>;
+  nextToken?: string;
+}
+
+export interface DescribeLogStreamsResponse {
+  logStreams?: Array<{
+    logStreamName?: string;
   }>;
   nextToken?: string;
 }
