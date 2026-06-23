@@ -4,6 +4,7 @@ export {
   getRecentStoppedEcsTasks,
   getTaskDefinitionMetadata,
 } from "./client.js";
+export { compareServiceImageWithEcr } from "./image-compare.js";
 export { EcsError } from "./types.js";
 export type {
   EcsServiceHealth,
@@ -12,4 +13,5 @@ export type {
   EcsListTasksOptions,
   EcsStoppedTasksOptions,
   EcsDesiredStatus,
+  EcsEcrImageComparisonResult,
 } from "./types.js";

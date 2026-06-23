@@ -34,6 +34,8 @@ export function normalizeContainers(
   containers: Array<{
     name?: string;
     lastStatus?: string;
+    image?: string;
+    imageDigest?: string;
     exitCode?: number;
     reason?: string;
   }> | undefined,
@@ -42,6 +44,8 @@ export function normalizeContainers(
   return containers.map((c) => ({
     name: c.name ?? "",
     lastStatus: c.lastStatus ?? "",
+    ...(c.image ? { image: c.image } : {}),
+    ...(c.imageDigest ? { imageDigest: c.imageDigest } : {}),
     ...(c.exitCode !== undefined ? { exitCode: c.exitCode } : {}),
     ...(c.reason ? { reason: c.reason } : {}),
   }));

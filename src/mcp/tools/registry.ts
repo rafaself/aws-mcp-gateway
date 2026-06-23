@@ -30,6 +30,9 @@ import {
   createGetRdsInstanceHealthToolManifest,
   createGetRdsMetricsToolManifest,
   createCheckSsmParameterInventoryToolManifest,
+  createGetEcrImageStatusToolManifest,
+  createCompareEcsTaskImageWithEcrToolManifest,
+  createGetS3BucketPostureToolManifest,
 } from "./definitions/index.js";
 
 export type GatewayToolCatalogMetadata = {
@@ -99,6 +102,9 @@ export function createToolManifests(ctx: GatewayContext): AnyToolManifest[] {
     createGetRdsInstanceHealthToolManifest(ctx),
     createGetRdsMetricsToolManifest(ctx),
     createCheckSsmParameterInventoryToolManifest(ctx),
+    createGetEcrImageStatusToolManifest(ctx),
+    createCompareEcsTaskImageWithEcrToolManifest(ctx),
+    createGetS3BucketPostureToolManifest(ctx),
   ] as AnyToolManifest[];
 }
 
