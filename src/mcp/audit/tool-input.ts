@@ -34,6 +34,33 @@ export function summarizeLogErrorsInput(args: {
   };
 }
 
+export function summarizeCloudwatchLogsInput(args: {
+  logStreamNamePrefix?: string;
+  query?: string;
+  lookbackMinutes?: number;
+  limit?: number;
+}): Record<string, unknown> {
+  return {
+    hasLogGroupName: true,
+    prefixLength: args.logStreamNamePrefix?.length ?? 0,
+    hasQuery: Boolean(args.query && args.query.length > 0),
+    lookbackMinutes: args.lookbackMinutes,
+    limit: args.limit,
+  };
+}
+
+export function summarizeCloudwatchAlarmSummaryInput(args: {
+  alarmNamePrefix?: string;
+  stateValue?: string;
+  limit?: number;
+}): Record<string, unknown> {
+  return {
+    prefixLength: args.alarmNamePrefix?.length ?? 0,
+    stateValue: args.stateValue,
+    limit: args.limit,
+  };
+}
+
 export function summarizeS3BucketsInput(args: {
   limit?: number;
 }): Record<string, unknown> {

@@ -219,6 +219,18 @@ export function logsDescribeLogGroupsResponse(
   });
 }
 
+export function logsDescribeLogStreamsResponse(
+  logStreams: Array<Record<string, unknown>>,
+  nextToken?: string,
+): Response {
+  const body: Record<string, unknown> = { logStreams };
+  if (nextToken) body.nextToken = nextToken;
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "content-type": "application/x-amz-json-1.1" },
+  });
+}
+
 export function makeLogGroup(opts?: {
   logGroupName?: string;
   creationTime?: number;

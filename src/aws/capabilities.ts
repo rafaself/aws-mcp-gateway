@@ -6,6 +6,7 @@ export type AwsCapabilityId =
   | "lambda:ListFunctions"
   | "s3:ListAllMyBuckets"
   | "logs:DescribeLogGroups"
+  | "logs:DescribeLogStreams"
   | "ecs:DescribeClusters"
   | "ecs:DescribeServices"
   | "ecs:ListTasks"
@@ -96,6 +97,13 @@ export const AWS_CAPABILITY_REGISTRY: Readonly<Record<AwsCapabilityId, AwsCapabi
       id: "logs:DescribeLogGroups",
       iamService: "logs",
       iamAction: "logs:DescribeLogGroups",
+      readonly: true,
+      costSensitivity: "volume-sensitive",
+    },
+    "logs:DescribeLogStreams": {
+      id: "logs:DescribeLogStreams",
+      iamService: "logs",
+      iamAction: "logs:DescribeLogStreams",
       readonly: true,
       costSensitivity: "volume-sensitive",
     },

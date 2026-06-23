@@ -79,8 +79,8 @@ describe("filterLogEvents", () => {
       credentials,
     );
 
-    expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0]).toEqual({
       logGroupName: "/aws/lambda/example",
       logStreamName: "2026/06/19/[$LATEST]abcdef",
       timestamp: TEST_TIMESTAMP_ISO,
@@ -190,9 +190,9 @@ describe("filterLogEvents", () => {
       credentials,
     );
 
-    expect(result).toHaveLength(1);
-    expect(result[0].message.length).toBe(1_000);
-    expect(result[0].message).toBe("x".repeat(997) + "...");
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0].message.length).toBe(1_000);
+    expect(result.events[0].message).toBe("x".repeat(997) + "...");
   });
 
   it("does not truncate messages at or under 1000 characters", async () => {
@@ -210,7 +210,7 @@ describe("filterLogEvents", () => {
       credentials,
     );
 
-    expect(result[0].message).toBe(shortMessage);
+    expect(result.events[0].message).toBe(shortMessage);
   });
 
   it("sends correct X-Amz-Target header", async () => {
@@ -250,7 +250,7 @@ describe("filterLogEvents", () => {
       credentials,
     );
 
-    expect(result).toEqual([]);
+    expect(result).toEqual({ events: [], truncated: false });
   });
 
   it("handles response with no events field", async () => {
@@ -270,7 +270,7 @@ describe("filterLogEvents", () => {
       credentials,
     );
 
-    expect(result).toEqual([]);
+    expect(result).toEqual({ events: [], truncated: true });
   });
 
   it("passes credentials to AwsClient constructor", async () => {
@@ -321,8 +321,8 @@ describe("filterLogEvents", () => {
       credentials,
     );
 
-    expect(result).toHaveLength(1);
-    const keys = Object.keys(result[0]);
+    expect(result.events).toHaveLength(1);
+    const keys = Object.keys(result.events[0]);
     expect(keys).not.toContain("eventId");
     expect(keys).not.toContain("ingestionTime");
   });
@@ -342,7 +342,7 @@ describe("filterLogEvents", () => {
       credentials,
     );
 
-    expect(result).toHaveLength(50);
+    expect(result.events).toHaveLength(50);
   });
 
   it("uses custom limit when provided", async () => {
@@ -360,7 +360,7 @@ describe("filterLogEvents", () => {
       credentials,
     );
 
-    expect(result).toHaveLength(3);
+    expect(result.events).toHaveLength(3);
   });
 
   it("sends custom limit in request body", async () => {
@@ -405,6 +405,66 @@ describe("filterLogEvents", () => {
     ).rejects.toThrow(LogsError);
 
     expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("redacts secrets in log messages", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(
+        logsFilterEventsResponse([
+          makeEvent({ message: "auth failed Bearer eyJhbGciOiJIUzI1NiJ9.sig" }),
+        ]),
+      ),
+    );
+
+    const result = await filterLogEvents(
+      "/aws/lambda/example",
+      {},
+      "us-east-1",
+      credentials,
+    );
+
+    expect(result.events[0].message).toBe("auth failed Bearer [REDACTED]");
+  });
+
+  it("returns truncated true when response hits limit", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(logsFilterEventsResponse(Array.from({ length: 5 }, () => makeEvent()))),
+    );
+
+    const result = await filterLogEvents(
+      "/aws/lambda/example",
+      { limit: 5 },
+      "us-east-1",
+      credentials,
+    );
+
+    expect(result.truncated).toBe(true);
+    expect(result.events).toHaveLength(5);
+  });
+
+  it("passes logStreamNamePrefix to FilterLogEvents", async () => {
+    mockFetch.mockImplementation(() => Promise.resolve(logsFilterEventsResponse([])));
+
+    await filterLogEvents(
+      "/aws/lambda/example",
+      { logStreamNamePrefix: "2026/06/", useDefaultFilterPattern: false, filterPattern: "" },
+      "us-east-1",
+      credentials,
+    );
+
+    const body = JSON.parse(
+      (mockFetch.mock.calls[0][1] as { body?: string }).body ?? "{}",
+    );
+    expect(body.logStreamNamePrefix).toBe("2026/06/");
+    expect(body.filterPattern).toBe("");
+  });
+
+  it("maps missing log group to not_found", async () => {
+    mockFetch.mockImplementation(() => Promise.resolve(new Response("{}", { status: 400 })));
+
+    await expect(
+      filterLogEvents("/missing/group", {}, "us-east-1", credentials),
+    ).rejects.toMatchObject({ code: "not_found" });
   });
 });
 
@@ -508,15 +568,18 @@ const DEFAULT_FILTER_PATTERN = "?ERROR ?Error ?error ?Exception ?exception ?WARN
 describe("filterLogEvents with cache", () => {
   it("returns cached result without calling AWS on cache hit", async () => {
     const cache = createMockKv();
-    const cachedResult = [
-      {
-        logGroupName: "/aws/lambda/example",
-        logStreamName: "stream-1",
-        timestamp: TEST_TIMESTAMP_ISO,
-        message: "Cached error",
-        region: "us-east-1",
-      },
-    ];
+    const cachedResult = {
+      events: [
+        {
+          logGroupName: "/aws/lambda/example",
+          logStreamName: "stream-1",
+          timestamp: TEST_TIMESTAMP_ISO,
+          message: "Cached error",
+          region: "us-east-1",
+        },
+      ],
+      truncated: false,
+    };
     const startTime = TEST_TIMESTAMP_MS - 3600000;
     const endTime = TEST_TIMESTAMP_MS;
     const limit = 50;
@@ -525,6 +588,7 @@ describe("filterLogEvents with cache", () => {
       logGroupName: "/aws/lambda/example",
       region: "us-east-1",
       filterPattern: DEFAULT_FILTER_PATTERN,
+      logStreamNamePrefix: "",
       startTime,
       endTime,
       limit,
@@ -557,7 +621,7 @@ describe("filterLogEvents with cache", () => {
       cache as never,
     );
 
-    expect(result).toHaveLength(1);
+    expect(result.events).toHaveLength(1);
     expect(mockFetch).toHaveBeenCalledTimes(1);
     expect(cache.put).toHaveBeenCalled();
   });
@@ -585,7 +649,7 @@ describe("filterLogEvents with cache", () => {
       credentials,
     );
 
-    expect(result).toHaveLength(1);
+    expect(result.events).toHaveLength(1);
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 

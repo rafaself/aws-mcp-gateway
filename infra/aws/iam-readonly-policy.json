@@ -46,7 +46,8 @@
       "Effect": "Allow",
       "Action": [
         "logs:DescribeLogGroups",
-        "logs:FilterLogEvents"
+        "logs:FilterLogEvents",
+        "logs:DescribeLogStreams"
       ],
       "Resource": "*"
     },

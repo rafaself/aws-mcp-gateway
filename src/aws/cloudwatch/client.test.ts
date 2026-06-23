@@ -538,3 +538,42 @@ describe("listAlarms with cache", () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("summarizeAlarms", () => {
+  it("returns state counts and masked alarm summaries", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(
+        cwAlarmsResponse([
+          makeAlarm({
+            name: "CPU-High",
+            reason: "Threshold crossed arn:aws:sns:us-east-1:123456789012:ops",
+          }),
+          makeAlarm({ name: "Disk-OK", state: "OK", reason: "Within threshold" }),
+        ]),
+      ),
+    );
+
+    const { summarizeAlarms } = await import("./client.js");
+    const result = await summarizeAlarms("us-east-1", { limit: 10 }, credentials);
+
+    expect(result.stateCounts).toEqual({
+      ALARM: 1,
+      OK: 1,
+      INSUFFICIENT_DATA: 0,
+    });
+    expect(result.alarms[0].reason).not.toContain("arn:aws:sns");
+    expect(result.alarms[0].metricNamespace).toBe("AWS/EC2");
+  });
+
+  it("passes alarm name prefix to DescribeAlarms", async () => {
+    mockFetch.mockImplementation(() => Promise.resolve(cwAlarmsResponse([])));
+
+    const { summarizeAlarms } = await import("./client.js");
+    await summarizeAlarms("us-east-1", { alarmNamePrefix: "prod-", limit: 5 }, credentials);
+
+    const body = JSON.parse(
+      (mockFetch.mock.calls[0][1] as { body?: string }).body ?? "{}",
+    );
+    expect(body.AlarmNamePrefix).toBe("prod-");
+  });
+});

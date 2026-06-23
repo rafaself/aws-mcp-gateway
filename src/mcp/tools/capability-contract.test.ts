@@ -19,6 +19,8 @@ const AWS_BACKED_TOOLS = [
   "get_aws_cost_by_service",
   "list_ec2_instances",
   "get_cloudwatch_alarms",
+  "get_cloudwatch_logs",
+  "get_cloudwatch_alarm_summary",
   "get_recent_log_errors",
   "list_lambda_functions",
   "list_s3_buckets",
