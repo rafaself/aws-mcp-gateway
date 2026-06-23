@@ -11,6 +11,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "sync-secrets": "bash scripts/sync-secrets.sh",
+    "sync-config": "bash scripts/sync-worker-config.sh",
     "deploy:configured": "bash scripts/deploy-with-env.sh",
     "setup:auth0": "bash scripts/setup-auth0-oauth.sh",
     "verify:oauth": "bash scripts/verify-oauth-deployment.sh",

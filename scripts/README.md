@@ -50,6 +50,7 @@ pnpm run output:guardrail
 pnpm run legacy:check
 pnpm run test:integrity
 pnpm run sync-secrets
+pnpm run sync-config
 pnpm run deploy:configured
 pnpm run setup:auth0
 pnpm run verify:oauth
@@ -116,6 +117,17 @@ Reads deployment secrets from the env file and pushes them to the Worker with `w
 
 This script calls external services and changes Worker secrets.
 
+#### `sync-worker-config.sh`
+
+Uploads a new Worker version with `wrangler versions upload` (vars from `wrangler.jsonc`, secrets from the env file via `--secrets-file`) and rolls it out with `wrangler versions deploy` at 100%. Use this to refresh configuration without `wrangler deploy` (no code release workflow).
+
+Optional environment overrides:
+
+- `WRANGLER_CONFIG_SYNC_TAG` (default: `config-sync`)
+- `WRANGLER_CONFIG_SYNC_MESSAGE` (default: `sync worker secrets and vars`)
+
+This script calls external services and changes Worker configuration.
+
 #### `verify-authenticated-deployment.sh`
 
 Runs an authenticated smoke test against a deployed Worker. It can use either a pre-issued access token or obtain one through an OAuth client-credentials flow, then verifies MCP initialization, tool listing, and a small set of tool calls.
@@ -169,7 +181,7 @@ Shared Node module that defines the runtime output guardrail logic used to detec
 ## Safety notes
 
 - Validation scripts such as `check-repository-safety.mjs`, `check-runtime-output.mjs`, `check-legacy-symbols.mjs`, `check-test-integrity.mjs`, and the `*.test.mjs` files are local-only.
-- `setup-auth0-oauth.sh`, `sync-secrets.sh`, and `deploy-with-env.sh` can change external systems.
+- `setup-auth0-oauth.sh`, `sync-secrets.sh`, `sync-worker-config.sh`, and `deploy-with-env.sh` can change external systems.
 - `verify-oauth-deployment.sh` and `verify-authenticated-deployment.sh` call live deployed services and should be run with the correct target environment.
 
 ## Maintenance

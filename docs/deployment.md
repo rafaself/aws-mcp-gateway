@@ -250,11 +250,19 @@ cp .env.deploy.example .env.deploy.local
 
 Wrangler only reads `CLOUDFLARE_API_TOKEN` from the shell. Store the token as `AWS_MCP_GATEWAY_CLOUDFLARE_API_TOKEN` in `.env.deploy.local`; the deploy scripts map it automatically. If you use `wrangler login`, the Cloudflare token is optional.
 
-Sync Worker secrets from `.env.deploy.local`:
+Sync Worker secrets from `.env.deploy.local` (no rollout; `wrangler secret put` only):
 
 ```bash
 pnpm run sync-secrets
 ```
+
+Sync secrets and `wrangler.jsonc` vars without a code deploy (`wrangler versions upload` + `wrangler versions deploy`):
+
+```bash
+pnpm run sync-config
+```
+
+Edit `wrangler.jsonc` before running `sync-config` when OAuth URLs, region allowlists, or other public vars change.
 
 Sync secrets and deploy in one step:
 
