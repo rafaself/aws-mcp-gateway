@@ -142,5 +142,6 @@ Attach a read-only policy on the target role with only the actions required for 
 ## Related documentation
 
 - [`docs/aws-iam-setup.md`](aws-iam-setup.md) — IAM user and policy setup
+- [`docs/iam-cross-account.md`](iam-cross-account.md) — trust policies, base-user `sts:AssumeRole`, and SES examples
 - [`docs/aws-capability-matrix.md`](aws-capability-matrix.md) — tool-to-IAM action mapping
 - [`SECURITY.md`](../SECURITY.md) — operational security checklist

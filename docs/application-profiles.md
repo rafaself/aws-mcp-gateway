@@ -216,5 +216,7 @@ Safety notes:
 
 ## Related documentation
 
+- [`aws-tools.md`](aws-tools.md) — generic direct-input tools (no profiles required)
+- [`iam-cross-account.md`](iam-cross-account.md) — multi-account AssumeRole IAM setup
 - [`aws-credentials.md`](aws-credentials.md) — default credentials and AssumeRole resolver
 - [`deployment.md`](deployment.md) — Worker bindings and deployment setup

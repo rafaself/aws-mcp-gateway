@@ -9,6 +9,9 @@ Use this document before deploying the gateway and before merging security-sensi
 - [docs/mcp-tools.md](docs/mcp-tools.md) — per-tool input, output, and limit contracts
 - [docs/chatgpt-connector-production-acceptance.md](docs/chatgpt-connector-production-acceptance.md) — final ChatGPT Connector production acceptance gate
 - [docs/aws-iam-setup.md](docs/aws-iam-setup.md) — IAM user and credential setup
+- [docs/aws-tools.md](docs/aws-tools.md) — generic direct-input AWS tools (no profiles required)
+- [docs/application-profiles.md](docs/application-profiles.md) — optional KV-backed operational context
+- [docs/iam-cross-account.md](docs/iam-cross-account.md) — multi-account AssumeRole IAM pattern
 - [docs/deployment.md](docs/deployment.md) — deployment and verification steps
 - [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md) — requirements for future expansion
 
@@ -84,6 +87,7 @@ Configure secrets with `wrangler secret put` and non-secret vars in `wrangler.js
 - [ ] `AUTH_RATE_LIMITER` Durable Object binding and migration are configured for OAuth deployments.
 - [ ] `RATE_LIMIT_MAX_REQUESTS` and `RATE_LIMIT_WINDOW_SECONDS` are set (or intentionally left at documented defaults).
 - [ ] Optional KV binding `AWS_MCP_CACHE` is configured in production if caching is desired (see [docs/deployment.md](docs/deployment.md)).
+- [ ] Optional KV binding `AWS_MCP_APP_CONFIG` is used only for application profiles — a separate namespace from `AWS_MCP_CACHE` (see [docs/application-profiles.md](docs/application-profiles.md)).
 - [ ] Missing or invalid required bindings return a normalized `configuration_error` response — not raw stack traces or binding dumps to unauthenticated callers.
 
 ---
@@ -113,9 +117,11 @@ The canonical read-only policy template is [`infra/aws/iam-readonly-policy.json`
 
 Tools are registered explicitly via manifest-backed definitions in `src/mcp/tools/`. There is no dynamic or runtime tool discovery. ChatGPT action visibility depends on authenticated `tools/list` returning valid descriptors for every **enabled** tool.
 
-- [ ] The registry defines **14** public tools (see [docs/mcp-tools.md](docs/mcp-tools.md)).
-- [ ] Default deployments expose **11** tools via packs `core`, `cost`, `inventory`, and `observability`: `search`, `fetch`, `get_gateway_status`, `get_aws_cost_summary`, `get_aws_cost_by_service`, `list_ec2_instances`, `get_cloudwatch_alarms`, `get_recent_log_errors`, `list_lambda_functions`, `list_s3_buckets`, `list_log_groups`.
+- [ ] The registry defines **38** public tools (see [docs/mcp-tools.md](docs/mcp-tools.md)).
+- [ ] Default deployments expose **21** tools via packs `core`, `cost`, `inventory`, `observability`, and `database` (see [docs/aws-tools.md](docs/aws-tools.md)).
 - [ ] Three **opt-in** aggregate tools (`aws_account_overview`, `aws_cost_overview`, `aws_observability_overview`) require the `aggregates` pack in `AWS_MCP_ENABLED_TOOL_PACKS`.
+- [ ] Three **opt-in** security tools (`check_ssm_parameter_inventory`, `get_s3_bucket_posture`, `get_ses_configuration_status`) require the `security` pack.
+- [ ] Nine **opt-in** application-ops tools require the `application-ops` pack and optional `AWS_MCP_APP_CONFIG` KV — profiles are not required for generic tools.
 - [ ] Authenticated `tools/list` returns only enabled tools with valid `title`, `description`, `inputSchema`, `outputSchema` (where applicable), read-only annotations, and OAuth `securitySchemes`.
 - [ ] `search` and `fetch` are catalog helpers — they do not replace `tools/list` for ChatGPT action discovery.
 - [ ] New tools are added only through manifest registration, policy/capability/cost-control metadata, and documented contracts in [docs/mcp-tools.md](docs/mcp-tools.md).
@@ -222,6 +228,51 @@ Caching is optional via the `AWS_MCP_CACHE` KV binding. See [README.md](README.m
 - [ ] Cache keys and values do not include `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, or `MCP_AUTH_TOKEN`.
 - [ ] Cache TTLs match documented values: 30 minutes for cost tools, 5 minutes for EC2, CloudWatch, and Logs tools.
 - [ ] KV read/write failures degrade gracefully (fall through to AWS) without exposing secrets in logs.
+- [ ] `AWS_MCP_APP_CONFIG` is never used for tool response caching or credential storage — only profile documents and index metadata.
+
+---
+
+## Application profile safety checklist
+
+Application profiles are optional operational context. See [docs/application-profiles.md](docs/application-profiles.md).
+
+- [ ] Profiles store resource names, regions, display metadata, and optional `auth.strategy` role ARNs — not credentials or secret values.
+- [ ] Profiles are **not authorization** — OAuth scopes, tool packs, IAM, and region allowlists remain the security boundary.
+- [ ] Missing or invalid `AWS_MCP_APP_CONFIG` does not break `/mcp` or generic AWS tools.
+- [ ] Profile JSON and KV documents **must never** contain `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `DATABASE_URL`, `JWT_SECRET`, passwords, bearer tokens, connection strings, or SSM parameter values.
+- [ ] Assumed-role temporary credentials are never written to KV — only held in Worker memory via the credential resolver.
+- [ ] Profile management scripts (`pnpm run app-profile:*`) output metadata only and never print secret-looking values.
+
+---
+
+## SSM metadata-only checklist
+
+SSM inventory tools verify parameter **existence and metadata** only — never parameter values.
+
+- [ ] `check_ssm_parameter_inventory` calls `ssm:DescribeParameters` only — not `GetParameter` or `GetParameters`.
+- [ ] `get_application_secret_inventory` uses configured parameter **names** from profiles — metadata-only, same boundary.
+- [ ] Tool output does not include SSM parameter values, SecureString payloads, or decrypted content.
+- [ ] IAM policies for SSM inventory do not grant `ssm:GetParameter*` unless a future explicit tool requires it with a separate security review.
+
+---
+
+## Log tool sensitivity checklist
+
+CloudWatch Logs tools return bounded, truncated event messages that may still contain sensitive application data.
+
+- [ ] `get_cloudwatch_logs` and `get_recent_log_errors` enforce lookback, event count, and message length limits (`src/security/limits.ts`).
+- [ ] Log message bodies are truncated — they are **not** guaranteed free of secrets, tokens, or PII.
+- [ ] Operators treat log tool output and related audit summaries as potentially sensitive in ChatGPT sessions.
+- [ ] Audit and application logs do not echo full raw log message bodies when avoidable.
+
+---
+
+## OAuth scope checklist
+
+- [ ] Production deployments recommend `OAUTH_REQUIRED_SCOPES=aws:read` (see [wrangler.example.jsonc](wrangler.example.jsonc)).
+- [ ] `/mcp` validates tokens against `OAUTH_REQUIRED_SCOPES` before tool execution.
+- [ ] Per-tool `auth.requiredScopes` in manifests are enforced by the policy gate (`src/mcp/tools/policy.ts`) — future domain scopes (for example `aws:cost`) can be required per tool without listing every domain scope globally in `OAUTH_REQUIRED_SCOPES`.
+- [ ] ChatGPT connector setup uses scope `aws:read` unless a deployment explicitly documents additional required scopes.
 
 ---
 
@@ -294,7 +345,7 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 - [ ] `GET /health` returns `{ "ok": true, "service": "aws-mcp-gateway" }` without authentication.
 - [ ] With valid runtime configuration, `POST /mcp` without authentication returns HTTP 401 (with `WWW-Authenticate` in `oauth` mode).
 - [ ] Authenticated MCP access works (local bearer token or ChatGPT OAuth flow — see [docs/mcp-testing.md](docs/mcp-testing.md)).
-- [ ] For ChatGPT production connectors, complete the production acceptance checklist in [docs/chatgpt-connector-production-acceptance.md](docs/chatgpt-connector-production-acceptance.md) — including authenticated `tools/list` validation for **enabled** tools only, OAuth login, Actions visible, `get_gateway_status`, optional `search`/`fetch`, and a bounded AWS tool. Default deployments expect 11 tools; enabling the `aggregates` pack expects 14. Detailed step-by-step responses: [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md).
+- [ ] For ChatGPT production connectors, complete the production acceptance checklist in [docs/chatgpt-connector-production-acceptance.md](docs/chatgpt-connector-production-acceptance.md) — including authenticated `tools/list` validation for **enabled** tools only, OAuth login, Actions visible, `get_gateway_status`, optional `search`/`fetch`, and a bounded AWS tool. Default deployments expect 21 tools; enabling `aggregates` adds three; enabling `security` adds three; enabling `application-ops` adds nine. Detailed step-by-step responses: [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md).
 - [ ] A smoke test confirms at least one AWS-backed tool returns normalized output in an allowed region.
 
 ---
