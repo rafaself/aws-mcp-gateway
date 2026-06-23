@@ -48,13 +48,13 @@
 			"id": "<your-kv-namespace-id>",
 			"remote": true
 		},
-		// Optional — application profiles only; gateway and generic AWS tools work without this binding.
-		// Remove this block entirely if you do not use the application-ops pack.
-		{
-			"binding": "AWS_MCP_APP_CONFIG",
-			"id": "<your-app-config-kv-namespace-id>",
-			"remote": true
-		}
+		// Optional — application profiles only. Generic AWS tools work without this binding.
+		// Add when using application-ops profiles or app-profile:* CLI commands:
+		// {
+		//   "binding": "AWS_MCP_APP_CONFIG",
+		//   "id": "<your-app-config-kv-namespace-id>",
+		//   "remote": true
+		// }
 	],
 	"observability": {
 		"enabled": true,

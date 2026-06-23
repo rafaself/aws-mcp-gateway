@@ -227,6 +227,23 @@ describe("validateEnv", () => {
     expect(result.config.AWS_MCP_APP_CONFIG).toBe(appConfig);
   });
 
+  it("succeeds without AWS_MCP_APP_CONFIG when application-ops pack is enabled", () => {
+    const env = {
+      AWS_ACCESS_KEY_ID: "key",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_REGION: "us-east-1",
+      AWS_ALLOWED_REGIONS: "us-east-1",
+      MCP_AUTH_TOKEN: "token",
+      AWS_MCP_ENABLED_TOOL_PACKS: "core,application-ops",
+    };
+
+    const result = validateEnv(env) as EnvValidationSuccess;
+
+    expect(result.valid).toBe(true);
+    expect(result.config.AWS_MCP_APP_CONFIG).toBeUndefined();
+    expect(result.config.toolExposure.enabledToolPacks.has("application-ops")).toBe(true);
+  });
+
   it("uses custom AWS_MCP_APP_PROFILE_INDEX_KEY when provided", () => {
     const env = {
       AWS_ACCESS_KEY_ID: "key",

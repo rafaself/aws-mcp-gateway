@@ -37,7 +37,9 @@ Workflow:
 
 ## KV binding
 
-Add a **separate** KV namespace from `AWS_MCP_CACHE`:
+Application profiles are optional. Do not configure `AWS_MCP_APP_CONFIG` unless you use the application-ops profile workflow.
+
+When you need profiles, add a **separate** KV namespace from `AWS_MCP_CACHE`:
 
 ```jsonc
 {
@@ -168,7 +170,7 @@ Use the repo-managed scripts to validate and publish profiles without editing KV
 Prerequisites:
 
 - `pnpm install`
-- `AWS_MCP_APP_CONFIG` binding in your Wrangler config
+- `AWS_MCP_APP_CONFIG` binding in your Wrangler config (required for profile CLI only — not for gateway deploy)
 - `AWS_ALLOWED_REGIONS` in Wrangler `vars` (used for region validation)
 
 Validate a local profile file (metadata-only output):

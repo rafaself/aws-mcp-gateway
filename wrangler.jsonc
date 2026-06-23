@@ -46,11 +46,6 @@
 			"binding": "AWS_MCP_CACHE",
 			"id": "<your-kv-namespace-id>",
 			"remote": true
-		},
-		{
-			"binding": "AWS_MCP_APP_CONFIG",
-			"id": "<your-app-config-kv-namespace-id>",
-			"remote": true
 		}
 	],
 	"observability": {

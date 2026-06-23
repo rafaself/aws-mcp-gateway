@@ -306,7 +306,7 @@ Default cache TTLs:
 
 The cache is optional for local development and tests. If the binding is absent, tools run without caching.
 
-**Application profiles** use a separate optional KV binding (`AWS_MCP_APP_CONFIG`) for saved operational context. Profiles are not required for `/mcp` or generic AWS tools. See [`docs/application-profiles.md`](docs/application-profiles.md) for schema details, [`docs/aws-tools.md`](docs/aws-tools.md) for direct generic tools, and [`docs/application-profiles.md#cli-workflow`](docs/application-profiles.md#cli-workflow) for `pnpm app-profile:*` commands.
+**Application profiles** use a separate optional KV binding (`AWS_MCP_APP_CONFIG`) for saved operational context. Application profiles are optional — do not configure `AWS_MCP_APP_CONFIG` unless you use the application-ops profile workflow. Profiles are not required for `/mcp` or generic AWS tools. See [`docs/application-profiles.md`](docs/application-profiles.md) for schema details, [`docs/aws-tools.md`](docs/aws-tools.md) for direct generic tools, and [`docs/application-profiles.md#cli-workflow`](docs/application-profiles.md#cli-workflow) for `pnpm app-profile:*` commands.
 
 **Cost Explorer billing estimates:** Non-cached `ce:GetCostAndUsage` requests are estimated at approximately **US$ 0.01** per live API call. Cached responses report `estimatedCostUsd: 0` and do not make a new Cost Explorer request. These values are approximate gateway estimates only — final AWS billing is determined by your AWS account usage and pricing.
 
