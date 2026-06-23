@@ -9,6 +9,7 @@ import {
 } from "../descriptor.js";
 import {
   applicationProfileIdInputSchema,
+  APPLICATION_OPS_ARTIFACTS_AWS,
   APPLICATION_OPS_COST_CONTROL,
   APPLICATION_OPS_SAFETY,
   type ApplicationProfileIdInput,
@@ -37,27 +38,7 @@ export function createGetApplicationArtifactStatusToolManifest(
     },
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
     aws: {
-      services: ["ecs", "ecr"],
-      actions: [
-        "ecs:DescribeClusters",
-        "ecs:DescribeServices",
-        "ecs:DescribeTaskDefinition",
-        "ecs:ListTasks",
-        "ecs:DescribeTasks",
-        "ecr:DescribeImages",
-        "ecr:DescribeImageScanFindings",
-        "ecr:GetLifecyclePolicy",
-      ],
-      capabilities: [
-        "ecs:DescribeClusters",
-        "ecs:DescribeServices",
-        "ecs:DescribeTaskDefinition",
-        "ecs:ListTasks",
-        "ecs:DescribeTasks",
-        "ecr:DescribeImages",
-        "ecr:DescribeImageScanFindings",
-        "ecr:GetLifecyclePolicy",
-      ],
+      ...APPLICATION_OPS_ARTIFACTS_AWS,
       regionMode: "single-region",
       readonly: true,
     },

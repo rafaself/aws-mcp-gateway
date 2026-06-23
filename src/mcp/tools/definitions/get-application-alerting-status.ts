@@ -9,6 +9,7 @@ import {
 } from "../descriptor.js";
 import {
   applicationProfileIdInputSchema,
+  APPLICATION_OPS_ALERTING_AWS,
   APPLICATION_OPS_COST_CONTROL,
   APPLICATION_OPS_SAFETY,
   type ApplicationProfileIdInput,
@@ -37,25 +38,7 @@ export function createGetApplicationAlertingStatusToolManifest(
     },
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
     aws: {
-      services: ["sns", "events", "cloudwatch"],
-      actions: [
-        "sns:ListTopics",
-        "sns:GetTopicAttributes",
-        "sns:ListSubscriptionsByTopic",
-        "events:ListRules",
-        "events:DescribeRule",
-        "events:ListTargetsByRule",
-        "cloudwatch:DescribeAlarms",
-      ],
-      capabilities: [
-        "sns:ListTopics",
-        "sns:GetTopicAttributes",
-        "sns:ListSubscriptionsByTopic",
-        "events:ListRules",
-        "events:DescribeRule",
-        "events:ListTargetsByRule",
-        "cloudwatch:DescribeAlarms",
-      ],
+      ...APPLICATION_OPS_ALERTING_AWS,
       regionMode: "single-region",
       readonly: true,
     },

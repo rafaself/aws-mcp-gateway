@@ -12,6 +12,7 @@ import {
 import {
   applicationProfileIdInputSchema,
   APPLICATION_OPS_COST_CONTROL,
+  APPLICATION_OPS_LOGS_AWS,
   APPLICATION_OPS_SAFETY,
 } from "./application-ops-shared.js";
 import { DEFAULT_AUTH_SCOPES, type ToolManifest } from "../manifest.js";
@@ -56,9 +57,7 @@ export function createGetApplicationLogsToolManifest(
     },
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
     aws: {
-      services: ["logs"],
-      actions: ["logs:FilterLogEvents"],
-      capabilities: ["logs:FilterLogEvents"],
+      ...APPLICATION_OPS_LOGS_AWS,
       regionMode: "single-region",
       readonly: true,
     },

@@ -11,6 +11,7 @@ import {
   applicationProfileIdInputSchema,
   APPLICATION_OPS_COST_CONTROL,
   APPLICATION_OPS_SAFETY,
+  APPLICATION_OPS_SSM_AWS,
   type ApplicationProfileIdInput,
 } from "./application-ops-shared.js";
 import { DEFAULT_AUTH_SCOPES, type ToolManifest } from "../manifest.js";
@@ -37,9 +38,7 @@ export function createGetApplicationSecretInventoryToolManifest(
     },
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
     aws: {
-      services: ["ssm"],
-      actions: ["ssm:DescribeParameters"],
-      capabilities: ["ssm:DescribeParameters"],
+      ...APPLICATION_OPS_SSM_AWS,
       regionMode: "single-region",
       readonly: true,
     },
