@@ -98,6 +98,10 @@ wrangler secret put MCP_AUTH_TOKEN
 
 **ChatGPT OAuth production mode** (`AUTH_MODE=oauth`): `MCP_AUTH_TOKEN` is **not** required. See [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
 
+For the runtime authentication lifecycle and route-by-route behavior, see
+[auth/README.md](auth/README.md), [auth/oauth-lifecycle.md](auth/oauth-lifecycle.md),
+and [auth/token-validation.md](auth/token-validation.md).
+
 ### Auth modes
 
 | Mode | Use case | `MCP_AUTH_TOKEN` | OAuth vars |
@@ -135,6 +139,9 @@ To support opaque access tokens from providers that expose RFC 7662 introspectio
 ```
 
 and configure `OAUTH_INTROSPECTION_CLIENT_ID` / `OAUTH_INTROSPECTION_CLIENT_SECRET` as Worker secrets.
+
+For a mode-by-mode comparison of `jwks`, `introspection`, and `hybrid`, see
+[auth/token-validation.md](auth/token-validation.md).
 
 Keep committed `wrangler.jsonc` and [`wrangler.example.jsonc`](../wrangler.example.jsonc) production-neutral (placeholders only). Set real worker host, Auth0 tenant, and KV namespace id in the Cloudflare dashboard, CI deploy overrides, or `.env.deploy.local` for setup scripts — never commit live tenant, host, or KV namespace values. When changing Wrangler structure, edit the example file first and mirror the same shape into `wrangler.jsonc`.
 

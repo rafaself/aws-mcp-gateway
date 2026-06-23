@@ -172,6 +172,9 @@ http://localhost:8787/mcp
 
 Local development uses `AUTH_MODE=local-bearer` by default. Production ChatGPT connector deployments should use OAuth.
 
+For the implementation-aligned authentication model, see
+[`docs/auth/README.md`](docs/auth/README.md).
+
 ## Configuration
 
 Both [`wrangler.jsonc`](wrangler.jsonc) and [`wrangler.example.jsonc`](wrangler.example.jsonc) are tracked and must stay structurally in sync. Edit `wrangler.example.jsonc` first when adding keys or sections, then mirror the same structure into `wrangler.jsonc`. `pnpm run repo:safety` enforces structural parity.
@@ -204,6 +207,11 @@ OAuth protected metadata:      https://<worker-host>/.well-known/oauth-protected
 ```
 
 `MCP_RESOURCE_URL` and `OAUTH_AUDIENCE` must use the Worker origin only. Do not append `/mcp` to those values.
+
+Authentication lifecycle and route responsibilities are documented in
+[`docs/auth/README.md`](docs/auth/README.md),
+[`docs/auth/oauth-lifecycle.md`](docs/auth/oauth-lifecycle.md), and
+[`docs/auth/token-validation.md`](docs/auth/token-validation.md).
 
 ### Tool exposure (optional)
 
@@ -420,6 +428,7 @@ Runtime MCP/auth dependency upgrades must be treated as protocol changes. See [`
 | --- | --- |
 | [`docs/mcp-tools.md`](docs/mcp-tools.md) | Public MCP tool contracts |
 | [`docs/chatgpt-connector.md`](docs/chatgpt-connector.md) | ChatGPT connector integration guide |
+| [`docs/auth/README.md`](docs/auth/README.md) | Authentication lifecycle, route surface, and token validation map |
 | [`docs/auth-chatgpt-oauth.md`](docs/auth-chatgpt-oauth.md) | OAuth/Auth0 setup |
 | [`docs/chatgpt-connector-production-acceptance.md`](docs/chatgpt-connector-production-acceptance.md) | Production acceptance gate |
 | [`docs/chatgpt-connector-smoke-test.md`](docs/chatgpt-connector-smoke-test.md) | Detailed connector smoke runbook |
