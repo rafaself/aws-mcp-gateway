@@ -15,9 +15,7 @@ import {
 import {
   applicationProfileIdInputSchema,
   APPLICATION_OPS_COST_CONTROL,
-  APPLICATION_OPS_OVERVIEW_ACTIONS,
-  APPLICATION_OPS_OVERVIEW_CAPABILITIES,
-  APPLICATION_OPS_OVERVIEW_SERVICES,
+  APPLICATION_OPS_OVERVIEW_AWS,
   APPLICATION_OPS_SAFETY,
   type ApplicationProfileIdInput,
 } from "./application-ops-shared.js";
@@ -45,9 +43,7 @@ export function createGetApplicationEnvironmentOverviewToolManifest(
     },
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
     aws: {
-      services: [...APPLICATION_OPS_OVERVIEW_SERVICES],
-      actions: [...APPLICATION_OPS_OVERVIEW_ACTIONS],
-      capabilities: [...APPLICATION_OPS_OVERVIEW_CAPABILITIES],
+      ...APPLICATION_OPS_OVERVIEW_AWS,
       regionMode: "single-region",
       readonly: true,
     },

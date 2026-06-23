@@ -9,6 +9,7 @@ import {
 } from "../descriptor.js";
 import {
   applicationProfileIdInputSchema,
+  APPLICATION_OPS_BUDGET_AWS,
   APPLICATION_OPS_COST_CONTROL,
   APPLICATION_OPS_SAFETY,
   type ApplicationProfileIdInput,
@@ -36,17 +37,7 @@ export function createGetApplicationCostStatusToolManifest(
     },
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
     aws: {
-      services: ["budgets"],
-      actions: [
-        "budgets:DescribeBudgets",
-        "budgets:DescribeNotificationsForBudget",
-        "budgets:DescribeSubscribersForNotification",
-      ],
-      capabilities: [
-        "budgets:DescribeBudgets",
-        "budgets:DescribeNotificationsForBudget",
-        "budgets:DescribeSubscribersForNotification",
-      ],
+      ...APPLICATION_OPS_BUDGET_AWS,
       regionMode: "single-region",
       readonly: true,
     },

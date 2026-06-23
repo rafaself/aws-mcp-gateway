@@ -9,6 +9,7 @@ import {
 } from "../descriptor.js";
 import {
   applicationProfileIdInputSchema,
+  APPLICATION_OPS_COMPUTE_AWS,
   APPLICATION_OPS_COST_CONTROL,
   APPLICATION_OPS_SAFETY,
   type ApplicationProfileIdInput,
@@ -36,19 +37,7 @@ export function createGetApplicationComputeStatusToolManifest(
     },
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
     aws: {
-      services: ["ecs"],
-      actions: [
-        "ecs:DescribeClusters",
-        "ecs:DescribeServices",
-        "ecs:ListTasks",
-        "ecs:DescribeTasks",
-      ],
-      capabilities: [
-        "ecs:DescribeClusters",
-        "ecs:DescribeServices",
-        "ecs:ListTasks",
-        "ecs:DescribeTasks",
-      ],
+      ...APPLICATION_OPS_COMPUTE_AWS,
       regionMode: "single-region",
       readonly: true,
     },

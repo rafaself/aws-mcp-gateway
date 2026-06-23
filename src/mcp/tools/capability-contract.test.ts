@@ -41,6 +41,14 @@ const AWS_BACKED_TOOLS = [
   "aws_account_overview",
   "aws_cost_overview",
   "aws_observability_overview",
+  "get_application_environment_overview",
+  "get_application_compute_status",
+  "get_application_database_status",
+  "get_application_logs",
+  "get_application_secret_inventory",
+  "get_application_artifact_status",
+  "get_application_alerting_status",
+  "get_application_cost_status",
 ] as const;
 
 const PAID_TOOLS = [

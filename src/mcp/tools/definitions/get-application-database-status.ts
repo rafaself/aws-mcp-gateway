@@ -10,6 +10,7 @@ import {
 import {
   applicationProfileIdInputSchema,
   APPLICATION_OPS_COST_CONTROL,
+  APPLICATION_OPS_DATABASE_AWS,
   APPLICATION_OPS_SAFETY,
   type ApplicationProfileIdInput,
 } from "./application-ops-shared.js";
@@ -36,9 +37,7 @@ export function createGetApplicationDatabaseStatusToolManifest(
     },
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
     aws: {
-      services: ["rds"],
-      actions: ["rds:DescribeDBInstances", "rds:DescribeDBSubnetGroups"],
-      capabilities: ["rds:DescribeDBInstances", "rds:DescribeDBSubnetGroups"],
+      ...APPLICATION_OPS_DATABASE_AWS,
       regionMode: "single-region",
       readonly: true,
     },
