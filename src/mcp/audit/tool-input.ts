@@ -176,3 +176,37 @@ export function summarizeSsmParameterInventoryInput(args: {
     requiredParameterCount: args.requiredParameterNames?.length ?? 0,
   };
 }
+
+export function summarizeEcrImageStatusInput(args: {
+  repositoryName?: string;
+  imageTag?: string;
+  imageDigest?: string;
+}): Record<string, unknown> {
+  return {
+    hasRepositoryName: Boolean(args.repositoryName),
+    hasImageTag: Boolean(args.imageTag),
+    hasImageDigest: Boolean(args.imageDigest),
+  };
+}
+
+export function summarizeEcsEcrImageCompareInput(args: {
+  clusterName?: string;
+  serviceName?: string;
+  repositoryName?: string;
+  expectedImageDigest?: string;
+}): Record<string, unknown> {
+  return {
+    hasClusterName: Boolean(args.clusterName),
+    hasServiceName: Boolean(args.serviceName),
+    hasRepositoryName: Boolean(args.repositoryName),
+    hasExpectedImageDigest: Boolean(args.expectedImageDigest),
+  };
+}
+
+export function summarizeS3BucketPostureInput(args: {
+  bucketName?: string;
+}): Record<string, unknown> {
+  return {
+    bucketNameLength: args.bucketName?.length ?? 0,
+  };
+}

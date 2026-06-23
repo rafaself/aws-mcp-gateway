@@ -26,6 +26,8 @@ const AWS_BACKED_TOOLS = [
   "get_recent_stopped_ecs_tasks",
   "get_rds_instance_health",
   "get_rds_metrics",
+  "get_ecr_image_status",
+  "compare_ecs_task_image_with_ecr",
 ] as const;
 
 const AGGREGATE_TOOLS = [
@@ -181,6 +183,16 @@ describe("security MCP tool descriptor contract", () => {
     });
     expect(toolsByName.check_ssm_parameter_inventory.title).toBe(
       PUBLIC_TOOL_TITLES.check_ssm_parameter_inventory,
+    );
+  });
+
+  it("get_s3_bucket_posture is listed when security pack is enabled", () => {
+    expect(toolsByName.get_s3_bucket_posture).toBeDefined();
+    expect(toolsByName.get_s3_bucket_posture.outputSchema).toMatchObject({
+      type: "object",
+    });
+    expect(toolsByName.get_s3_bucket_posture.title).toBe(
+      PUBLIC_TOOL_TITLES.get_s3_bucket_posture,
     );
   });
 });

@@ -37,7 +37,23 @@
       "Sid": "S3Read",
       "Effect": "Allow",
       "Action": [
-        "s3:ListAllMyBuckets"
+        "s3:ListAllMyBuckets",
+        "s3:GetBucketLocation",
+        "s3:GetBucketPublicAccessBlock",
+        "s3:GetBucketEncryption",
+        "s3:GetBucketVersioning",
+        "s3:GetLifecycleConfiguration",
+        "s3:GetBucketPolicyStatus"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ECRRead",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:DescribeImages",
+        "ecr:DescribeImageScanFindings",
+        "ecr:GetLifecyclePolicy"
       ],
       "Resource": "*"
     },

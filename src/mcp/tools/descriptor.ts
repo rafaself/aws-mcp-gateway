@@ -32,6 +32,9 @@ export const PUBLIC_TOOL_TITLES = {
   get_rds_instance_health: "Get RDS Instance Health",
   get_rds_metrics: "Get RDS Metrics",
   check_ssm_parameter_inventory: "Check SSM Parameter Inventory",
+  get_ecr_image_status: "Get ECR Image Status",
+  compare_ecs_task_image_with_ecr: "Compare ECS Task Image With ECR",
+  get_s3_bucket_posture: "Get S3 Bucket Posture",
   aws_account_overview: "AWS Account Overview",
   aws_cost_overview: "AWS Cost Overview",
   aws_observability_overview: "AWS Observability Overview",
@@ -401,6 +404,84 @@ export const checkSsmParameterInventoryOutputSchema = withOptionalExecutionMetad
   parameterPrefix: z.string(),
   missingCount: z.number(),
   parameters: z.array(ssmParameterInventoryEntrySchema),
+});
+
+const ecrImageScanSummarySchema = z.object({
+  criticalCount: z.number(),
+  highCount: z.number(),
+});
+
+export const getEcrImageStatusOutputSchema = withOptionalExecutionMetadata({
+  region: z.string(),
+  repositoryName: z.string(),
+  found: z.boolean(),
+  imageDigest: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  pushedAt: z.string().optional(),
+  imageSizeInBytes: z.number().optional(),
+  scanStatus: z.string().optional(),
+  scanSummary: ecrImageScanSummarySchema.optional(),
+  hasLifecyclePolicy: z.boolean().optional(),
+});
+
+export const compareEcsTaskImageWithEcrOutputSchema = withOptionalExecutionMetadata({
+  region: z.string(),
+  clusterName: z.string(),
+  serviceName: z.string(),
+  repositoryName: z.string(),
+  taskDefinitionImage: z.string().optional(),
+  runningTaskImageDigests: z.array(z.string()),
+  ecrImageDigest: z.string().optional(),
+  ecrImageTags: z.array(z.string()).optional(),
+  ecrImageFound: z.boolean(),
+  matchesEcrDigest: z.boolean(),
+  matchesExpectedDigest: z.boolean().nullable(),
+});
+
+const s3PublicAccessBlockSchema = z.object({
+  blockPublicAcls: z.boolean(),
+  ignorePublicAcls: z.boolean(),
+  blockPublicPolicy: z.boolean(),
+  restrictPublicBuckets: z.boolean(),
+});
+
+const s3LifecycleRuleSummarySchema = z.object({
+  id: z.string(),
+  status: z.string(),
+});
+
+export const getS3BucketPostureOutputSchema = withOptionalExecutionMetadata({
+  bucketName: z.string(),
+  region: z.string(),
+  bucketExists: z.boolean(),
+  publicAccessBlock: s3PublicAccessBlockSchema.optional(),
+  encryption: z
+    .object({
+      configured: z.boolean(),
+      algorithm: z.string().optional(),
+      kmsKeyId: z.string().optional(),
+    })
+    .optional(),
+  versioning: z
+    .object({
+      status: z.string(),
+    })
+    .optional(),
+  lifecycle: z
+    .object({
+      ruleCount: z.number(),
+      rules: z.array(s3LifecycleRuleSummarySchema),
+    })
+    .optional(),
+  isPublic: z.boolean().optional(),
+  tlsOnlyPolicyIndicator: z.literal("unknown"),
+  metrics: z
+    .object({
+      bucketSizeBytes: z.number().optional(),
+      objectCount: z.number().optional(),
+      asOf: z.string().optional(),
+    })
+    .optional(),
 });
 
 const overviewEc2SectionSchema = z.object({

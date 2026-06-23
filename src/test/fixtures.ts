@@ -330,6 +330,23 @@ export function makeEcsTask(opts?: {
   };
 }
 
+export function makeEcsTaskWithImage(opts?: {
+  image?: string;
+  imageDigest?: string;
+  taskArn?: string;
+}) {
+  const task = makeEcsTask({ taskArn: opts?.taskArn });
+  const container = task.containers[0] as {
+    name: string;
+    lastStatus: string;
+    image?: string;
+    imageDigest?: string;
+  };
+  if (opts?.image) container.image = opts.image;
+  if (opts?.imageDigest) container.imageDigest = opts.imageDigest;
+  return task;
+}
+
 export function makeDayWithGroups(
   start: string,
   end: string,
@@ -346,4 +363,52 @@ export function makeDayWithGroups(
       Metrics: { [metric]: { Amount: g.amount, Unit: unit } },
     })),
   };
+}
+
+export function ecrJsonResponse(body: Record<string, unknown>, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/x-amz-json-1.1" },
+  });
+}
+
+export function ecrErrorResponse(errorType: string, status = 400): Response {
+  return ecrJsonResponse({ __type: errorType, message: errorType }, status);
+}
+
+export function makeEcrImageDetail(opts?: {
+  digest?: string;
+  tags?: string[];
+  pushedAt?: number;
+  scanStatus?: string;
+}) {
+  return {
+    imageDigest: opts?.digest ?? "sha256:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+    imageTags: opts?.tags ?? ["latest"],
+    imagePushedAt: opts?.pushedAt ?? 1718798400000,
+    imageSizeInBytes: 123456789,
+    imageScanStatus: { status: opts?.scanStatus ?? "COMPLETE" },
+    imageScanFindingSummary: { CRITICAL: 0, HIGH: 1 },
+  };
+}
+
+export function s3XmlResponse(body: string, status = 200): Response {
+  return new Response(body, {
+    status,
+    headers: { "content-type": "application/xml" },
+  });
+}
+
+export function s3ErrorXml(code: string, status = 404): Response {
+  return s3XmlResponse(
+    `<?xml version="1.0" encoding="UTF-8"?><Error><Code>${code}</Code><Message>${code}</Message></Error>`,
+    status,
+  );
+}
+
+export function s3BucketLocationXml(region = "us-west-2"): string {
+  if (region === "us-east-1") {
+    return '<?xml version="1.0" encoding="UTF-8"?><LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>';
+  }
+  return `<?xml version="1.0" encoding="UTF-8"?><LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">${region}</LocationConstraint>`;
 }

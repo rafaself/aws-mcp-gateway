@@ -5,6 +5,8 @@ import { cacheSet } from "../../cache/kv.js";
 import {
   RDS_CACHE_TTL_SECONDS,
   RDS_MAX_METRIC_DATAPOINTS,
+  S3_METRIC_LOOKBACK_MINUTES,
+  S3_METRIC_PERIOD_SECONDS,
 } from "../../security/limits.js";
 import type { ExecutionTelemetry } from "../../telemetry/types.js";
 import { awsRequest } from "../client.js";
@@ -227,4 +229,107 @@ export async function getRdsInstanceMetrics(
   }
 
   return result;
+}
+
+export interface S3BucketMetricsResult {
+  bucketSizeBytes?: number;
+  objectCount?: number;
+  asOf?: string;
+}
+
+export async function getS3BucketMetrics(
+  bucketName: string,
+  region: string,
+  credentials: AwsCredentials,
+  execution?: ExecutionTelemetry,
+): Promise<S3BucketMetricsResult | undefined> {
+  const endTime = new Date();
+  const startTime = new Date(endTime.getTime() - S3_METRIC_LOOKBACK_MINUTES * 60 * 1000);
+
+  const queries = [
+    {
+      Id: "BucketSizeBytes",
+      MetricStat: {
+        Metric: {
+          Namespace: "AWS/S3",
+          MetricName: "BucketSizeBytes",
+          Dimensions: [
+            { Name: "BucketName", Value: bucketName },
+            { Name: "StorageType", Value: "StandardStorage" },
+          ],
+        },
+        Period: S3_METRIC_PERIOD_SECONDS,
+        Stat: "Average",
+      },
+      ReturnData: true,
+    },
+    {
+      Id: "NumberOfObjects",
+      MetricStat: {
+        Metric: {
+          Namespace: "AWS/S3",
+          MetricName: "NumberOfObjects",
+          Dimensions: [
+            { Name: "BucketName", Value: bucketName },
+            { Name: "StorageType", Value: "AllStorageTypes" },
+          ],
+        },
+        Period: S3_METRIC_PERIOD_SECONDS,
+        Stat: "Average",
+      },
+      ReturnData: true,
+    },
+  ];
+
+  const response = await awsRequest<GetMetricDataResponse>(
+    {
+      capability: "cloudwatch:GetMetricData",
+      service: "monitoring",
+      region,
+      method: "POST",
+      path: "/",
+      headers: {
+        "X-Amz-Target": "GraniteServiceVersion20100801.GetMetricData",
+        "Content-Type": "application/x-amz-json-1.1",
+      },
+      body: {
+        StartTime: startTime.toISOString(),
+        EndTime: endTime.toISOString(),
+        MetricDataQueries: queries,
+        ScanBy: "TimestampDescending",
+      },
+      execution,
+    },
+    credentials,
+  );
+
+  const resultsById = new Map(
+    (response.MetricDataResults ?? []).map((result) => [result.Id ?? "", result]),
+  );
+
+  const sizeResult = resultsById.get("BucketSizeBytes");
+  const countResult = resultsById.get("NumberOfObjects");
+
+  const sizeDatapoints = normalizeDatapoints(sizeResult?.Timestamps, sizeResult?.Values);
+  const countDatapoints = normalizeDatapoints(countResult?.Timestamps, countResult?.Values);
+
+  if (sizeDatapoints.length === 0 && countDatapoints.length === 0) {
+    return undefined;
+  }
+
+  const latestTimestamp = [
+    sizeDatapoints.at(-1)?.timestamp,
+    countDatapoints.at(-1)?.timestamp,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .at(-1);
+
+  return {
+    ...(sizeDatapoints.length > 0
+      ? { bucketSizeBytes: sizeDatapoints.at(-1)?.value }
+      : {}),
+    ...(countDatapoints.length > 0 ? { objectCount: countDatapoints.at(-1)?.value } : {}),
+    ...(latestTimestamp ? { asOf: latestTimestamp } : {}),
+  };
 }

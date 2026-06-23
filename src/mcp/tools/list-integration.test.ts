@@ -55,7 +55,7 @@ describe("tools/list MCP protocol integration", () => {
     expect(listResult).toBeDefined();
 
     const tools = listResult!.result.tools;
-    expect(tools).toHaveLength(18);
+    expect(tools).toHaveLength(20);
 
     for (const tool of tools) {
       expect(tool.securitySchemes).toEqual(OAUTH_SECURITY);
@@ -99,7 +99,7 @@ describe("tools/list MCP protocol integration", () => {
     const listResult = protocolMessages.find(isToolsListResult);
     const tools = listResult!.result.tools;
 
-    expect(tools).toHaveLength(17);
+    expect(tools).toHaveLength(19);
     expect(tools.map((tool) => tool.name)).not.toContain("get_cloudwatch_alarms");
   });
 

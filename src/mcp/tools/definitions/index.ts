@@ -56,3 +56,12 @@ export {
 export {
   createCheckSsmParameterInventoryToolManifest,
 } from "./check-ssm-parameter-inventory.js";
+export {
+  createGetEcrImageStatusToolManifest,
+} from "./get-ecr-image-status.js";
+export {
+  createCompareEcsTaskImageWithEcrToolManifest,
+} from "./compare-ecs-task-image-with-ecr.js";
+export {
+  createGetS3BucketPostureToolManifest,
+} from "./get-s3-bucket-posture.js";

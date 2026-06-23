@@ -5,6 +5,15 @@ export type AwsCapabilityId =
   | "logs:FilterLogEvents"
   | "lambda:ListFunctions"
   | "s3:ListAllMyBuckets"
+  | "s3:GetBucketLocation"
+  | "s3:GetBucketPublicAccessBlock"
+  | "s3:GetBucketEncryption"
+  | "s3:GetBucketVersioning"
+  | "s3:GetLifecycleConfiguration"
+  | "s3:GetBucketPolicyStatus"
+  | "ecr:DescribeImages"
+  | "ecr:DescribeImageScanFindings"
+  | "ecr:GetLifecyclePolicy"
   | "logs:DescribeLogGroups"
   | "logs:DescribeLogStreams"
   | "ecs:DescribeClusters"
@@ -95,6 +104,69 @@ export const AWS_CAPABILITY_REGISTRY: Readonly<Record<AwsCapabilityId, AwsCapabi
       id: "s3:ListAllMyBuckets",
       iamService: "s3",
       iamAction: "s3:ListAllMyBuckets",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "s3:GetBucketLocation": {
+      id: "s3:GetBucketLocation",
+      iamService: "s3",
+      iamAction: "s3:GetBucketLocation",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "s3:GetBucketPublicAccessBlock": {
+      id: "s3:GetBucketPublicAccessBlock",
+      iamService: "s3",
+      iamAction: "s3:GetBucketPublicAccessBlock",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "s3:GetBucketEncryption": {
+      id: "s3:GetBucketEncryption",
+      iamService: "s3",
+      iamAction: "s3:GetBucketEncryption",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "s3:GetBucketVersioning": {
+      id: "s3:GetBucketVersioning",
+      iamService: "s3",
+      iamAction: "s3:GetBucketVersioning",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "s3:GetLifecycleConfiguration": {
+      id: "s3:GetLifecycleConfiguration",
+      iamService: "s3",
+      iamAction: "s3:GetLifecycleConfiguration",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "s3:GetBucketPolicyStatus": {
+      id: "s3:GetBucketPolicyStatus",
+      iamService: "s3",
+      iamAction: "s3:GetBucketPolicyStatus",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "ecr:DescribeImages": {
+      id: "ecr:DescribeImages",
+      iamService: "ecr",
+      iamAction: "ecr:DescribeImages",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "ecr:DescribeImageScanFindings": {
+      id: "ecr:DescribeImageScanFindings",
+      iamService: "ecr",
+      iamAction: "ecr:DescribeImageScanFindings",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "ecr:GetLifecyclePolicy": {
+      id: "ecr:GetLifecyclePolicy",
+      iamService: "ecr",
+      iamAction: "ecr:GetLifecyclePolicy",
       readonly: true,
       costSensitivity: "low",
     },

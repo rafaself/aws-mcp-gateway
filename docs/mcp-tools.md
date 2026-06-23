@@ -1697,6 +1697,217 @@ Single-region. Defaults to gateway `AWS_REGION` when omitted.
 
 ---
 
+## 21. `get_ecr_image_status`
+
+**Purpose:** Returns normalized ECR image metadata for a repository including digest,
+tags, push time, scan summary, and lifecycle policy presence. Use the repository name
+directly — no application profile is required.
+
+**Pack:** `inventory`
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `repositoryName` | `string` | yes | — | ECR repository name format; max 256 characters. |
+| `imageTag` | `string` | no | — | Optional tag; mutually exclusive with `imageDigest`. |
+| `imageDigest` | `string` | no | — | Optional `sha256:` digest; mutually exclusive with `imageTag`. |
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+
+When neither `imageTag` nor `imageDigest` is provided, the most recently pushed image
+is selected from a bounded `DescribeImages` page.
+
+### Region behavior
+
+Single-region. Defaults to gateway `AWS_REGION` when omitted.
+
+### AWS API
+
+- **Service:** ECR
+- **Actions:** `DescribeImages`, `DescribeImageScanFindings`, `GetLifecyclePolicy`
+- **Capabilities:** `ecr:DescribeImages`, `ecr:DescribeImageScanFindings`, `ecr:GetLifecyclePolicy`
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    region: string,
+    repositoryName: string,
+    found: boolean,
+    imageDigest?: string,
+    tags?: string[],
+    pushedAt?: string,
+    imageSizeInBytes?: number,
+    scanStatus?: string,
+    scanSummary?: { criticalCount: number, highCount: number },
+    hasLifecyclePolicy?: boolean
+  }
+}
+```
+
+### Example
+
+```json
+{
+  "repositoryName": "my-app",
+  "imageTag": "v1.2.3",
+  "region": "us-east-1"
+}
+```
+
+### Safety boundaries
+
+- Does not pull container images.
+- Does not delete images or modify lifecycle policies.
+- Missing repository or image returns `found: false` without exposing unrelated repository data.
+- Scan findings are limited to critical/high counts.
+
+---
+
+## 22. `compare_ecs_task_image_with_ecr`
+
+**Purpose:** Compares an ECS service task definition image reference and running task
+image digests against the matching ECR image. Supports immutable digest-based deployment
+verification.
+
+**Pack:** `inventory`
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `clusterName` | `string` | yes | — | ECS cluster name. |
+| `serviceName` | `string` | yes | — | ECS service name. |
+| `repositoryName` | `string` | yes | — | ECR repository name used for comparison. |
+| `expectedImageDigest` | `string` | no | — | Optional sha256 digest the service should run. |
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+
+### Region behavior
+
+Single-region. Defaults to gateway `AWS_REGION` when omitted.
+
+### AWS API
+
+- **Services:** ECS, ECR
+- **Actions:** `DescribeClusters`, `DescribeServices`, `DescribeTaskDefinition`, `ListTasks`, `DescribeTasks`, `DescribeImages`, `DescribeImageScanFindings`, `GetLifecyclePolicy`
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    region: string,
+    clusterName: string,
+    serviceName: string,
+    repositoryName: string,
+    taskDefinitionImage?: string,
+    runningTaskImageDigests: string[],
+    ecrImageDigest?: string,
+    ecrImageTags?: string[],
+    ecrImageFound: boolean,
+    matchesEcrDigest: boolean,
+    matchesExpectedDigest: boolean | null
+  }
+}
+```
+
+### Example
+
+```json
+{
+  "clusterName": "prod",
+  "serviceName": "api",
+  "repositoryName": "api",
+  "expectedImageDigest": "sha256:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+  "region": "us-east-1"
+}
+```
+
+### Safety boundaries
+
+- Reads ECS service/task metadata and ECR image metadata only.
+- Does not pull images or modify ECS services or ECR repositories.
+- Running task sampling is bounded (max 5 tasks).
+
+---
+
+## 23. `get_s3_bucket_posture`
+
+**Purpose:** Returns S3 bucket security posture metadata including public access block,
+encryption, versioning, lifecycle summary, and optional CloudWatch size metrics. Use the
+bucket name directly — no application profile is required.
+
+**Important:** Public assets hosted outside AWS S3 (CDNs, static hosts, object storage on
+other providers) are **out of scope** for this tool.
+
+**Pack:** `security` (disabled by default — enable the `security` pack or list this tool
+in `AWS_MCP_ENABLED_TOOLS`)
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `bucketName` | `string` | yes | — | S3 bucket naming rules; max 63 characters. |
+| `region` | `string` | no | `AWS_REGION` | Region hint for initial signing; must be in `AWS_ALLOWED_REGIONS`. |
+
+### Region behavior
+
+Single-region hint for the initial `GetBucketLocation` call. The resolved bucket region
+is returned in the output.
+
+### AWS API
+
+- **Services:** S3, CloudWatch
+- **Actions:** `GetBucketLocation`, `GetBucketPublicAccessBlock`, `GetBucketEncryption`, `GetBucketVersioning`, `GetLifecycleConfiguration`, `GetBucketPolicyStatus`, `GetMetricData`
+- **Capabilities:** matching `s3:*` and `cloudwatch:GetMetricData` entries
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    bucketName: string,
+    region: string,
+    bucketExists: boolean,
+    publicAccessBlock?: {
+      blockPublicAcls: boolean,
+      ignorePublicAcls: boolean,
+      blockPublicPolicy: boolean,
+      restrictPublicBuckets: boolean
+    },
+    encryption?: { configured: boolean, algorithm?: string, kmsKeyId?: string },
+    versioning?: { status: string },
+    lifecycle?: { ruleCount: number, rules: [{ id: string, status: string }] },
+    isPublic?: boolean,
+    tlsOnlyPolicyIndicator: "unknown",
+    metrics?: { bucketSizeBytes?: number, objectCount?: number, asOf?: string }
+  }
+}
+```
+
+### Example
+
+```json
+{
+  "bucketName": "my-app-assets",
+  "region": "us-east-1"
+}
+```
+
+### Safety boundaries
+
+- Does not list or read S3 objects.
+- Does not download bucket policies or object ACLs.
+- Missing bucket returns `bucketExists: false` without throwing.
+- TLS-only enforcement is reported as `unknown` (bucket policy document is not fetched).
+- CloudWatch metrics are best-effort and omitted when unavailable.
+
+---
+
 ## Error codes reference
 
 All tool errors use the `GatewayError` class hierarchy and return a consistent

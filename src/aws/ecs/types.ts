@@ -27,6 +27,8 @@ export interface EcsServiceHealth {
 export interface EcsContainerStatus {
   name: string;
   lastStatus: string;
+  image?: string;
+  imageDigest?: string;
   exitCode?: number;
   reason?: string;
 }
@@ -65,6 +67,20 @@ export interface EcsStoppedTasksOptions {
   serviceName?: string;
   lookbackMinutes?: number;
   limit?: number;
+}
+
+export interface EcsEcrImageComparisonResult {
+  region: string;
+  clusterName: string;
+  serviceName: string;
+  repositoryName: string;
+  taskDefinitionImage?: string;
+  runningTaskImageDigests: string[];
+  ecrImageDigest?: string;
+  ecrImageTags?: string[];
+  ecrImageFound: boolean;
+  matchesEcrDigest: boolean;
+  matchesExpectedDigest: boolean | null;
 }
 
 export interface DescribeClustersResponse {
@@ -123,6 +139,8 @@ export interface DescribeTasksResponse {
     containers?: Array<{
       name?: string;
       lastStatus?: string;
+      image?: string;
+      imageDigest?: string;
       exitCode?: number;
       reason?: string;
     }>;
