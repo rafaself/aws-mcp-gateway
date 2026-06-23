@@ -33,6 +33,10 @@ import {
   createGetEcrImageStatusToolManifest,
   createCompareEcsTaskImageWithEcrToolManifest,
   createGetS3BucketPostureToolManifest,
+  createGetSesConfigurationStatusToolManifest,
+  createGetSnsTopicStatusToolManifest,
+  createGetEventBridgeRulesStatusToolManifest,
+  createGetBudgetStatusToolManifest,
 } from "./definitions/index.js";
 
 export type GatewayToolCatalogMetadata = {
@@ -105,6 +109,10 @@ export function createToolManifests(ctx: GatewayContext): AnyToolManifest[] {
     createGetEcrImageStatusToolManifest(ctx),
     createCompareEcsTaskImageWithEcrToolManifest(ctx),
     createGetS3BucketPostureToolManifest(ctx),
+    createGetSesConfigurationStatusToolManifest(ctx),
+    createGetSnsTopicStatusToolManifest(ctx),
+    createGetEventBridgeRulesStatusToolManifest(ctx),
+    createGetBudgetStatusToolManifest(ctx),
   ] as AnyToolManifest[];
 }
 

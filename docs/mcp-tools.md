@@ -113,6 +113,13 @@ See [`docs/specs/tool-execution-metadata.md`](specs/tool-execution-metadata.md) 
 | 18 | `get_rds_instance_health` | RDS instance health | Yes | [↓](#18-get_rds_instance_health) |
 | 19 | `get_rds_metrics` | RDS CloudWatch metrics | Yes | [↓](#19-get_rds_metrics) |
 | 20 | `check_ssm_parameter_inventory` | SSM parameter inventory metadata | Yes | [↓](#20-check_ssm_parameter_inventory) |
+| 21 | `get_ecr_image_status` | ECR image status | Yes | [↓](#21-get_ecr_image_status) |
+| 22 | `compare_ecs_task_image_with_ecr` | ECS vs ECR image compare | Yes | [↓](#22-compare_ecs_task_image_with_ecr) |
+| 23 | `get_s3_bucket_posture` | S3 bucket security posture | Yes | [↓](#23-get_s3_bucket_posture) |
+| 24 | `get_ses_configuration_status` | SES configuration set status | Yes | [↓](#24-get_ses_configuration_status) |
+| 25 | `get_sns_topic_status` | SNS topic and subscription status | Yes | [↓](#25-get_sns_topic_status) |
+| 26 | `get_eventbridge_rules_status` | EventBridge and Scheduler status | Yes | [↓](#26-get_eventbridge_rules_status) |
+| 27 | `get_budget_status` | AWS Budget status | Yes | [↓](#27-get_budget_status) |
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
@@ -120,7 +127,9 @@ All public tools require OAuth (`aws:read`) or local bearer authentication and a
 
 **Aggregate overview tools (10–12)** compose existing manifest-backed capabilities into bounded summaries. They are in the `aggregates` tool pack, which is **disabled by default**. Enable with `AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,aggregates` when you want higher-level summaries instead of calling each inventory or observability tool separately. Aggregates are not full account crawlers — they return counts and short normalized samples only.
 
-**Security tools (20)** are in the `security` tool pack, which is **disabled by default**. Enable with `AWS_MCP_ENABLED_TOOL_PACKS=...,security` or `AWS_MCP_ENABLED_TOOLS=check_ssm_parameter_inventory` when you need SSM parameter inventory checks. These tools return metadata only and never read or return parameter values.
+**Security tools (20, 23–24)** are in the `security` tool pack, which is **disabled by default**. Enable with `AWS_MCP_ENABLED_TOOL_PACKS=...,security` when you need SSM parameter inventory, S3 posture, or SES configuration checks. These tools return metadata only and mask sensitive endpoints.
+
+**Observability tools (25–26)** for SNS and EventBridge/Scheduler are in the default `observability` pack. **Budget tool (27)** is in the default `cost` pack.
 
 ---
 
@@ -1908,6 +1917,127 @@ is returned in the output.
 
 ---
 
+## 24. `get_ses_configuration_status`
+
+**Purpose:** Returns SES configuration set status including sending enabled state,
+reputation metrics, TLS policy, and event destination summaries. Supports optional
+`AssumeRole` for SES resources in another AWS account.
+
+**Pack:** `security` (disabled by default)
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `configurationSetName` | `string` | yes | — | Alphanumeric, hyphen, underscore; max 64 characters. |
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+| `roleArn` | `string` | no | — | Valid IAM role ARN for cross-account access. |
+| `externalId` | `string` | no | — | Optional external ID for the trust policy (never logged). |
+
+### AWS API
+
+- **Service:** SES (v2)
+- **Actions:** `GetConfigurationSet`, `GetConfigurationSetEventDestinations`
+
+### Output highlights
+
+- `configurationSetExists`, `sendingEnabled`, `reputationMetricsEnabled`, `tlsPolicy`
+- `eventDestinations[]` with masked SNS topic ARNs
+
+### Safety boundaries
+
+- No send-email operations.
+- Subscription and email endpoints are not returned from SES configuration APIs.
+
+---
+
+## 25. `get_sns_topic_status`
+
+**Purpose:** Returns SNS topic status including subscription count, protocols,
+confirmation state, masked subscription endpoints, and a summarized topic policy.
+
+**Pack:** `observability` (enabled by default)
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `topicName` | `string` | one of name/ARN | — | Short topic name when ARN is unknown. |
+| `topicArn` | `string` | one of name/ARN | — | Valid SNS topic ARN. |
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+| `roleArn` | `string` | no | — | Optional cross-account role ARN. |
+| `externalId` | `string` | no | — | Optional external ID (never logged). |
+
+### AWS API
+
+- **Service:** SNS
+- **Actions:** `ListTopics`, `GetTopicAttributes`, `ListSubscriptionsByTopic`
+
+### Safety boundaries
+
+- Email and SMS endpoints are masked in output.
+- Topic policy is summarized without exposing principal identifiers.
+
+---
+
+## 26. `get_eventbridge_rules_status`
+
+**Purpose:** Returns EventBridge rule and EventBridge Scheduler schedule status with
+safe target summaries. Raw target input payloads are never returned.
+
+**Pack:** `observability` (enabled by default)
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `ruleNamePrefix` | `string` | no | — | Max 256 characters. |
+| `scheduleNamePrefix` | `string` | no | — | Max 256 characters. |
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+| `limit` | `number` | no | `25` | Integer 1–50. |
+| `roleArn` | `string` | no | — | Optional cross-account role ARN. |
+| `externalId` | `string` | no | — | Optional external ID (never logged). |
+
+### AWS API
+
+- **Services:** EventBridge, EventBridge Scheduler
+- **Actions:** `ListRules`, `DescribeRule`, `ListTargetsByRule`, `ListSchedules`, `GetSchedule`
+
+### Safety boundaries
+
+- Target `Input`, transformers, and dead-letter payloads are omitted.
+- Target ARNs and role ARNs are masked.
+
+---
+
+## 27. `get_budget_status`
+
+**Purpose:** Returns AWS Budget status including limit, actual spend, notification
+thresholds, and masked subscriber addresses.
+
+**Pack:** `cost` (enabled by default)
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `budgetName` | `string` | yes | — | Max 100 characters. |
+| `accountId` | `string` | yes | — | 12-digit AWS account ID. |
+| `roleArn` | `string` | no | — | Optional cross-account role ARN. |
+| `externalId` | `string` | no | — | Optional external ID (never logged). |
+
+### AWS API
+
+- **Service:** AWS Budgets (signed in `us-east-1`)
+- **Actions:** `DescribeBudgets`, `DescribeNotificationsForBudget`, `DescribeSubscribersForNotification`
+
+### Safety boundaries
+
+- Subscriber email addresses are masked.
+- No budget write operations.
+
+---
+
 ## Error codes reference
 
 All tool errors use the `GatewayError` class hierarchy and return a consistent
@@ -2000,6 +2130,13 @@ Every tool handler is wrapped in `safeMcpHandler` which:
 | `get_rds_instance_health` | Yes | dbInstanceIdentifier, region | 300s (5 min) |
 | `get_rds_metrics` | Yes | dbInstanceIdentifier, region, lookbackMinutes, periodSeconds | 300s (5 min) |
 | `check_ssm_parameter_inventory` | Yes | parameterPrefix, requiredParameterNames, region | 300s (5 min) |
+| `get_ecr_image_status` | Yes | repositoryName, region, imageTag or imageDigest | 300s (5 min) |
+| `compare_ecs_task_image_with_ecr` | Yes | clusterName, serviceName, repositoryName, region | 300s (5 min) |
+| `get_s3_bucket_posture` | Yes | bucketName, region | 300s (5 min) |
+| `get_ses_configuration_status` | Yes | configurationSetName, region, roleArn | 300s (5 min) |
+| `get_sns_topic_status` | Yes | topicName or topicArn, region, roleArn | 300s (5 min) |
+| `get_eventbridge_rules_status` | Yes | ruleNamePrefix, scheduleNamePrefix, region, limit, roleArn | 300s (5 min) |
+| `get_budget_status` | Yes | budgetName, accountId, roleArn | 300s (5 min) |
 | `aws_account_overview` | Yes | per composed client keys | 300s (5 min) |
 | `aws_cost_overview` | Yes | startDate, endDate, granularity (×2 CE calls) | 1800s (30 min) |
 | `aws_observability_overview` | Yes | per composed client keys | 300s (5 min) |

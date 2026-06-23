@@ -27,7 +27,7 @@ ChatGPT Connector
   -> Normalized AWS cost, inventory, alarm, and log data
 ```
 
-The registry defines **22** public tools. Default deployments expose **18** through tool packs (`core`, `cost`, `inventory`, `observability`, `database`). Three aggregate overview tools are opt-in via the `aggregates` pack. One security tool is opt-in via the `security` pack. See [tool exposure](#tool-exposure-optional) and [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md).
+The registry defines **26** public tools. Default deployments expose **21** through tool packs (`core`, `cost`, `inventory`, `observability`, `database`). Three aggregate overview tools are opt-in via the `aggregates` pack. Security tools (SSM inventory, S3 posture, SES configuration) are opt-in via the `security` pack. See [tool exposure](#tool-exposure-optional) and [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md).
 
 ## Current status
 

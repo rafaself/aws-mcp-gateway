@@ -28,6 +28,9 @@ const AWS_BACKED_TOOLS = [
   "get_rds_metrics",
   "get_ecr_image_status",
   "compare_ecs_task_image_with_ecr",
+  "get_sns_topic_status",
+  "get_eventbridge_rules_status",
+  "get_budget_status",
 ] as const;
 
 const AGGREGATE_TOOLS = [
