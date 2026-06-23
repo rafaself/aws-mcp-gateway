@@ -10,6 +10,7 @@ const validConfig: ValidatedGatewayConfig = {
   AWS_REGION: "us-east-1",
   AWS_ALLOWED_REGIONS: "us-east-1,us-west-2",
   MCP_AUTH_TOKEN: "token",
+  AWS_MCP_APP_PROFILE_INDEX_KEY: "app-profiles/index.json",
   toolExposure: defaultResolvedToolExposure(),
 };
 
@@ -48,6 +49,37 @@ describe("buildGatewayContext", () => {
     const ctx = buildGatewayContext(validConfig);
 
     expect(ctx.cache).toBeUndefined();
+  });
+
+  it("passes appConfig binding when present", () => {
+    const appConfig = {} as never;
+    const ctx = buildGatewayContext({
+      ...validConfig,
+      AWS_MCP_APP_CONFIG: appConfig,
+    });
+
+    expect(ctx.appConfig).toBe(appConfig);
+  });
+
+  it("leaves appConfig undefined when binding absent", () => {
+    const ctx = buildGatewayContext(validConfig);
+
+    expect(ctx.appConfig).toBeUndefined();
+  });
+
+  it("passes appProfileIndexKey from validated configuration", () => {
+    const ctx = buildGatewayContext({
+      ...validConfig,
+      AWS_MCP_APP_PROFILE_INDEX_KEY: "custom/index.json",
+    });
+
+    expect(ctx.appProfileIndexKey).toBe("custom/index.json");
+  });
+
+  it("defaults appProfileIndexKey when not customized", () => {
+    const ctx = buildGatewayContext(validConfig);
+
+    expect(ctx.appProfileIndexKey).toBe("app-profiles/index.json");
   });
 
   it("extracts auth mode and oauth scopes when present", () => {

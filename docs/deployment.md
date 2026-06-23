@@ -239,6 +239,38 @@ Copy the returned `id` into `wrangler.jsonc`:
 
 If the KV binding is absent, all tool calls proceed without caching. This is acceptable for evaluation but not recommended for regular use.
 
+### Optional application profile KV
+
+Application profiles are optional operational context stored in a **separate** KV namespace from `AWS_MCP_CACHE`.
+
+Create the namespace:
+
+```bash
+wrangler kv:namespace create "AWS_MCP_APP_CONFIG"
+```
+
+Copy the returned `id` into `wrangler.jsonc`:
+
+```jsonc
+{
+  "kv_namespaces": [
+    {
+      "binding": "AWS_MCP_APP_CONFIG",
+      "id": "<your-app-config-kv-namespace-id>",
+      "remote": true
+    }
+  ]
+}
+```
+
+Optional index key var (default `app-profiles/index.json`):
+
+```jsonc
+"AWS_MCP_APP_PROFILE_INDEX_KEY": "app-profiles/index.json"
+```
+
+If the binding is absent, the gateway and generic AWS tools continue to work normally. See [`application-profiles.md`](application-profiles.md) for key layout, schema, and security boundaries.
+
 ## Local credential files
 
 Use **project-prefixed** names for deploy credentials so they do not clash with other Cloudflare or AWS tooling on your machine.
