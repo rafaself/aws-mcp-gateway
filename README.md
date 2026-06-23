@@ -275,7 +275,7 @@ Use a dedicated IAM user with only the permissions required by the gateway.
 
 The canonical read-only policy is maintained at [`infra/aws/iam-readonly-policy.json`](infra/aws/iam-readonly-policy.json).
 
-See [`docs/aws-iam-setup.md`](docs/aws-iam-setup.md) for the complete IAM setup flow. For multi-account access with STS `AssumeRole`, see [`docs/aws-credentials.md`](docs/aws-credentials.md).
+See [`docs/aws-iam-setup.md`](docs/aws-iam-setup.md) for the complete IAM setup flow. For multi-account access with STS `AssumeRole`, see [`docs/aws-credentials.md`](docs/aws-credentials.md) and [`docs/iam-cross-account.md`](docs/iam-cross-account.md).
 
 Do not use `AdministratorAccess` or broad AWS-managed policies for this gateway.
 
@@ -306,7 +306,7 @@ Default cache TTLs:
 
 The cache is optional for local development and tests. If the binding is absent, tools run without caching.
 
-**Application profiles** use a separate optional KV binding (`AWS_MCP_APP_CONFIG`) for saved operational context. Profiles are not required for `/mcp` or generic AWS tools. See [`docs/application-profiles.md`](docs/application-profiles.md) for schema details and [`docs/application-profiles.md#cli-workflow`](docs/application-profiles.md#cli-workflow) for `pnpm app-profile:*` commands.
+**Application profiles** use a separate optional KV binding (`AWS_MCP_APP_CONFIG`) for saved operational context. Profiles are not required for `/mcp` or generic AWS tools. See [`docs/application-profiles.md`](docs/application-profiles.md) for schema details, [`docs/aws-tools.md`](docs/aws-tools.md) for direct generic tools, and [`docs/application-profiles.md#cli-workflow`](docs/application-profiles.md#cli-workflow) for `pnpm app-profile:*` commands.
 
 **Cost Explorer billing estimates:** Non-cached `ce:GetCostAndUsage` requests are estimated at approximately **US$ 0.01** per live API call. Cached responses report `estimatedCostUsd: 0` and do not make a new Cost Explorer request. These values are approximate gateway estimates only — final AWS billing is determined by your AWS account usage and pricing.
 
@@ -398,6 +398,12 @@ Forbidden in the current scope:
 
 For the full security checklist, see [`SECURITY.md`](SECURITY.md).
 
+### AWS operations model
+
+- **Generic tools** — pass resource names directly (`clusterName`, `logGroupName`, `dbInstanceIdentifier`, …); no profiles required. See [`docs/aws-tools.md`](docs/aws-tools.md).
+- **Application profiles** — optional saved operational context in KV for the `application-ops` pack. See [`docs/application-profiles.md`](docs/application-profiles.md).
+- **Cross-account IAM** — one gateway user plus `sts:AssumeRole` into read-only target roles. See [`docs/iam-cross-account.md`](docs/iam-cross-account.md).
+
 ## Testing
 
 **Minimal local loop:**
@@ -434,6 +440,9 @@ Runtime MCP/auth dependency upgrades must be treated as protocol changes. See [`
 | Document | Purpose |
 | --- | --- |
 | [`docs/mcp-tools.md`](docs/mcp-tools.md) | Public MCP tool contracts |
+| [`docs/aws-tools.md`](docs/aws-tools.md) | Generic direct-input AWS tools (no profiles required) |
+| [`docs/application-profiles.md`](docs/application-profiles.md) | Optional KV-backed application profiles |
+| [`docs/iam-cross-account.md`](docs/iam-cross-account.md) | Multi-account AssumeRole IAM pattern |
 | [`docs/chatgpt-connector.md`](docs/chatgpt-connector.md) | ChatGPT connector integration guide |
 | [`docs/auth/README.md`](docs/auth/README.md) | Authentication lifecycle, route surface, and token validation map |
 | [`docs/auth-chatgpt-oauth.md`](docs/auth-chatgpt-oauth.md) | OAuth/Auth0 setup |
