@@ -110,6 +110,8 @@ See [`docs/specs/tool-execution-metadata.md`](specs/tool-execution-metadata.md) 
 | 15 | `get_recent_stopped_ecs_tasks` | Stopped ECS task diagnostics | Yes | [↓](#15-get_recent_stopped_ecs_tasks) |
 | 16 | `get_cloudwatch_logs` | Generic bounded log query | Yes | [↓](#16-get_cloudwatch_logs) |
 | 17 | `get_cloudwatch_alarm_summary` | Single-region alarm summary | Yes | [↓](#17-get_cloudwatch_alarm_summary) |
+| 18 | `get_rds_instance_health` | RDS instance health | Yes | [↓](#18-get_rds_instance_health) |
+| 19 | `get_rds_metrics` | RDS CloudWatch metrics | Yes | [↓](#19-get_rds_metrics) |
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
@@ -1435,6 +1437,173 @@ are never exposed. ARNs appearing in `StateReason` are masked as
 
 ---
 
+## 18. `get_rds_instance_health`
+
+**Purpose:** Returns normalized RDS DB instance health and posture for any instance
+in allowed regions. Use the DB instance identifier directly — no application profile
+is required.
+
+**Pack:** `database`
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `dbInstanceIdentifier` | `string` | yes | — | Non-empty, max 63 characters. |
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+
+### Region behavior
+
+Single-region. Defaults to gateway `AWS_REGION` when omitted.
+
+### AWS API
+
+- **Service:** RDS
+- **Actions:** `DescribeDBInstances`, `DescribeDBSubnetGroups`
+- **Capabilities:** `rds:DescribeDBInstances`, `rds:DescribeDBSubnetGroups`
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `dbInstanceIdentifier`, `region` |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    dbInstanceIdentifier: string,
+    region: string,
+    status: string,
+    engine: string,
+    engineVersion: string,
+    instanceClass: string,
+    allocatedStorageGb: number,
+    maxAllocatedStorageGb?: number,
+    storageEncrypted: boolean,
+    publiclyAccessible: boolean,
+    multiAz: boolean,
+    backupRetentionPeriodDays: number,
+    deletionProtection: boolean,
+    latestRestorableTime?: string,
+    dbSubnetGroupName?: string,
+    vpcId?: string
+  }
+}
+```
+
+### Example
+
+```json
+{
+  "dbInstanceIdentifier": "prod-postgres",
+  "region": "us-east-1"
+}
+```
+
+### Safety boundaries
+
+- Does not connect to the database or execute SQL.
+- Does not read Secrets Manager or SSM parameter values.
+- Endpoint host, port, master username, and credentials are never returned.
+- Invalid input fails before any downstream AWS call.
+
+---
+
+## 19. `get_rds_metrics`
+
+**Purpose:** Returns bounded recent CloudWatch metrics for an RDS DB instance.
+Use the DB instance identifier directly — no application profile is required.
+
+**Pack:** `database`
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `dbInstanceIdentifier` | `string` | yes | — | Non-empty, max 63 characters. |
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+| `lookbackMinutes` | `number` | no | `60` | Integer 1–1440. |
+| `periodSeconds` | `number` | no | `300` | Integer 60–3600. |
+
+### Region behavior
+
+Single-region. Defaults to gateway `AWS_REGION` when omitted.
+
+### AWS API
+
+- **Service:** RDS (existence check), CloudWatch
+- **Actions:** `DescribeDBInstances`, `GetMetricData`
+- **Capabilities:** `rds:DescribeDBInstances`, `cloudwatch:GetMetricData`
+
+### Metrics returned
+
+Required series: `CPUUtilization`, `DatabaseConnections`, `FreeStorageSpace`,
+`FreeableMemory`.
+
+Optional series (included with `status: "no_data"` when unavailable):
+`ReadIOPS`, `WriteIOPS`, `ReadLatency`, `WriteLatency`.
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `dbInstanceIdentifier`, `region`, `lookbackMinutes`, `periodSeconds` |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    dbInstanceIdentifier: string,
+    region: string,
+    lookbackMinutes: number,
+    periodSeconds: number,
+    metrics: [{
+      name: string,
+      unit: string,
+      status: "ok" | "no_data",
+      datapoints: [{ timestamp: string, value: number }]
+    }]
+  }
+}
+```
+
+### Example
+
+```json
+{
+  "dbInstanceIdentifier": "prod-postgres",
+  "region": "us-east-1",
+  "lookbackMinutes": 60,
+  "periodSeconds": 300
+}
+```
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Region not in allowlist | `validation_error` | false |
+| Invalid lookback or period | `validation_error` | false |
+| DB instance not found | `not_found` | false |
+| AWS API failure | `aws_request_failed` | varies |
+
+### Safety boundaries
+
+- Does not connect to the database or execute SQL.
+- Metric datapoints are capped at **60** per series.
+- Empty or unsupported metric series return `status: "no_data"` rather than failing the tool.
+
+---
+
 ## Error codes reference
 
 All tool errors use the `GatewayError` class hierarchy and return a consistent
@@ -1491,6 +1660,7 @@ Error
         │     ├── CloudWatchError
         │     ├── LogsError
         │     ├── EcsError
+        │     ├── RdsError
         │     └── CostExplorerError
         └── AwsRequestError (statusCode, service, region)
 ```
@@ -1523,6 +1693,8 @@ Every tool handler is wrapped in `safeMcpHandler` which:
 | `get_ecs_service_health` | Yes | clusterName, serviceName, region | 300s (5 min) |
 | `list_ecs_tasks` | Yes | clusterName, serviceName, desiredStatus, limit, region | 300s (5 min) |
 | `get_recent_stopped_ecs_tasks` | Yes | clusterName, serviceName, lookbackMinutes, limit, region | 300s (5 min) |
+| `get_rds_instance_health` | Yes | dbInstanceIdentifier, region | 300s (5 min) |
+| `get_rds_metrics` | Yes | dbInstanceIdentifier, region, lookbackMinutes, periodSeconds | 300s (5 min) |
 | `aws_account_overview` | Yes | per composed client keys | 300s (5 min) |
 | `aws_cost_overview` | Yes | startDate, endDate, granularity (×2 CE calls) | 1800s (30 min) |
 | `aws_observability_overview` | Yes | per composed client keys | 300s (5 min) |

@@ -27,6 +27,10 @@ the unique IAM actions listed in this matrix. Drift is enforced by
 | get_cloudwatch_logs | observability | logs | logs:FilterLogEvents | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
 | get_ecs_service_health | observability | ecs | ecs:DescribeClusters | single-region | read-only | 300 | cached-read | low | low |  |
 | get_ecs_service_health | observability | ecs | ecs:DescribeServices | single-region | read-only | 300 | cached-read | low | low |  |
+| get_rds_instance_health | database | rds | rds:DescribeDBInstances | single-region | read-only | 300 | cached-read | low | low |  |
+| get_rds_instance_health | database | rds | rds:DescribeDBSubnetGroups | single-region | read-only | 300 | cached-read | low | low |  |
+| get_rds_metrics | database | cloudwatch | cloudwatch:GetMetricData | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
+| get_rds_metrics | database | rds | rds:DescribeDBInstances | single-region | read-only | 300 | cached-read | volume-sensitive | low |  |
 | get_recent_log_errors | observability | logs | logs:FilterLogEvents | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
 | get_recent_stopped_ecs_tasks | observability | ecs | ecs:DescribeTasks | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
 | get_recent_stopped_ecs_tasks | observability | ecs | ecs:ListTasks | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |

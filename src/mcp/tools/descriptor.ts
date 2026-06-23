@@ -29,6 +29,8 @@ export const PUBLIC_TOOL_TITLES = {
   get_ecs_service_health: "Get ECS Service Health",
   list_ecs_tasks: "List ECS Tasks",
   get_recent_stopped_ecs_tasks: "Get Recent Stopped ECS Tasks",
+  get_rds_instance_health: "Get RDS Instance Health",
+  get_rds_metrics: "Get RDS Metrics",
   aws_account_overview: "AWS Account Overview",
   aws_cost_overview: "AWS Cost Overview",
   aws_observability_overview: "AWS Observability Overview",
@@ -341,6 +343,45 @@ export const recentStoppedEcsTasksOutputSchema = withOptionalExecutionMetadata({
       containers: z.array(ecsContainerStatusSchema),
     }),
   ),
+});
+
+export const rdsInstanceHealthOutputSchema = withOptionalExecutionMetadata({
+  dbInstanceIdentifier: z.string(),
+  region: z.string(),
+  status: z.string(),
+  engine: z.string(),
+  engineVersion: z.string(),
+  instanceClass: z.string(),
+  allocatedStorageGb: z.number(),
+  maxAllocatedStorageGb: z.number().optional(),
+  storageEncrypted: z.boolean(),
+  publiclyAccessible: z.boolean(),
+  multiAz: z.boolean(),
+  backupRetentionPeriodDays: z.number(),
+  deletionProtection: z.boolean(),
+  latestRestorableTime: z.string().optional(),
+  dbSubnetGroupName: z.string().optional(),
+  vpcId: z.string().optional(),
+});
+
+const rdsMetricDatapointSchema = z.object({
+  timestamp: z.string(),
+  value: z.number(),
+});
+
+const rdsMetricSeriesSchema = z.object({
+  name: z.string(),
+  unit: z.string(),
+  status: z.enum(["ok", "no_data"]),
+  datapoints: z.array(rdsMetricDatapointSchema),
+});
+
+export const rdsMetricsOutputSchema = withOptionalExecutionMetadata({
+  dbInstanceIdentifier: z.string(),
+  region: z.string(),
+  lookbackMinutes: z.number(),
+  periodSeconds: z.number(),
+  metrics: z.array(rdsMetricSeriesSchema),
 });
 
 const overviewEc2SectionSchema = z.object({

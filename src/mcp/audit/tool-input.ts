@@ -146,3 +146,23 @@ export function summarizeEcsStoppedTasksInput(args: {
     ...(args.limit !== undefined ? { limit: args.limit } : {}),
   };
 }
+
+export function summarizeRdsInstanceHealthInput(args: {
+  dbInstanceIdentifier?: string;
+}): Record<string, unknown> {
+  return {
+    hasDbInstanceIdentifier: Boolean(args.dbInstanceIdentifier),
+  };
+}
+
+export function summarizeRdsMetricsInput(args: {
+  dbInstanceIdentifier?: string;
+  lookbackMinutes?: number;
+  periodSeconds?: number;
+}): Record<string, unknown> {
+  return {
+    hasDbInstanceIdentifier: Boolean(args.dbInstanceIdentifier),
+    lookbackMinutes: args.lookbackMinutes,
+    ...(args.periodSeconds !== undefined ? { periodSeconds: args.periodSeconds } : {}),
+  };
+}

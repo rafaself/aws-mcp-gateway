@@ -102,7 +102,7 @@ describe("validateEnv", () => {
 
     expect(result.valid).toBe(true);
     expect([...result.config.toolExposure.enabledToolPacks].sort()).toEqual(
-      ["core", "cost", "inventory", "observability"].sort(),
+      ["core", "cost", "database", "inventory", "observability"].sort(),
     );
     expect(result.config.toolExposure.enabledTools).toEqual([]);
     expect(result.config.toolExposure.disabledTools.size).toBe(0);

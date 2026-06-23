@@ -47,3 +47,9 @@ export {
 export {
   createGetRecentStoppedEcsTasksToolManifest,
 } from "./get-recent-stopped-ecs-tasks.js";
+export {
+  createGetRdsInstanceHealthToolManifest,
+} from "./get-rds-instance-health.js";
+export {
+  createGetRdsMetricsToolManifest,
+} from "./get-rds-metrics.js";

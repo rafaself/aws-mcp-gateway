@@ -24,6 +24,8 @@ list_log_groups
 get_ecs_service_health
 list_ecs_tasks
 get_recent_stopped_ecs_tasks
+get_rds_instance_health
+get_rds_metrics
 aws_account_overview
 aws_cost_overview
 aws_observability_overview

@@ -14,6 +14,7 @@ describe("aws capabilities registry", () => {
     expect(AWS_CAPABILITY_IDS.sort()).toEqual([
       "ce:GetCostAndUsage",
       "cloudwatch:DescribeAlarms",
+      "cloudwatch:GetMetricData",
       "ec2:DescribeInstances",
       "ecs:DescribeClusters",
       "ecs:DescribeServices",
@@ -24,6 +25,8 @@ describe("aws capabilities registry", () => {
       "logs:DescribeLogGroups",
       "logs:DescribeLogStreams",
       "logs:FilterLogEvents",
+      "rds:DescribeDBInstances",
+      "rds:DescribeDBSubnetGroups",
       "s3:ListAllMyBuckets",
       "sts:AssumeRole",
     ]);
@@ -41,6 +44,7 @@ describe("aws capabilities registry", () => {
     expect(awsActionsForCapabilities(AWS_CAPABILITY_IDS)).toEqual([
       "ce:GetCostAndUsage",
       "cloudwatch:DescribeAlarms",
+      "cloudwatch:GetMetricData",
       "ec2:DescribeInstances",
       "ecs:DescribeClusters",
       "ecs:DescribeServices",
@@ -51,6 +55,8 @@ describe("aws capabilities registry", () => {
       "logs:DescribeLogGroups",
       "logs:DescribeLogStreams",
       "logs:FilterLogEvents",
+      "rds:DescribeDBInstances",
+      "rds:DescribeDBSubnetGroups",
       "s3:ListAllMyBuckets",
       "sts:AssumeRole",
     ]);
@@ -61,6 +67,7 @@ describe("aws capabilities registry", () => {
       "ecs",
       "lambda",
       "logs",
+      "rds",
       "s3",
       "sts",
     ]);
