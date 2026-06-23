@@ -66,7 +66,7 @@ describe("tool exposure configuration", () => {
     const exposed = resolveExposedToolNames(manifests, ctx.toolExposure);
 
     expect([...exposed].sort()).toEqual(
-      ["get_aws_cost_by_service", "get_aws_cost_summary"].sort(),
+      ["get_aws_cost_by_service", "get_aws_cost_summary", "get_budget_status"].sort(),
     );
   });
 

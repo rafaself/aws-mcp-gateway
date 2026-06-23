@@ -55,7 +55,7 @@ describe("tools/list MCP protocol integration", () => {
     expect(listResult).toBeDefined();
 
     const tools = listResult!.result.tools;
-    expect(tools).toHaveLength(20);
+    expect(tools).toHaveLength(23);
 
     for (const tool of tools) {
       expect(tool.securitySchemes).toEqual(OAUTH_SECURITY);
@@ -99,7 +99,7 @@ describe("tools/list MCP protocol integration", () => {
     const listResult = protocolMessages.find(isToolsListResult);
     const tools = listResult!.result.tools;
 
-    expect(tools).toHaveLength(19);
+    expect(tools).toHaveLength(22);
     expect(tools.map((tool) => tool.name)).not.toContain("get_cloudwatch_alarms");
   });
 
@@ -129,6 +129,10 @@ describe("tools/list MCP protocol integration", () => {
     const listResult = protocolMessages.find(isToolsListResult);
     const toolNames = listResult!.result.tools.map((tool) => tool.name).sort();
 
-    expect(toolNames).toEqual(["get_aws_cost_by_service", "get_aws_cost_summary"]);
+    expect(toolNames).toEqual([
+      "get_aws_cost_by_service",
+      "get_aws_cost_summary",
+      "get_budget_status",
+    ]);
   });
 });

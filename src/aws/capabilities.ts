@@ -26,7 +26,20 @@ export type AwsCapabilityId =
   | "cloudwatch:GetMetricData"
   | "ssm:DescribeParameters"
   | "ssm:GetParameters"
-  | "sts:AssumeRole";
+  | "sts:AssumeRole"
+  | "ses:GetConfigurationSet"
+  | "ses:GetConfigurationSetEventDestinations"
+  | "sns:ListTopics"
+  | "sns:GetTopicAttributes"
+  | "sns:ListSubscriptionsByTopic"
+  | "events:ListRules"
+  | "events:DescribeRule"
+  | "events:ListTargetsByRule"
+  | "scheduler:ListSchedules"
+  | "scheduler:GetSchedule"
+  | "budgets:DescribeBudgets"
+  | "budgets:DescribeNotificationsForBudget"
+  | "budgets:DescribeSubscribersForNotification";
 
 export type AwsCapabilityCostSensitivity =
   | "paid"
@@ -259,6 +272,99 @@ export const AWS_CAPABILITY_REGISTRY: Readonly<Record<AwsCapabilityId, AwsCapabi
       id: "sts:AssumeRole",
       iamService: "sts",
       iamAction: "sts:AssumeRole",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "ses:GetConfigurationSet": {
+      id: "ses:GetConfigurationSet",
+      iamService: "ses",
+      iamAction: "ses:GetConfigurationSet",
+      requestService: "email",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "ses:GetConfigurationSetEventDestinations": {
+      id: "ses:GetConfigurationSetEventDestinations",
+      iamService: "ses",
+      iamAction: "ses:GetConfigurationSetEventDestinations",
+      requestService: "email",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "sns:ListTopics": {
+      id: "sns:ListTopics",
+      iamService: "sns",
+      iamAction: "sns:ListTopics",
+      readonly: true,
+      costSensitivity: "fanout-sensitive",
+    },
+    "sns:GetTopicAttributes": {
+      id: "sns:GetTopicAttributes",
+      iamService: "sns",
+      iamAction: "sns:GetTopicAttributes",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "sns:ListSubscriptionsByTopic": {
+      id: "sns:ListSubscriptionsByTopic",
+      iamService: "sns",
+      iamAction: "sns:ListSubscriptionsByTopic",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "events:ListRules": {
+      id: "events:ListRules",
+      iamService: "events",
+      iamAction: "events:ListRules",
+      readonly: true,
+      costSensitivity: "fanout-sensitive",
+    },
+    "events:DescribeRule": {
+      id: "events:DescribeRule",
+      iamService: "events",
+      iamAction: "events:DescribeRule",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "events:ListTargetsByRule": {
+      id: "events:ListTargetsByRule",
+      iamService: "events",
+      iamAction: "events:ListTargetsByRule",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "scheduler:ListSchedules": {
+      id: "scheduler:ListSchedules",
+      iamService: "scheduler",
+      iamAction: "scheduler:ListSchedules",
+      readonly: true,
+      costSensitivity: "fanout-sensitive",
+    },
+    "scheduler:GetSchedule": {
+      id: "scheduler:GetSchedule",
+      iamService: "scheduler",
+      iamAction: "scheduler:GetSchedule",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "budgets:DescribeBudgets": {
+      id: "budgets:DescribeBudgets",
+      iamService: "budgets",
+      iamAction: "budgets:DescribeBudgets",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "budgets:DescribeNotificationsForBudget": {
+      id: "budgets:DescribeNotificationsForBudget",
+      iamService: "budgets",
+      iamAction: "budgets:DescribeNotificationsForBudget",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "budgets:DescribeSubscribersForNotification": {
+      id: "budgets:DescribeSubscribersForNotification",
+      iamService: "budgets",
+      iamAction: "budgets:DescribeSubscribersForNotification",
       readonly: true,
       costSensitivity: "low",
     },

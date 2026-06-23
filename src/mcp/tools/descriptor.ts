@@ -35,6 +35,10 @@ export const PUBLIC_TOOL_TITLES = {
   get_ecr_image_status: "Get ECR Image Status",
   compare_ecs_task_image_with_ecr: "Compare ECS Task Image With ECR",
   get_s3_bucket_posture: "Get S3 Bucket Posture",
+  get_ses_configuration_status: "Get SES Configuration Status",
+  get_sns_topic_status: "Get SNS Topic Status",
+  get_eventbridge_rules_status: "Get EventBridge Rules Status",
+  get_budget_status: "Get Budget Status",
   aws_account_overview: "AWS Account Overview",
   aws_cost_overview: "AWS Cost Overview",
   aws_observability_overview: "AWS Observability Overview",
@@ -482,6 +486,103 @@ export const getS3BucketPostureOutputSchema = withOptionalExecutionMetadata({
       asOf: z.string().optional(),
     })
     .optional(),
+});
+
+const sesEventDestinationSchema = z.object({
+  name: z.string(),
+  enabled: z.boolean(),
+  matchingEventTypes: z.array(z.string()),
+  destinationType: z.string(),
+  snsTopicArn: z.string().optional(),
+});
+
+export const getSesConfigurationStatusOutputSchema = withOptionalExecutionMetadata({
+  region: z.string(),
+  configurationSetName: z.string(),
+  configurationSetExists: z.boolean(),
+  sendingEnabled: z.boolean().optional(),
+  reputationMetricsEnabled: z.boolean().optional(),
+  tlsPolicy: z.string().optional(),
+  eventDestinations: z.array(sesEventDestinationSchema),
+});
+
+const snsSubscriptionSummarySchema = z.object({
+  protocol: z.string(),
+  endpointMasked: z.string(),
+  pendingConfirmation: z.boolean(),
+});
+
+const topicPolicySummarySchema = z.object({
+  statementCount: z.number(),
+  allowsPublish: z.boolean(),
+  principalTypes: z.array(z.string()),
+});
+
+export const getSnsTopicStatusOutputSchema = withOptionalExecutionMetadata({
+  region: z.string(),
+  topicName: z.string().optional(),
+  topicArn: z.string().optional(),
+  topicExists: z.boolean(),
+  subscriptionCount: z.number(),
+  protocols: z.array(z.string()),
+  pendingConfirmationCount: z.number(),
+  subscriptions: z.array(snsSubscriptionSummarySchema),
+  policySummary: topicPolicySummarySchema.optional(),
+});
+
+const eventBridgeTargetSummarySchema = z.object({
+  id: z.string().optional(),
+  arn: z.string().optional(),
+  roleArn: z.string().optional(),
+});
+
+const eventBridgeRuleSummarySchema = z.object({
+  name: z.string(),
+  state: z.string(),
+  scheduleExpression: z.string().optional(),
+  eventPatternSummary: z.string().optional(),
+  targetCount: z.number(),
+  targets: z.array(eventBridgeTargetSummarySchema),
+});
+
+const schedulerScheduleSummarySchema = z.object({
+  name: z.string(),
+  state: z.string(),
+  scheduleExpression: z.string().optional(),
+  targetArn: z.string().optional(),
+  targetRoleArn: z.string().optional(),
+});
+
+export const getEventBridgeRulesStatusOutputSchema = withOptionalExecutionMetadata({
+  region: z.string(),
+  rules: z.array(eventBridgeRuleSummarySchema),
+  schedules: z.array(schedulerScheduleSummarySchema),
+  truncated: z.boolean(),
+});
+
+const budgetSubscriberSummarySchema = z.object({
+  type: z.string(),
+  addressMasked: z.string(),
+});
+
+const budgetNotificationSummarySchema = z.object({
+  notificationType: z.string(),
+  comparisonOperator: z.string().optional(),
+  threshold: z.number().optional(),
+  thresholdType: z.string().optional(),
+  subscribers: z.array(budgetSubscriberSummarySchema),
+});
+
+export const getBudgetStatusOutputSchema = withOptionalExecutionMetadata({
+  accountId: z.string(),
+  budgetName: z.string(),
+  budgetExists: z.boolean(),
+  limitAmount: z.string().optional(),
+  limitUnit: z.string().optional(),
+  actualSpend: z.string().optional(),
+  forecastedSpend: z.string().optional(),
+  timeUnit: z.string().optional(),
+  notifications: z.array(budgetNotificationSummarySchema),
 });
 
 const overviewEc2SectionSchema = z.object({

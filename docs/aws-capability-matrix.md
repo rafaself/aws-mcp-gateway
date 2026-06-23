@@ -30,6 +30,9 @@ the unique IAM actions listed in this matrix. Drift is enforced by
 | compare_ecs_task_image_with_ecr | inventory | ecs | ecs:ListTasks | single-region | read-only | 300 | cached-read | low | volume-sensitive |  |
 | get_aws_cost_by_service | cost | ce | ce:GetCostAndUsage | single-region | read-only | 1800 | cached-read | paid | paid | 0.01 |
 | get_aws_cost_summary | cost | ce | ce:GetCostAndUsage | single-region | read-only | 1800 | cached-read | paid | paid | 0.01 |
+| get_budget_status | cost | budgets | budgets:DescribeBudgets | single-region | read-only | 300 | cached-read | low | low |  |
+| get_budget_status | cost | budgets | budgets:DescribeNotificationsForBudget | single-region | read-only | 300 | cached-read | low | low |  |
+| get_budget_status | cost | budgets | budgets:DescribeSubscribersForNotification | single-region | read-only | 300 | cached-read | low | low |  |
 | get_cloudwatch_alarm_summary | observability | cloudwatch | cloudwatch:DescribeAlarms | single-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |
 | get_cloudwatch_alarms | observability | cloudwatch | cloudwatch:DescribeAlarms | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |
 | get_cloudwatch_logs | observability | logs | logs:DescribeLogStreams | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
@@ -39,6 +42,11 @@ the unique IAM actions listed in this matrix. Drift is enforced by
 | get_ecr_image_status | inventory | ecr | ecr:GetLifecyclePolicy | single-region | read-only | 300 | cached-read | low | low |  |
 | get_ecs_service_health | observability | ecs | ecs:DescribeClusters | single-region | read-only | 300 | cached-read | low | low |  |
 | get_ecs_service_health | observability | ecs | ecs:DescribeServices | single-region | read-only | 300 | cached-read | low | low |  |
+| get_eventbridge_rules_status | observability | events | events:DescribeRule | single-region | read-only | 300 | cached-read | low | low |  |
+| get_eventbridge_rules_status | observability | events | events:ListRules | single-region | read-only | 300 | cached-read | low | fanout-sensitive |  |
+| get_eventbridge_rules_status | observability | events | events:ListTargetsByRule | single-region | read-only | 300 | cached-read | low | low |  |
+| get_eventbridge_rules_status | observability | scheduler | scheduler:GetSchedule | single-region | read-only | 300 | cached-read | low | low |  |
+| get_eventbridge_rules_status | observability | scheduler | scheduler:ListSchedules | single-region | read-only | 300 | cached-read | low | fanout-sensitive |  |
 | get_rds_instance_health | database | rds | rds:DescribeDBInstances | single-region | read-only | 300 | cached-read | low | low |  |
 | get_rds_instance_health | database | rds | rds:DescribeDBSubnetGroups | single-region | read-only | 300 | cached-read | low | low |  |
 | get_rds_metrics | database | cloudwatch | cloudwatch:GetMetricData | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
@@ -53,6 +61,11 @@ the unique IAM actions listed in this matrix. Drift is enforced by
 | get_s3_bucket_posture | security | s3 | s3:GetBucketPublicAccessBlock | single-region | read-only | 300 | cached-read | low | low |  |
 | get_s3_bucket_posture | security | s3 | s3:GetBucketVersioning | single-region | read-only | 300 | cached-read | low | low |  |
 | get_s3_bucket_posture | security | s3 | s3:GetLifecycleConfiguration | single-region | read-only | 300 | cached-read | low | low |  |
+| get_ses_configuration_status | security | ses | ses:GetConfigurationSet | single-region | read-only | 300 | cached-read | low | low |  |
+| get_ses_configuration_status | security | ses | ses:GetConfigurationSetEventDestinations | single-region | read-only | 300 | cached-read | low | low |  |
+| get_sns_topic_status | observability | sns | sns:GetTopicAttributes | single-region | read-only | 300 | cached-read | low | low |  |
+| get_sns_topic_status | observability | sns | sns:ListSubscriptionsByTopic | single-region | read-only | 300 | cached-read | low | low |  |
+| get_sns_topic_status | observability | sns | sns:ListTopics | single-region | read-only | 300 | cached-read | low | fanout-sensitive |  |
 | list_ec2_instances | inventory | ec2 | ec2:DescribeInstances | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |
 | list_ecs_tasks | observability | ecs | ecs:DescribeTasks | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
 | list_ecs_tasks | observability | ecs | ecs:ListTasks | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |

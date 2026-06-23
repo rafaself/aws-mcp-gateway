@@ -112,6 +112,54 @@
         "sts:AssumeRole"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "SesRead",
+      "Effect": "Allow",
+      "Action": [
+        "ses:GetConfigurationSet",
+        "ses:GetConfigurationSetEventDestinations"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SnsRead",
+      "Effect": "Allow",
+      "Action": [
+        "sns:ListTopics",
+        "sns:GetTopicAttributes",
+        "sns:ListSubscriptionsByTopic"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EventBridgeRead",
+      "Effect": "Allow",
+      "Action": [
+        "events:ListRules",
+        "events:DescribeRule",
+        "events:ListTargetsByRule"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SchedulerRead",
+      "Effect": "Allow",
+      "Action": [
+        "scheduler:ListSchedules",
+        "scheduler:GetSchedule"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "BudgetsRead",
+      "Effect": "Allow",
+      "Action": [
+        "budgets:DescribeBudgets",
+        "budgets:DescribeNotificationsForBudget",
+        "budgets:DescribeSubscribersForNotification"
+      ],
+      "Resource": "*"
     }
   ]
 }

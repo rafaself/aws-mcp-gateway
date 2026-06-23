@@ -78,6 +78,20 @@ Resolved credentials include:
 
 Pass resolved credentials to existing AWS client helpers (`awsRequest`, service clients). The shared `createAwsClient` helper includes `X-Amz-Security-Token` when `sessionToken` is set.
 
+### Cross-account SES example
+
+When SES configuration sets live in a different AWS account, pass `roleArn` to tools that support optional assume-role input (for example `get_ses_configuration_status`):
+
+```json
+{
+  "configurationSetName": "prod-mail",
+  "region": "us-east-1",
+  "roleArn": "arn:aws:iam::123456789012:role/SesReadOnly"
+}
+```
+
+The gateway user must have `sts:AssumeRole` on the target role, and the target role must grant the SES read actions required by the tool. `externalId` is never logged or returned in tool output.
+
 ## In-memory credential cache
 
 Assumed-role credentials are cached only in Worker memory:

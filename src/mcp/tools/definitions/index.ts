@@ -65,3 +65,15 @@ export {
 export {
   createGetS3BucketPostureToolManifest,
 } from "./get-s3-bucket-posture.js";
+export {
+  createGetSesConfigurationStatusToolManifest,
+} from "./get-ses-configuration-status.js";
+export {
+  createGetSnsTopicStatusToolManifest,
+} from "./get-sns-topic-status.js";
+export {
+  createGetEventBridgeRulesStatusToolManifest,
+} from "./get-eventbridge-rules-status.js";
+export {
+  createGetBudgetStatusToolManifest,
+} from "./get-budget-status.js";
