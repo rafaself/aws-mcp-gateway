@@ -51,6 +51,18 @@
       "Resource": "*"
     },
     {
+      "Sid": "ECSRead",
+      "Effect": "Allow",
+      "Action": [
+        "ecs:DescribeClusters",
+        "ecs:DescribeServices",
+        "ecs:ListTasks",
+        "ecs:DescribeTasks",
+        "ecs:DescribeTaskDefinition"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "StsAssumeRole",
       "Effect": "Allow",
       "Action": [

@@ -22,6 +22,9 @@ import {
   createAwsAccountOverviewToolManifest,
   createAwsCostOverviewToolManifest,
   createAwsObservabilityOverviewToolManifest,
+  createGetEcsServiceHealthToolManifest,
+  createListEcsTasksToolManifest,
+  createGetRecentStoppedEcsTasksToolManifest,
 } from "./definitions/index.js";
 
 export type GatewayToolCatalogMetadata = {
@@ -83,6 +86,9 @@ export function createToolManifests(ctx: GatewayContext): AnyToolManifest[] {
     createAwsAccountOverviewToolManifest(ctx),
     createAwsCostOverviewToolManifest(ctx),
     createAwsObservabilityOverviewToolManifest(ctx),
+    createGetEcsServiceHealthToolManifest(ctx),
+    createListEcsTasksToolManifest(ctx),
+    createGetRecentStoppedEcsTasksToolManifest(ctx),
   ] as AnyToolManifest[];
 }
 

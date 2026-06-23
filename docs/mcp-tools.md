@@ -105,6 +105,9 @@ See [`docs/specs/tool-execution-metadata.md`](specs/tool-execution-metadata.md) 
 | 10 | `aws_account_overview` | Bounded account summary | Yes | [↓](#10-aws_account_overview) |
 | 11 | `aws_cost_overview` | Bounded cost summary | Yes | [↓](#11-aws_cost_overview) |
 | 12 | `aws_observability_overview` | Bounded observability summary | Yes | [↓](#12-aws_observability_overview) |
+| 13 | `get_ecs_service_health` | ECS service health | Yes | [↓](#13-get_ecs_service_health) |
+| 14 | `list_ecs_tasks` | ECS task inventory | Yes | [↓](#14-list_ecs_tasks) |
+| 15 | `get_recent_stopped_ecs_tasks` | Stopped ECS task diagnostics | Yes | [↓](#15-get_recent_stopped_ecs_tasks) |
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
@@ -1066,6 +1069,197 @@ No log events, metric namespaces, or stored byte counts in this aggregate.
 
 ---
 
+## 13. `get_ecs_service_health`
+
+**Purpose:** Returns normalized ECS service health including deployment status,
+task counts, current task definition revision, capacity provider info, and
+bounded recent service events.
+
+**Pack:** `observability`
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `clusterName` | `string` | yes | — | Non-empty cluster name. |
+| `serviceName` | `string` | yes | — | Non-empty service name. |
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+
+### Region behavior
+
+Single-region. Defaults to gateway `AWS_REGION` when omitted.
+
+### AWS API
+
+- **Service:** ECS
+- **Actions:** `DescribeClusters`, `DescribeServices`
+- **Capabilities:** `ecs:DescribeClusters`, `ecs:DescribeServices`
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `clusterName`, `serviceName`, `region` |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    clusterName: string,
+    serviceName: string,
+    region: string,
+    desiredCount: number,
+    runningCount: number,
+    pendingCount: number,
+    deploymentStatus: string,
+    rolloutState: string,
+    taskDefinition: string,  // family:revision
+    launchType?: string,
+    capacityProviders?: string[],
+    events: [{ id: string, createdAt: string, message: string }]
+  }
+}
+```
+
+### Redacted fields
+
+Full ARNs, account IDs, task definition environment variables, and secrets are
+never exposed.
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Region not in allowlist | `validation_error` | false |
+| Missing cluster or service | `not_found` | false |
+| AWS API failure | `aws_request_failed` | varies |
+
+---
+
+## 14. `list_ecs_tasks`
+
+**Purpose:** Lists ECS tasks in a cluster with optional service and status
+filters and a bounded result limit.
+
+**Pack:** `observability`
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `clusterName` | `string` | yes | — | Non-empty cluster name. |
+| `serviceName` | `string` | no | — | Optional service filter. |
+| `desiredStatus` | `string` | no | — | `RUNNING`, `PENDING`, or `STOPPED`. |
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+| `limit` | `number` | no | 100 | Integer 1–100. |
+
+### AWS API
+
+- **Service:** ECS
+- **Actions:** `ListTasks`, `DescribeTasks`
+- **Capabilities:** `ecs:ListTasks`, `ecs:DescribeTasks`
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `clusterName`, `serviceName`, `desiredStatus`, `limit`, `region` |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    region: string,
+    clusterName: string,
+    count: number,
+    tasks: [{
+      taskId: string,
+      taskDefinition: string,
+      lastStatus: string,
+      desiredStatus: string,
+      healthStatus?: string,
+      startedAt?: string,
+      stoppedAt?: string,
+      stopCode?: string,
+      stoppedReason?: string,
+      availabilityZone?: string,
+      containers: [{ name: string, lastStatus: string, exitCode?: number, reason?: string }]
+    }]
+  }
+}
+```
+
+---
+
+## 15. `get_recent_stopped_ecs_tasks`
+
+**Purpose:** Returns recent stopped ECS task diagnostics including stop reasons
+and container exit codes within a bounded lookback window.
+
+**Pack:** `observability`
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `clusterName` | `string` | yes | — | Non-empty cluster name. |
+| `serviceName` | `string` | no | — | Optional service filter. |
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+| `lookbackMinutes` | `number` | no | 60 | Integer 1–1440. |
+| `limit` | `number` | no | 100 | Integer 1–100. |
+
+### AWS API
+
+- **Service:** ECS
+- **Actions:** `ListTasks`, `DescribeTasks`
+- **Capabilities:** `ecs:ListTasks`, `ecs:DescribeTasks`
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `clusterName`, `serviceName`, `lookbackMinutes`, `limit`, `region` |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    region: string,
+    clusterName: string,
+    lookbackMinutes: number,
+    count: number,
+    tasks: [{
+      taskId: string,
+      taskDefinition: string,
+      stoppedReason?: string,
+      stopCode?: string,
+      startedAt?: string,
+      stoppedAt?: string,
+      containers: [{ name: string, lastStatus: string, exitCode?: number, reason?: string }]
+    }]
+  }
+}
+```
+
+### Safety boundaries
+
+- Task definition environment variables and secrets are never exposed.
+- Full task ARNs are normalized to safe task ID suffixes.
+
+---
+
 ## Error codes reference
 
 All tool errors use the `GatewayError` class hierarchy and return a consistent
@@ -1121,6 +1315,7 @@ Error
         │     ├── Ec2Error
         │     ├── CloudWatchError
         │     ├── LogsError
+        │     ├── EcsError
         │     └── CostExplorerError
         └── AwsRequestError (statusCode, service, region)
 ```
@@ -1148,6 +1343,9 @@ Every tool handler is wrapped in `safeMcpHandler` which:
 | `list_lambda_functions` | Yes | regions, limit | 300s (5 min) |
 | `list_s3_buckets` | Yes | limit | 300s (5 min) |
 | `list_log_groups` | Yes | region, prefix, limit | 300s (5 min) |
+| `get_ecs_service_health` | Yes | clusterName, serviceName, region | 300s (5 min) |
+| `list_ecs_tasks` | Yes | clusterName, serviceName, desiredStatus, limit, region | 300s (5 min) |
+| `get_recent_stopped_ecs_tasks` | Yes | clusterName, serviceName, lookbackMinutes, limit, region | 300s (5 min) |
 | `aws_account_overview` | Yes | per composed client keys | 300s (5 min) |
 | `aws_cost_overview` | Yes | startDate, endDate, granularity (×2 CE calls) | 1800s (30 min) |
 | `aws_observability_overview` | Yes | per composed client keys | 300s (5 min) |

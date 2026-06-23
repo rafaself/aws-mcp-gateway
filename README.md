@@ -27,7 +27,7 @@ ChatGPT Connector
   -> Normalized AWS cost, inventory, alarm, and log data
 ```
 
-The registry defines **14** public tools. Default deployments expose **11** through tool packs (`core`, `cost`, `inventory`, `observability`). Three aggregate overview tools are opt-in via the `aggregates` pack. See [tool exposure](#tool-exposure-optional) and [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md).
+The registry defines **17** public tools. Default deployments expose **14** through tool packs (`core`, `cost`, `inventory`, `observability`). Three aggregate overview tools are opt-in via the `aggregates` pack. See [tool exposure](#tool-exposure-optional) and [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md).
 
 ## Current status
 
@@ -71,6 +71,9 @@ Default-exposed tools (11 with built-in pack settings):
 | `list_lambda_functions` | List Lambda functions in allowed regions | Yes |
 | `list_s3_buckets` | List S3 buckets in the account | Yes |
 | `list_log_groups` | List CloudWatch log groups in a region | Yes |
+| `get_ecs_service_health` | ECS service deployment health and recent events | Yes |
+| `list_ecs_tasks` | List ECS tasks in a cluster with optional filters | Yes |
+| `get_recent_stopped_ecs_tasks` | Recent stopped ECS task diagnostics | Yes |
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
@@ -230,7 +233,7 @@ Tool packs:
 core:           search, fetch, get_gateway_status
 cost:           get_aws_cost_summary, get_aws_cost_by_service
 inventory:      list_ec2_instances, list_lambda_functions, list_s3_buckets
-observability:  get_cloudwatch_alarms, get_recent_log_errors, list_log_groups
+observability:  get_cloudwatch_alarms, get_recent_log_errors, list_log_groups, get_ecs_service_health, list_ecs_tasks, get_recent_stopped_ecs_tasks
 aggregates:     aws_account_overview, aws_cost_overview, aws_observability_overview (disabled by default)
 security:       (no tools yet)
 ```
@@ -358,7 +361,7 @@ source .env.deploy.local && pnpm run verify:oauth
 pnpm run verify:oauth:authenticated
 ```
 
-Then create or refresh the ChatGPT connector. The Actions list should expose all **enabled** MCP tools from `tools/list` (11 by default; 14 when the `aggregates` pack is enabled). Disabled or pack-gated tools do not appear as Actions.
+Then create or refresh the ChatGPT connector. The Actions list should expose all **enabled** MCP tools from `tools/list` (14 by default; 17 when the `aggregates` pack is enabled). Disabled or pack-gated tools do not appear as Actions.
 
 Detailed setup and troubleshooting:
 

@@ -231,6 +231,93 @@ export function makeLogGroup(opts?: {
   };
 }
 
+export function ecsJsonResponse(body: Record<string, unknown>): Response {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "content-type": "application/x-amz-json-1.1" },
+  });
+}
+
+export function makeEcsCluster(opts?: { clusterName?: string; status?: string }) {
+  return {
+    clusterName: opts?.clusterName ?? "my-cluster",
+    status: opts?.status ?? "ACTIVE",
+  };
+}
+
+export function makeEcsService(opts?: {
+  serviceName?: string;
+  desiredCount?: number;
+  runningCount?: number;
+  pendingCount?: number;
+  taskDefinition?: string;
+  launchType?: string;
+}) {
+  return {
+    serviceName: opts?.serviceName ?? "my-service",
+    status: "ACTIVE",
+    desiredCount: opts?.desiredCount ?? 2,
+    runningCount: opts?.runningCount ?? 2,
+    pendingCount: opts?.pendingCount ?? 0,
+    taskDefinition:
+      opts?.taskDefinition ??
+      "arn:aws:ecs:us-east-1:123456789012:task-definition/my-app:42",
+    launchType: opts?.launchType ?? "FARGATE",
+    capacityProviderStrategy: [{ capacityProvider: "FARGATE" }],
+    deployments: [
+      {
+        status: "PRIMARY",
+        rolloutState: "COMPLETED",
+        desiredCount: opts?.desiredCount ?? 2,
+        runningCount: opts?.runningCount ?? 2,
+        pendingCount: opts?.pendingCount ?? 0,
+      },
+    ],
+    events: [
+      {
+        id: "evt-1",
+        createdAt: "2026-06-01T12:00:00.000Z",
+        message: "(service my-service) has reached a steady state.",
+      },
+    ],
+  };
+}
+
+export function makeEcsTask(opts?: {
+  taskArn?: string;
+  taskDefinitionArn?: string;
+  lastStatus?: string;
+  desiredStatus?: string;
+  stoppedAt?: string;
+  stopCode?: string;
+  stoppedReason?: string;
+}) {
+  const taskId = "abc123def456";
+  return {
+    taskArn:
+      opts?.taskArn ??
+      `arn:aws:ecs:us-east-1:123456789012:task/my-cluster/${taskId}`,
+    taskDefinitionArn:
+      opts?.taskDefinitionArn ??
+      "arn:aws:ecs:us-east-1:123456789012:task-definition/my-app:42",
+    lastStatus: opts?.lastStatus ?? "RUNNING",
+    desiredStatus: opts?.desiredStatus ?? "RUNNING",
+    healthStatus: "HEALTHY",
+    startedAt: "2026-06-01T10:00:00.000Z",
+    ...(opts?.stoppedAt ? { stoppedAt: opts.stoppedAt } : {}),
+    ...(opts?.stopCode ? { stopCode: opts.stopCode } : {}),
+    ...(opts?.stoppedReason ? { stoppedReason: opts.stoppedReason } : {}),
+    availabilityZone: "us-east-1a",
+    containers: [
+      {
+        name: "app",
+        lastStatus: opts?.lastStatus ?? "RUNNING",
+        ...(opts?.stopCode ? { exitCode: 1, reason: "Error" } : {}),
+      },
+    ],
+  };
+}
+
 export function makeDayWithGroups(
   start: string,
   end: string,

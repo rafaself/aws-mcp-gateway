@@ -21,6 +21,9 @@ get_recent_log_errors
 list_lambda_functions
 list_s3_buckets
 list_log_groups
+get_ecs_service_health
+list_ecs_tasks
+get_recent_stopped_ecs_tasks
 aws_account_overview
 aws_cost_overview
 aws_observability_overview

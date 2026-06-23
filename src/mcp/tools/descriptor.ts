@@ -24,6 +24,9 @@ export const PUBLIC_TOOL_TITLES = {
   list_lambda_functions: "List Lambda Functions",
   list_s3_buckets: "List S3 Buckets",
   list_log_groups: "List Log Groups",
+  get_ecs_service_health: "Get ECS Service Health",
+  list_ecs_tasks: "List ECS Tasks",
+  get_recent_stopped_ecs_tasks: "Get Recent Stopped ECS Tasks",
   aws_account_overview: "AWS Account Overview",
   aws_cost_overview: "AWS Cost Overview",
   aws_observability_overview: "AWS Observability Overview",
@@ -230,6 +233,73 @@ export const listLogGroupsOutputSchema = withOptionalExecutionMetadata({
   logGroups: z.array(
     z.object({
       name: z.string(),
+    }),
+  ),
+});
+
+const ecsContainerStatusSchema = z.object({
+  name: z.string(),
+  lastStatus: z.string(),
+  exitCode: z.number().optional(),
+  reason: z.string().optional(),
+});
+
+export const ecsServiceHealthOutputSchema = withOptionalExecutionMetadata({
+  clusterName: z.string(),
+  serviceName: z.string(),
+  region: z.string(),
+  desiredCount: z.number(),
+  runningCount: z.number(),
+  pendingCount: z.number(),
+  deploymentStatus: z.string(),
+  rolloutState: z.string(),
+  taskDefinition: z.string(),
+  launchType: z.string().optional(),
+  capacityProviders: z.array(z.string()).optional(),
+  events: z.array(
+    z.object({
+      id: z.string(),
+      createdAt: z.string(),
+      message: z.string(),
+    }),
+  ),
+});
+
+export const listEcsTasksOutputSchema = withOptionalExecutionMetadata({
+  region: z.string(),
+  clusterName: z.string(),
+  count: z.number(),
+  tasks: z.array(
+    z.object({
+      taskId: z.string(),
+      taskDefinition: z.string(),
+      lastStatus: z.string(),
+      desiredStatus: z.string(),
+      healthStatus: z.string().optional(),
+      startedAt: z.string().optional(),
+      stoppedAt: z.string().optional(),
+      stopCode: z.string().optional(),
+      stoppedReason: z.string().optional(),
+      availabilityZone: z.string().optional(),
+      containers: z.array(ecsContainerStatusSchema),
+    }),
+  ),
+});
+
+export const recentStoppedEcsTasksOutputSchema = withOptionalExecutionMetadata({
+  region: z.string(),
+  clusterName: z.string(),
+  lookbackMinutes: z.number(),
+  count: z.number(),
+  tasks: z.array(
+    z.object({
+      taskId: z.string(),
+      taskDefinition: z.string(),
+      stoppedReason: z.string().optional(),
+      stopCode: z.string().optional(),
+      startedAt: z.string().optional(),
+      stoppedAt: z.string().optional(),
+      containers: z.array(ecsContainerStatusSchema),
     }),
   ),
 });
