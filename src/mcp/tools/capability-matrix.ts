@@ -4,6 +4,7 @@ import {
   getAwsCapability,
   type AwsCapabilityId,
 } from "../../aws/capabilities.js";
+import { getCapabilityUnitCostUsd } from "../execution/pricing.js";
 import type { AnyToolManifest } from "./manifest.js";
 import { isAwsBackedManifest } from "./policy.js";
 
@@ -18,6 +19,7 @@ export type AwsCapabilityMatrixRow = {
   costClass: string;
   costControlClass: string;
   costSensitivity: string;
+  estimatedUnitCostUsd: string;
 };
 
 export function buildAwsCapabilityMatrixRows(
@@ -32,6 +34,7 @@ export function buildAwsCapabilityMatrixRows(
 
     for (const capabilityId of manifest.aws.capabilities) {
       const capability = getAwsCapability(capabilityId);
+      const unitCost = getCapabilityUnitCostUsd(capabilityId);
       rows.push({
         toolName: manifest.name,
         pack: manifest.pack,
@@ -43,6 +46,7 @@ export function buildAwsCapabilityMatrixRows(
         costClass: manifest.safety.costClass,
         costControlClass: manifest.costControl.class,
         costSensitivity: capability.costSensitivity,
+        estimatedUnitCostUsd: unitCost !== undefined ? unitCost.toFixed(2) : "",
       });
     }
   }
@@ -72,13 +76,13 @@ export function renderAwsCapabilityMatrixMarkdown(
     "the unique IAM actions listed in this matrix. Drift is enforced by",
     "`src/aws/iam-readonly-policy.test.ts`.",
     "",
-    "| Tool | Pack | AWS service | AWS action | Region mode | Risk level | Cache TTL (s) | Cost class | Cost control | Cost sensitivity |",
-    "| --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- |",
+    "| Tool | Pack | AWS service | AWS action | Region mode | Risk level | Cache TTL (s) | Cost class | Cost control | Cost sensitivity | Estimated unit cost (USD) |",
+    "| --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | ---: |",
   ];
 
   for (const row of rows) {
     lines.push(
-      `| ${row.toolName} | ${row.pack} | ${row.awsService} | ${row.awsAction} | ${row.regionMode} | ${row.riskLevel} | ${row.cacheTtlSeconds} | ${row.costClass} | ${row.costControlClass} | ${row.costSensitivity} |`,
+      `| ${row.toolName} | ${row.pack} | ${row.awsService} | ${row.awsAction} | ${row.regionMode} | ${row.riskLevel} | ${row.cacheTtlSeconds} | ${row.costClass} | ${row.costControlClass} | ${row.costSensitivity} | ${row.estimatedUnitCostUsd} |`,
     );
   }
 

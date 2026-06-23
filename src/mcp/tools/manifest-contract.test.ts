@@ -13,6 +13,7 @@ import type { AnyToolManifest } from "./manifest.js";
 import { isAwsBackedManifest } from "./policy.js";
 import { buildAwsExecutionMetadataFromManifest } from "../execution/build.js";
 import { toolExecutionMetadataSchema } from "../execution/metadata.js";
+import { paidManifestHasModeledUnitCosts } from "../execution/pricing.js";
 import { DEFAULT_ENABLED_TOOL_PACKS } from "../../config/tool-exposure.js";
 
 import {
@@ -267,6 +268,17 @@ describe("tool manifest contract", () => {
       expect(metadata.billing.costClass).toBe(manifest.costControl.class);
       expect(metadata.cache.ttlSeconds).toBe(manifest.safety.cacheTtlSeconds);
       expect(metadata.awsRequests.length).toBeGreaterThan(0);
+    });
+  }
+
+  for (const toolName of AWS_BACKED_TOOLS) {
+    it(`${toolName} paid manifest declares modeled unit costs for every capability`, () => {
+      const manifest = byName[toolName];
+      if (manifest.costControl.class !== "paid") {
+        return;
+      }
+
+      expect(paidManifestHasModeledUnitCosts(manifest)).toBe(true);
     });
   }
 

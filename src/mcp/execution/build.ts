@@ -65,6 +65,7 @@ export function buildAwsExecutionMetadataFromManifest(
     billing: resolveBillingFromManifest(manifest, {
       charged,
       estimatedCostUsd: charged ? estimatedCostUsd : 0,
+      cacheStatus,
     }),
     awsRequests,
     awsRequestCount,

@@ -374,17 +374,21 @@ describe("registerCostSummaryTool", () => {
         startDate: "2025-01-01",
         endDate: "2025-02-01",
         granularity: "MONTHLY",
-      }) as { structuredContent: Record<string, unknown> };
+      }) as { structuredContent: Record<string, unknown>; content: Array<{ type: string; text: string }> };
 
       const execution = result.structuredContent.execution as {
         cache: { status: string };
         awsRequestCount: number;
-        billing: { charged: boolean };
+        billing: { charged: boolean; note: string };
       };
 
       expect(execution.cache.status).toBe("hit");
       expect(execution.awsRequestCount).toBe(0);
       expect(execution.billing.charged).toBe(false);
+      expect(execution.billing.note).toContain("No new AWS Cost Explorer API request was made");
+      expect(result.content[0].text).toContain(
+        "Billing note: served from cache. No new AWS Cost Explorer API request was made.",
+      );
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
@@ -406,7 +410,7 @@ describe("registerCostSummaryTool", () => {
         startDate: "2025-01-01",
         endDate: "2025-02-01",
         granularity: "MONTHLY",
-      }) as { structuredContent: Record<string, unknown> };
+      }) as { structuredContent: Record<string, unknown>; content: Array<{ type: string; text: string }> };
 
       const execution = result.structuredContent.execution as {
         cache: { status: string };
@@ -423,6 +427,9 @@ describe("registerCostSummaryTool", () => {
         action: "ce:GetCostAndUsage",
         requestCount: 1,
       });
+      expect(result.content[0].text).toContain(
+        "Billing note: served from AWS Cost Explorer, not cache. Estimated AWS API cost: US$ 0.01.",
+      );
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 

@@ -350,12 +350,14 @@ describe("registerListEc2InstancesTool", () => {
     registerMcpToolForTest(mock.server, ctxWithCache, "list_ec2_instances");
     const result = await mock.getTool("list_ec2_instances")!.handler({}) as {
       structuredContent: Record<string, unknown>;
+      content: Array<{ type: string; text: string }>;
     };
 
     const execution = result.structuredContent.execution as {
       cache: { status: string };
       awsRequestCount: number;
       awsRequests: Array<{ action: string; requestCount: number }>;
+      billing: { costClass: string };
     };
 
     expect(execution.cache.status).toBe("miss");
@@ -368,6 +370,10 @@ describe("registerListEc2InstancesTool", () => {
         }),
       ]),
     );
+    expect(execution.billing.costClass).toBe("fanout-sensitive");
+
+    const content = result.content[0];
+    expect(content.text).not.toContain("Billing note:");
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });
