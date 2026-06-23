@@ -1,4 +1,4 @@
-import { AwsClient } from "aws4fetch";
+import { createAwsClient } from "../aws-client.js";
 import type { ExecutionTelemetry } from "../../telemetry/types.js";
 import { assertAwsCapability } from "../capabilities.js";
 import { AwsRequestError } from "../errors.js";
@@ -13,12 +13,7 @@ export async function s3ListBucketsFetch(
 ): Promise<string> {
   assertAwsCapability("s3:ListAllMyBuckets");
 
-  const client = new AwsClient({
-    accessKeyId: credentials.accessKeyId,
-    secretAccessKey: credentials.secretAccessKey,
-    service: "s3",
-    region: S3_GLOBAL_REGION,
-  });
+  const client = createAwsClient(credentials, "s3", S3_GLOBAL_REGION);
 
   const url = "https://s3.amazonaws.com/";
 

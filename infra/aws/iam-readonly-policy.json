@@ -49,6 +49,14 @@
         "logs:FilterLogEvents"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "StsAssumeRole",
+      "Effect": "Allow",
+      "Action": [
+        "sts:AssumeRole"
+      ],
+      "Resource": "*"
     }
   ]
 }

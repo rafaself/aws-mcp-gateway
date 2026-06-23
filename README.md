@@ -270,7 +270,7 @@ Use a dedicated IAM user with only the permissions required by the gateway.
 
 The canonical read-only policy is maintained at [`infra/aws/iam-readonly-policy.json`](infra/aws/iam-readonly-policy.json).
 
-See [`docs/aws-iam-setup.md`](docs/aws-iam-setup.md) for the complete IAM setup flow.
+See [`docs/aws-iam-setup.md`](docs/aws-iam-setup.md) for the complete IAM setup flow. For multi-account access with STS `AssumeRole`, see [`docs/aws-credentials.md`](docs/aws-credentials.md).
 
 Do not use `AdministratorAccess` or broad AWS-managed policies for this gateway.
 
@@ -434,6 +434,7 @@ Runtime MCP/auth dependency upgrades must be treated as protocol changes. See [`
 | [`docs/chatgpt-connector-smoke-test.md`](docs/chatgpt-connector-smoke-test.md) | Detailed connector smoke runbook |
 | [`docs/deployment.md`](docs/deployment.md) | Cloudflare deployment guide |
 | [`docs/aws-iam-setup.md`](docs/aws-iam-setup.md) | AWS IAM setup |
+| [`docs/aws-credentials.md`](docs/aws-credentials.md) | Default credentials and STS AssumeRole model |
 | [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md) | Tool-to-IAM capability matrix |
 | [`docs/mcp-testing.md`](docs/mcp-testing.md) | Manual MCP smoke tests |
 | [`docs/post-mvp-boundaries.md`](docs/post-mvp-boundaries.md) | Future write/management safety boundaries |

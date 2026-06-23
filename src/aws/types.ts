@@ -15,7 +15,12 @@ export interface AwsRequestOptions {
   execution?: ExecutionTelemetry;
 }
 
+export type AwsCredentialSource = "default" | "assume-role";
+
 export interface AwsCredentials {
   accessKeyId: string;
   secretAccessKey: string;
+  sessionToken?: string;
+  expiresAt?: number;
+  source?: AwsCredentialSource;
 }

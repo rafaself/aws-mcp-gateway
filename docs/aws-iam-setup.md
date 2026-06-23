@@ -29,6 +29,8 @@ This guide walks through creating a least-privilege IAM user and configuring its
 
 The policy grants only read/list/describe/get actions required by the gateway's MCP tools. It does not include any mutation actions such as `StartInstances`, `PutMetricAlarm`, `DeleteLogGroup` or similar. Compare tool-required actions in the [AWS capability matrix](aws-capability-matrix.md) when reviewing policy changes.
 
+The template also includes `sts:AssumeRole` so the gateway can obtain temporary credentials for trusted roles in other accounts. Restrict the `Resource` value to specific role ARNs in production. See [AWS credentials and AssumeRole](aws-credentials.md) for the recommended multi-account model.
+
 Aggregate overview tools (`aws_account_overview`, `aws_cost_overview`, `aws_observability_overview`) compose existing inventory, cost, and observability APIs — they do **not** require new IAM actions beyond the committed read-only policy.
 
 ## Step 3: Create an access key

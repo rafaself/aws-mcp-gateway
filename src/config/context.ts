@@ -1,4 +1,6 @@
 import type { AwsCredentials } from "../aws/types.js";
+import type { AwsCredentialResolver } from "../aws/credentials/resolver.js";
+import { createCredentialResolver } from "../aws/credentials/resolver.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
 import type { ExecutionCollector } from "../telemetry/collector.js";
 import { createExecutionCollector } from "../telemetry/collector.js";
@@ -13,6 +15,7 @@ export type { ValidatedToolExposureConfig };
 
 export interface GatewayContext {
   credentials: AwsCredentials;
+  credentialResolver: AwsCredentialResolver;
   region: string;
   allowedRegions: string[];
   cache?: KVNamespace;
@@ -38,11 +41,17 @@ export function buildGatewayContext(
   config: ValidatedGatewayConfig,
   options?: BuildGatewayContextOptions,
 ): GatewayContext {
+  const credentials: AwsCredentials = {
+    accessKeyId: config.AWS_ACCESS_KEY_ID,
+    secretAccessKey: config.AWS_SECRET_ACCESS_KEY,
+  };
+
   return {
-    credentials: {
-      accessKeyId: config.AWS_ACCESS_KEY_ID,
-      secretAccessKey: config.AWS_SECRET_ACCESS_KEY,
-    },
+    credentials,
+    credentialResolver: createCredentialResolver({
+      defaultCredentials: credentials,
+      region: config.AWS_REGION,
+    }),
     region: config.AWS_REGION,
     allowedRegions: parseRegions(config.AWS_ALLOWED_REGIONS),
     cache: config.AWS_MCP_CACHE,

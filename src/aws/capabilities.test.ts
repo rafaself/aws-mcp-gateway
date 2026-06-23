@@ -19,6 +19,7 @@ describe("aws capabilities registry", () => {
       "logs:DescribeLogGroups",
       "logs:FilterLogEvents",
       "s3:ListAllMyBuckets",
+      "sts:AssumeRole",
     ]);
   });
 
@@ -39,6 +40,7 @@ describe("aws capabilities registry", () => {
       "logs:DescribeLogGroups",
       "logs:FilterLogEvents",
       "s3:ListAllMyBuckets",
+      "sts:AssumeRole",
     ]);
     expect(awsServicesForCapabilities(AWS_CAPABILITY_IDS)).toEqual([
       "ce",
@@ -47,6 +49,7 @@ describe("aws capabilities registry", () => {
       "lambda",
       "logs",
       "s3",
+      "sts",
     ]);
   });
 

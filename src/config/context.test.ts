@@ -74,6 +74,18 @@ describe("buildGatewayContext", () => {
     expect(ctx.grantedScopes).toEqual(["aws:read", "openid"]);
   });
 
+  it("creates a credential resolver from default credentials", async () => {
+    const ctx = buildGatewayContext(validConfig);
+
+    const credentials = await ctx.credentialResolver.resolve({ strategy: "default" });
+
+    expect(credentials).toEqual({
+      accessKeyId: "AKIA-test",
+      secretAccessKey: "test-secret",
+      source: "default",
+    });
+  });
+
   it("passes tool exposure from validated configuration", () => {
     const ctx = buildGatewayContext({
       ...validConfig,

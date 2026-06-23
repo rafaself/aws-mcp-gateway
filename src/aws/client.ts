@@ -1,4 +1,4 @@
-import { AwsClient } from "aws4fetch";
+import { createAwsClient } from "./aws-client.js";
 import { assertAwsCapability, AwsCapabilityError, getAwsCapability } from "./capabilities.js";
 import { AwsRequestError } from "./errors.js";
 import type { AwsRequestOptions, AwsCredentials } from "./types.js";
@@ -24,12 +24,7 @@ export async function awsRequest<T = Record<string, unknown>>(
 
   const { service, region, method, path, query, headers, body } = options;
 
-  const client = new AwsClient({
-    accessKeyId: credentials.accessKeyId,
-    secretAccessKey: credentials.secretAccessKey,
-    service,
-    region,
-  });
+  const client = createAwsClient(credentials, service, region);
 
   const url = new URL(`https://${service}.${region}.amazonaws.com${path}`);
 
