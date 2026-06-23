@@ -62,7 +62,7 @@ beforeEach(() => {
 });
 
 describe("get_ses_configuration_status tool", () => {
-  it("uses assume-role credentials when roleArn is provided", async () => {
+  it("uses default gateway credentials only", async () => {
     mockFetch
       .mockResolvedValueOnce(
         new Response(
@@ -79,17 +79,11 @@ describe("get_ses_configuration_status tool", () => {
 
     const mock = makeMockServer();
     registerMcpToolForTest(mock.server, testContext, "get_ses_configuration_status");
-    const roleArn = "arn:aws:iam::123456789012:role/SesReadOnly";
     const result = await mock.getTool("get_ses_configuration_status")!.handler({
       configurationSetName: "prod-mail",
-      roleArn,
     }) as { structuredContent: Record<string, unknown> };
 
-    expect(mockResolve).toHaveBeenCalledWith({
-      strategy: "assume-role",
-      roleArn,
-      externalId: undefined,
-    });
+    expect(mockResolve).not.toHaveBeenCalled();
     expect(result.structuredContent).toMatchObject({
       configurationSetExists: true,
       sendingEnabled: true,

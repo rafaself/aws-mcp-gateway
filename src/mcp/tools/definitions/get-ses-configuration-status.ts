@@ -8,8 +8,6 @@ import {
   PUBLIC_TOOL_TITLES,
   getSesConfigurationStatusOutputSchema,
 } from "../descriptor.js";
-import { resolveToolCredentials } from "../resolve-tool-credentials.js";
-import { assumeRoleInputFields } from "../schemas/assume-role.js";
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
@@ -23,7 +21,6 @@ const getSesConfigurationStatusInputSchema = z.object({
     .string()
     .optional()
     .describe("AWS region (defaults to gateway AWS_REGION)."),
-  ...assumeRoleInputFields,
 });
 
 type GetSesConfigurationStatusInput = z.infer<typeof getSesConfigurationStatusInputSchema>;
@@ -37,7 +34,7 @@ export function createGetSesConfigurationStatusToolManifest(
     description:
       "Returns SES configuration set status including sending enabled state, reputation metrics, " +
       "TLS policy, and event destination summaries. SNS destination ARNs are masked. " +
-      "Supports optional AssumeRole for SES in another account.",
+      "Uses default gateway credentials only.",
     pack: "security",
     lifecycle: "stable",
     inputSchema: getSesConfigurationStatusInputSchema,
@@ -46,7 +43,7 @@ export function createGetSesConfigurationStatusToolManifest(
     catalog: {
       keywords: ["ses", "email", "configuration", "posture", "security"],
       docsAnchor: "24-get_ses_configuration_status",
-      inputSummary: "configurationSetName, optional region, optional roleArn.",
+      inputSummary: "configurationSetName, optional region.",
       awsService: "ses",
     },
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
@@ -79,18 +76,12 @@ export function createGetSesConfigurationStatusToolManifest(
       const region = args.region ?? ctx.region;
       validateRegion(region, ctx.allowedRegions);
 
-      const credentials = await resolveToolCredentials(ctx, {
-        roleArn: args.roleArn,
-        externalId: args.externalId,
-      });
-
       const status = await getConfigurationStatus(
         args.configurationSetName,
         region,
-        credentials,
+        ctx.credentials,
         ctx.cache,
         ctx.execution,
-        { roleArn: args.roleArn },
       );
 
       const text = status.configurationSetExists

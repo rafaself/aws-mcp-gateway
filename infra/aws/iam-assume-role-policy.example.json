@@ -1,0 +1,16 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AssumeTrustedReadOnlyRoles",
+      "Effect": "Allow",
+      "Action": [
+        "sts:AssumeRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::123456789012:role/AwsMcpGatewaySesReadOnly",
+        "arn:aws:iam::987654321098:role/AwsMcpGatewaySharedReadOnly"
+      ]
+    }
+  ]
+}

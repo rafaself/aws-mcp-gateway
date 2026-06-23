@@ -24,33 +24,17 @@ Benefits:
 
 ## Same-account default reads
 
-For resources in the gateway's home account, tools use default credentials directly. No `roleArn` is required.
+For resources in the gateway's home account, direct tools use default credentials. Cross-account access requires KV-backed application profiles with configured `auth.strategy`.
 
 1. Create a dedicated IAM user (for example `aws-mcp-gateway`).
 2. Attach the project read-only policy: [`infra/aws/iam-readonly-policy.json`](../infra/aws/iam-readonly-policy.json).
 3. Store `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as Cloudflare secrets.
 
-The template policy includes `sts:AssumeRole` so the same user can assume trusted roles when needed. Restrict `Resource` in production — see below.
+When cross-account AssumeRole is needed, attach the optional add-on policy from [`infra/aws/iam-assume-role-policy.example.json`](../infra/aws/iam-assume-role-policy.example.json) with explicit trusted role ARNs.
 
 ## Cross-account SES example
 
-SES configuration sets often live in a dedicated mail-sending account. Two supported patterns:
-
-### Tool-level `roleArn`
-
-Call `get_ses_configuration_status` with explicit resource and role inputs:
-
-```json
-{
-  "configurationSetName": "example-production",
-  "region": "us-east-1",
-  "roleArn": "arn:aws:iam::123456789012:role/AwsMcpGatewaySesReadOnly"
-}
-```
-
-### Profile-level `auth.strategy`
-
-Store the role in an application profile (operational context only — not a secret):
+SES configuration sets often live in a dedicated mail-sending account. Configure the trusted role in an application profile (operational context only — not a secret):
 
 ```json
 {
@@ -102,7 +86,7 @@ Attach a **read-only policy on the target role** with only the actions required 
 
 The gateway user's inline or managed policy must allow assuming only trusted roles. **Do not use `"Resource": "*"` in production.**
 
-Example statement to add alongside the read-only tool policy (or as a separate inline policy):
+Example add-on policy (also available as [`infra/aws/iam-assume-role-policy.example.json`](../infra/aws/iam-assume-role-policy.example.json)):
 
 ```json
 {
@@ -116,7 +100,7 @@ Example statement to add alongside the read-only tool policy (or as a separate i
 }
 ```
 
-The checked-in template at [`infra/aws/iam-readonly-policy.json`](../infra/aws/iam-readonly-policy.json) includes a broad `sts:AssumeRole` entry for development convenience. Tighten `Resource` to explicit role ARNs before production deployment.
+The canonical readonly policy at [`infra/aws/iam-readonly-policy.json`](../infra/aws/iam-readonly-policy.json) does **not** include `sts:AssumeRole`. Attach the optional add-on policy with explicit trusted role ARNs when profile-configured cross-account access is required.
 
 ## Target role permissions
 
@@ -157,8 +141,8 @@ See [`application-profiles.md#secret-boundaries`](application-profiles.md#secret
 After configuring trust and policies:
 
 1. Deploy with default credentials and `AWS_ALLOWED_REGIONS` including the target region.
-2. Enable the relevant tool pack (`security` for SES/SSM/S3 posture tools).
-3. Call a tool with `roleArn` (or use a profile with `assume-role` auth).
+2. Enable the relevant tool pack (`security` for SES/SSM/S3 posture tools, `application-ops` for profile-backed cross-account reads).
+3. Use an application profile with `assume-role` auth (direct tools do not accept `roleArn`).
 4. Confirm normalized output — no credentials, session tokens, or raw AWS bodies in the response.
 
 For local bearer testing, see [`mcp-testing.md`](mcp-testing.md).
@@ -167,5 +151,5 @@ For local bearer testing, see [`mcp-testing.md`](mcp-testing.md).
 
 - [`aws-credentials.md`](aws-credentials.md) — resolver API, in-memory cache, security boundaries
 - [`aws-iam-setup.md`](aws-iam-setup.md) — gateway IAM user creation
-- [`aws-tools.md`](aws-tools.md) — generic tools and optional `roleArn` inputs
+- [`aws-tools.md`](aws-tools.md) — generic tools use default credentials; cross-account via profiles
 - [`application-profiles.md`](application-profiles.md) — per-resource `auth.strategy` in profiles

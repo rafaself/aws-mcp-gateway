@@ -7,8 +7,6 @@ import {
   PUBLIC_TOOL_TITLES,
   getBudgetStatusOutputSchema,
 } from "../descriptor.js";
-import { resolveToolCredentials } from "../resolve-tool-credentials.js";
-import { assumeRoleInputFields } from "../schemas/assume-role.js";
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
@@ -19,7 +17,6 @@ const getBudgetStatusInputSchema = z.object({
   accountId: z
     .string()
     .describe("12-digit AWS account ID that owns the budget."),
-  ...assumeRoleInputFields,
 });
 
 type GetBudgetStatusInput = z.infer<typeof getBudgetStatusInputSchema>;
@@ -32,7 +29,7 @@ export function createGetBudgetStatusToolManifest(
     title: PUBLIC_TOOL_TITLES.get_budget_status,
     description:
       "Returns AWS Budget status including limit, actual spend, notification thresholds, " +
-      "and masked subscriber addresses.",
+      "and masked subscriber addresses. Uses default gateway credentials only.",
     pack: "cost",
     lifecycle: "stable",
     inputSchema: getBudgetStatusInputSchema,
@@ -41,7 +38,7 @@ export function createGetBudgetStatusToolManifest(
     catalog: {
       keywords: ["budget", "cost", "spend", "forecast", "notifications"],
       docsAnchor: "27-get_budget_status",
-      inputSummary: "budgetName, accountId, optional roleArn.",
+      inputSummary: "budgetName, accountId.",
       awsService: "budgets",
     },
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
@@ -79,18 +76,12 @@ export function createGetBudgetStatusToolManifest(
     },
     descriptorKind: "aws-readonly",
     handler: async (args: GetBudgetStatusInput) => {
-      const credentials = await resolveToolCredentials(ctx, {
-        roleArn: args.roleArn,
-        externalId: args.externalId,
-      });
-
       const status = await getBudgetStatus(
         args.budgetName,
         args.accountId,
-        credentials,
+        ctx.credentials,
         ctx.cache,
         ctx.execution,
-        { roleArn: args.roleArn },
       );
 
       const text = status.budgetExists

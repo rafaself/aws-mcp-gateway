@@ -106,14 +106,6 @@
       "Resource": "*"
     },
     {
-      "Sid": "StsAssumeRole",
-      "Effect": "Allow",
-      "Action": [
-        "sts:AssumeRole"
-      ],
-      "Resource": "*"
-    },
-    {
       "Sid": "SesRead",
       "Effect": "Allow",
       "Action": [

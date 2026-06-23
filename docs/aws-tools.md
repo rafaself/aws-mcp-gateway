@@ -10,7 +10,7 @@ For per-tool input/output contracts, see [`mcp-tools.md`](mcp-tools.md). For IAM
 Authenticated /mcp request
   -> tool name + resource identifiers in input
   -> policy gate (packs, scopes, limits)
-  -> default or assumed-role credentials
+  -> default gateway credentials
   -> signed read-only AWS API call
   -> normalized structuredContent
 ```
@@ -29,9 +29,10 @@ Generic tools accept resource names directly. They do **not** read `AWS_MCP_APP_
 | `topicName` / `topicArn` | SNS topic status |
 | `budgetName` | Budget status (with `accountId`) |
 | `region` | All regional tools; must be in `AWS_ALLOWED_REGIONS` |
-| `roleArn` | Optional cross-account reads (SES, SNS, budgets, and others) |
 
 Missing or misconfigured profile KV does **not** break generic tools or `/mcp`.
+
+Direct generic tools use **default gateway credentials only**. They do not accept `roleArn` or `externalId` as public inputs. Cross-account access is configured through KV-backed application profiles — see [Cross-account reads](#cross-account-reads).
 
 ## Recommended setup order
 
@@ -67,12 +68,14 @@ AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,database,security
 
 ## Cross-account reads
 
-Some generic tools accept optional `roleArn` (and `externalId`) to assume a read-only role in another account before calling AWS. The gateway user must have `sts:AssumeRole` on the target role.
+Direct generic tools do **not** accept `roleArn` or `externalId` as public inputs. Role selection is infrastructure configuration, not runtime tool input.
+
+For resources in other AWS accounts, configure cross-account access through **KV-backed application profiles** with `auth.strategy: "assume-role"` and a validated IAM role ARN. The gateway user must have `sts:AssumeRole` on the target role via the optional add-on policy at [`infra/aws/iam-assume-role-policy.example.json`](../infra/aws/iam-assume-role-policy.example.json).
 
 Common cases:
 
-- **SES** in a separate account — `get_ses_configuration_status` with `configurationSetName` and `roleArn`
-- **SNS / budgets** — `get_sns_topic_status`, `get_budget_status` with `roleArn` when the resource owner account differs
+- **SES** in a separate account — profile `resources.ses.auth` with `assume-role`, then use `application-ops` tools (for example `get_application_environment_overview`)
+- **SNS / budgets** — profile-level `auth.strategy: "assume-role"` when the resource owner account differs
 
 See [`iam-cross-account.md`](iam-cross-account.md) for trust policies, base-user `sts:AssumeRole` permissions, and examples.
 

@@ -8,8 +8,6 @@ import {
   PUBLIC_TOOL_TITLES,
   getEventBridgeRulesStatusOutputSchema,
 } from "../descriptor.js";
-import { resolveToolCredentials } from "../resolve-tool-credentials.js";
-import { assumeRoleInputFields } from "../schemas/assume-role.js";
 import {
   DEFAULT_AUTH_SCOPES,
   type ToolManifest,
@@ -30,7 +28,6 @@ const getEventBridgeRulesStatusInputSchema = z.object({
     .int()
     .optional()
     .describe("Maximum rules and schedules to return (default 25, max 50)."),
-  ...assumeRoleInputFields,
 });
 
 type GetEventBridgeRulesStatusInput = z.infer<typeof getEventBridgeRulesStatusInputSchema>;
@@ -43,7 +40,7 @@ export function createGetEventBridgeRulesStatusToolManifest(
     title: PUBLIC_TOOL_TITLES.get_eventbridge_rules_status,
     description:
       "Returns EventBridge rule and Scheduler schedule status with safe target summaries. " +
-      "Raw target input payloads are never returned.",
+      "Raw target input payloads are never returned. Uses default gateway credentials only.",
     pack: "observability",
     lifecycle: "stable",
     inputSchema: getEventBridgeRulesStatusInputSchema,
@@ -52,7 +49,7 @@ export function createGetEventBridgeRulesStatusToolManifest(
     catalog: {
       keywords: ["eventbridge", "scheduler", "rules", "schedules", "automation"],
       docsAnchor: "26-get_eventbridge_rules_status",
-      inputSummary: "optional prefixes, region, limit, optional roleArn.",
+      inputSummary: "optional prefixes, region, limit.",
       awsService: "events",
     },
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
@@ -97,11 +94,6 @@ export function createGetEventBridgeRulesStatusToolManifest(
       const region = args.region ?? ctx.region;
       validateRegion(region, ctx.allowedRegions);
 
-      const credentials = await resolveToolCredentials(ctx, {
-        roleArn: args.roleArn,
-        externalId: args.externalId,
-      });
-
       const status = await getRulesStatus(
         {
           region,
@@ -109,10 +101,9 @@ export function createGetEventBridgeRulesStatusToolManifest(
           scheduleNamePrefix: args.scheduleNamePrefix,
           limit: args.limit,
         },
-        credentials,
+        ctx.credentials,
         ctx.cache,
         ctx.execution,
-        { roleArn: args.roleArn },
       );
 
       const text =
