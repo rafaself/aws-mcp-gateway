@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   checkMaintainerDenylist,
+  checkProfileSampleFile,
   checkPublicConfigFile,
   checkTrackedFile,
   checkWranglerConfigParity,
@@ -10,6 +11,7 @@ import {
   isPlaceholderValue,
   runRepositorySafetyChecks,
   scanLineForSecrets,
+  scanProfileSampleLine,
 } from "./lib/repository-safety-checks.mjs";
 
 describe("isForbiddenTrackedPath", () => {
@@ -211,5 +213,31 @@ describe("checkTrackedFile", () => {
       "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\nMCP_AUTH_TOKEN=secret\n",
     );
     assert.ok(violations.some((v) => v.ruleId === "forbidden-tracked-path"));
+  });
+});
+
+describe("profile sample safety", () => {
+  it("accepts safe example profile samples", () => {
+    const violations = checkProfileSampleFile(
+      JSON.stringify({ displayName: "Example Production", auth: { strategy: "default" } }, null, 2),
+      "examples/app-profiles/example-prod.profile.json",
+    );
+    assert.equal(violations.length, 0);
+  });
+
+  it("rejects secret-looking profile sample content", () => {
+    const violations = scanProfileSampleLine('"password": "password=secret"');
+    assert.ok(violations.some((v) => v.ruleId === "profile-secret-like-value"));
+
+    const fileViolations = checkProfileSampleFile(
+      '{\n  "displayName": "password=secret"\n}\n',
+      "examples/app-profiles/bad.profile.json",
+    );
+    assert.ok(fileViolations.some((v) => v.ruleId === "profile-secret-like-value"));
+  });
+
+  it("ignores profile sample checks outside examples/app-profiles", () => {
+    const violations = checkProfileSampleFile('{"displayName":"password=secret"}', "src/other.json");
+    assert.equal(violations.length, 0);
   });
 });

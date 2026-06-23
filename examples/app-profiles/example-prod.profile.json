@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "id": "example-prod",
+  "displayName": "Example Production",
+  "environment": "production",
+  "region": "us-east-1",
+  "auth": { "strategy": "default" },
+  "resources": {
+    "ecs": {
+      "clusterName": "example-production",
+      "serviceName": "example-production-api",
+      "logGroupName": "/ecs/example-production",
+      "containers": ["api"]
+    },
+    "rds": {
+      "dbInstanceIdentifier": "example-production"
+    },
+    "ses": {
+      "auth": {
+        "strategy": "assume-role",
+        "roleArn": "arn:aws:iam::123456789012:role/AwsMcpGatewaySesReadOnly"
+      },
+      "configurationSetName": "example-production"
+    }
+  }
+}

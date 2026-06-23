@@ -32,6 +32,7 @@
 		// "AWS_MCP_MAX_RISK_LEVEL": "read-only"
 		// Optional application profile index key (default: app-profiles/index.json):
 		// "AWS_MCP_APP_PROFILE_INDEX_KEY": "app-profiles/index.json"
+		// Manage profiles with: pnpm run app-profile:validate|put|list|delete (see docs/application-profiles.md)
 	},
 	"durable_objects": {
 		"bindings": [

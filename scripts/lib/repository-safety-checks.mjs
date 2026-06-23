@@ -41,6 +41,18 @@ export const SECRET_SCAN_SKIP_PATHS = new Set([
   "scripts/repository-safety-checks.test.mjs",
 ]);
 
+export const APP_PROFILE_SAMPLE_PREFIX = "examples/app-profiles/";
+
+const PROFILE_CONNECTION_STRING_PATTERN =
+  /\b(?:postgres|postgresql|mysql|mongodb|redis):\/\//i;
+const PROFILE_KEY_VALUE_SECRET_PATTERN =
+  /\b(?:password|secret|token|api[_-]?key)\s*=/i;
+const PROFILE_DATABASE_URL_PATTERN = /\bDATABASE_URL\b/i;
+const PROFILE_JWT_SECRET_PATTERN = /\bJWT_SECRET\b/i;
+const PROFILE_BEARER_TOKEN_PATTERN = /\bbearer\s+[a-z0-9._-]+/i;
+const PROFILE_AWS_SECRET_KEY_PATTERN = /\bAWS_SECRET_ACCESS_KEY\b/i;
+const PROFILE_AWS_SESSION_TOKEN_PATTERN = /\bAWS_SESSION_TOKEN\b/i;
+
 export const SENSITIVE_ENV_KEYS = [
   "AWS_ACCESS_KEY_ID",
   "AWS_SECRET_ACCESS_KEY",
@@ -283,6 +295,65 @@ export function scanLineForSecrets(line) {
 }
 
 /**
+ * @param {string} line
+ * @returns {Array<{ ruleId: string }>}
+ */
+export function scanProfileSampleLine(line) {
+  const violations = [];
+
+  if (PROFILE_CONNECTION_STRING_PATTERN.test(line)) {
+    violations.push({ ruleId: "profile-secret-like-value" });
+  }
+  if (PROFILE_KEY_VALUE_SECRET_PATTERN.test(line)) {
+    violations.push({ ruleId: "profile-secret-like-value" });
+  }
+  if (PROFILE_DATABASE_URL_PATTERN.test(line)) {
+    violations.push({ ruleId: "profile-secret-like-value" });
+  }
+  if (PROFILE_JWT_SECRET_PATTERN.test(line)) {
+    violations.push({ ruleId: "profile-secret-like-value" });
+  }
+  if (PROFILE_BEARER_TOKEN_PATTERN.test(line)) {
+    violations.push({ ruleId: "profile-secret-like-value" });
+  }
+  if (PROFILE_AWS_SECRET_KEY_PATTERN.test(line)) {
+    violations.push({ ruleId: "profile-secret-like-value" });
+  }
+  if (PROFILE_AWS_SESSION_TOKEN_PATTERN.test(line)) {
+    violations.push({ ruleId: "profile-secret-like-value" });
+  }
+
+  return violations;
+}
+
+/**
+ * @param {string} content
+ * @param {string} filePath
+ * @returns {Array<{ file: string, line: number, ruleId: string }>}
+ */
+export function checkProfileSampleFile(content, filePath) {
+  if (!filePath.startsWith(APP_PROFILE_SAMPLE_PREFIX)) {
+    return [];
+  }
+
+  const violations = [];
+  const lines = content.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    for (const v of scanProfileSampleLine(line)) {
+      violations.push({
+        file: filePath,
+        line: i + 1,
+        ruleId: v.ruleId,
+      });
+    }
+  }
+
+  return violations;
+}
+
+/**
  * @param {string} content
  * @param {string} filePath
  * @returns {Array<{ file: string, line: number, ruleId: string }>}
@@ -479,6 +550,7 @@ export function checkTrackedFile(filePath, content) {
     if (!SECRET_SCAN_SKIP_PATHS.has(filePath)) {
       violations.push(...scanFileForSecrets(content, filePath));
     }
+    violations.push(...checkProfileSampleFile(content, filePath));
     if (!publicConfig && !MAINTAINER_SCAN_SKIP_PATHS.has(filePath)) {
       violations.push(...checkMaintainerDenylist(content, filePath));
     }

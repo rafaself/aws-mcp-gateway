@@ -161,6 +161,59 @@ SSM parameter values
 
 Never store profiles in `AWS_MCP_CACHE`. That namespace is for normalized tool response caching only.
 
+## CLI workflow
+
+Use the repo-managed scripts to validate and publish profiles without editing KV manually. Scripts reuse the same Worker validation rules and accept profile JSON from files only (no inline JSON arguments).
+
+Prerequisites:
+
+- `pnpm install`
+- `AWS_MCP_APP_CONFIG` binding in your Wrangler config
+- `AWS_ALLOWED_REGIONS` in Wrangler `vars` (used for region validation)
+
+Validate a local profile file (metadata-only output):
+
+```bash
+pnpm run app-profile:validate -- --file examples/app-profiles/example-prod.profile.json
+```
+
+Upload to local KV (default) after validation:
+
+```bash
+pnpm run app-profile:put -- --file examples/app-profiles/example-prod.profile.json
+```
+
+Upload to remote KV:
+
+```bash
+pnpm run app-profile:put -- --file examples/app-profiles/example-prod.profile.json --remote
+```
+
+List index metadata (no full profile bodies):
+
+```bash
+pnpm run app-profile:list
+pnpm run app-profile:list -- --remote
+```
+
+Delete a profile (requires explicit confirmation):
+
+```bash
+pnpm run app-profile:delete -- --profile-id example-prod --yes --remote
+```
+
+Common flags:
+
+- `-c, --config <path>` — Wrangler config (default: `wrangler.jsonc`)
+- `-e, --env <name>` — Wrangler environment
+- `--remote` — target remote KV instead of local storage
+
+Safety notes:
+
+- Invalid JSON or schema failures exit non-zero.
+- Corrupt existing index data is not silently overwritten.
+- Script output stays metadata-only and never prints secret-looking values.
+
 ## Related documentation
 
 - [`aws-credentials.md`](aws-credentials.md) — default credentials and AssumeRole resolver

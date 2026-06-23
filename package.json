@@ -24,12 +24,18 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "test:integrity": "node scripts/check-test-integrity.mjs"
+    "test:integrity": "node scripts/check-test-integrity.mjs",
+    "app-profile:validate": "tsx scripts/app-profiles/validate-profile.ts",
+    "app-profile:put": "tsx scripts/app-profiles/put-profile.ts",
+    "app-profile:list": "tsx scripts/app-profiles/list-profiles.ts",
+    "app-profile:delete": "tsx scripts/app-profiles/delete-profile.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260619.1",
+    "@types/node": "^22.15.30",
     "@vitest/coverage-v8": "^4.1.9",
     "typescript": "^5.8.3",
+    "tsx": "^4.20.3",
     "vitest": "^4.1.9",
     "wrangler": "^4.12.1"
   },
