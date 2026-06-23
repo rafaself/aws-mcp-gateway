@@ -58,7 +58,7 @@ describe("registerListLambdaFunctionsTool", () => {
     registerMcpToolForTest(mock.server, singleRegionContext, "list_lambda_functions");
     const result = await mock.getTool("list_lambda_functions")!.handler({}) as Record<string, unknown>;
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       regions: ["us-east-1"],
       count: 1,
       functions: [

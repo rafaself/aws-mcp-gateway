@@ -63,7 +63,7 @@ describe("registerListLogGroupsTool", () => {
       region: "us-east-1",
     }) as Record<string, unknown>;
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       region: "us-east-1",
       count: 1,
       logGroups: [{ name: "/aws/lambda/app" }],

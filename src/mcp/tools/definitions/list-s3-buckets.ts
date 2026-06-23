@@ -73,6 +73,7 @@ export function createListS3BucketsToolManifest(
         { limit: args.limit },
         ctx.credentials,
         ctx.cache,
+        ctx.execution,
       );
 
       const count = buckets.length;

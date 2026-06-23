@@ -103,7 +103,7 @@ describe("registerCostSummaryTool", () => {
     const content = (result.content as Array<{ type: string; text: string }>)[0];
     expect(content.text).toBe("AWS cost from 2025-01-01 to 2025-02-01 is 42.5 USD.");
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       period: { startDate: "2025-01-01", endDate: "2025-02-01" },
       granularity: "MONTHLY",
       total: 42.5,
@@ -143,7 +143,7 @@ describe("registerCostSummaryTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
   });
@@ -163,7 +163,7 @@ describe("registerCostSummaryTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
   });
@@ -183,7 +183,7 @@ describe("registerCostSummaryTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
   });
@@ -282,7 +282,7 @@ describe("registerCostSummaryTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBeUndefined();
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       period: { startDate: "2025-01-01", endDate: "2025-04-01" },
       granularity: "MONTHLY",
       total: 50,
@@ -308,7 +308,7 @@ describe("registerCostSummaryTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
     expect(mockFetch).not.toHaveBeenCalled();
@@ -347,8 +347,138 @@ describe("registerCostSummaryTool", () => {
     }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "aws_request_failed", retryable: false },
+    });
+    expect(result.structuredContent).not.toHaveProperty("execution");
+  });
+
+  describe("execution metadata", () => {
+    it("reports cache hit with zero AWS requests", async () => {
+      const cachedSummary = {
+        period: { startDate: "2025-01-01", endDate: "2025-02-01" },
+        currency: "USD",
+        total: 99,
+      };
+
+      const mockKv = {
+        get: vi.fn(async () => cachedSummary),
+        put: vi.fn(),
+      } as never;
+
+      const ctxWithCache: GatewayContext = { ...testContext, cache: mockKv };
+      const mock = makeMockServer();
+      registerMcpToolForTest(mock.server, ctxWithCache, "get_aws_cost_summary");
+      const tool = mock.getTool("get_aws_cost_summary")!;
+      const result = await tool.handler({
+        startDate: "2025-01-01",
+        endDate: "2025-02-01",
+        granularity: "MONTHLY",
+      }) as { structuredContent: Record<string, unknown> };
+
+      const execution = result.structuredContent.execution as {
+        cache: { status: string };
+        awsRequestCount: number;
+        billing: { charged: boolean };
+      };
+
+      expect(execution.cache.status).toBe("hit");
+      expect(execution.awsRequestCount).toBe(0);
+      expect(execution.billing.charged).toBe(false);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("reports cache miss with AWS request telemetry and billing charge", async () => {
+      mockFetch.mockResolvedValue(
+        ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "42.50")]),
+      );
+
+      const mockKv = {
+        get: vi.fn(async () => null),
+        put: vi.fn(),
+      } as never;
+
+      const ctxWithCache: GatewayContext = { ...testContext, cache: mockKv };
+      const mock = makeMockServer();
+      registerMcpToolForTest(mock.server, ctxWithCache, "get_aws_cost_summary");
+      const tool = mock.getTool("get_aws_cost_summary")!;
+      const result = await tool.handler({
+        startDate: "2025-01-01",
+        endDate: "2025-02-01",
+        granularity: "MONTHLY",
+      }) as { structuredContent: Record<string, unknown> };
+
+      const execution = result.structuredContent.execution as {
+        cache: { status: string };
+        awsRequestCount: number;
+        billing: { charged: boolean; estimatedCostUsd: number };
+        awsRequests: Array<{ action: string; requestCount: number }>;
+      };
+
+      expect(execution.cache.status).toBe("miss");
+      expect(execution.awsRequestCount).toBe(1);
+      expect(execution.billing.charged).toBe(true);
+      expect(execution.billing.estimatedCostUsd).toBe(0.01);
+      expect(execution.awsRequests[0]).toMatchObject({
+        action: "ce:GetCostAndUsage",
+        requestCount: 1,
+      });
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("reports cache disabled when KV binding is absent", async () => {
+      mockFetch.mockResolvedValue(
+        ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "10.00")]),
+      );
+
+      const mock = makeMockServer();
+      registerMcpToolForTest(mock.server, testContext, "get_aws_cost_summary");
+      const tool = mock.getTool("get_aws_cost_summary")!;
+      const result = await tool.handler({
+        startDate: "2025-01-01",
+        endDate: "2025-02-01",
+        granularity: "MONTHLY",
+      }) as { structuredContent: Record<string, unknown> };
+
+      const execution = result.structuredContent.execution as {
+        cache: { status: string };
+        awsRequestCount: number;
+      };
+
+      expect(execution.cache.status).toBe("disabled");
+      expect(execution.awsRequestCount).toBe(1);
+    });
+
+    it("reports cache unavailable when KV read fails but still returns live data", async () => {
+      mockFetch.mockResolvedValue(
+        ceResponse([makeDayTotal("2025-01-01", "2025-02-01", "15.00")]),
+      );
+
+      const mockKv = {
+        get: vi.fn(async () => {
+          throw new Error("KV unavailable");
+        }),
+        put: vi.fn(),
+      } as never;
+
+      const ctxWithCache: GatewayContext = { ...testContext, cache: mockKv };
+      const mock = makeMockServer();
+      registerMcpToolForTest(mock.server, ctxWithCache, "get_aws_cost_summary");
+      const tool = mock.getTool("get_aws_cost_summary")!;
+      const result = await tool.handler({
+        startDate: "2025-01-01",
+        endDate: "2025-02-01",
+        granularity: "MONTHLY",
+      }) as { structuredContent: Record<string, unknown> };
+
+      const execution = result.structuredContent.execution as {
+        cache: { status: string };
+        awsRequestCount: number;
+      };
+
+      expect(execution.cache.status).toBe("unavailable");
+      expect(execution.awsRequestCount).toBe(1);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 });

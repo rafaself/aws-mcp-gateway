@@ -29,8 +29,8 @@ export async function buildCostOverview(
   };
 
   const [summary, byService] = await Promise.all([
-    getCostSummary(costOptions, ctx.credentials, ctx.region, ctx.cache),
-    getCostByService(costOptions, ctx.credentials, ctx.region, ctx.cache),
+    getCostSummary(costOptions, ctx.credentials, ctx.region, ctx.cache, ctx.execution),
+    getCostByService(costOptions, ctx.credentials, ctx.region, ctx.cache, ctx.execution),
   ]);
 
   return {

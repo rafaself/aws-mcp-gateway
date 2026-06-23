@@ -1,5 +1,7 @@
 import type { AwsCredentials } from "../aws/types.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
+import type { ExecutionCollector } from "../telemetry/collector.js";
+import { createExecutionCollector } from "../telemetry/collector.js";
 import { parseRegions } from "../security/regions.js";
 import type { AuthMode, ValidatedGatewayConfig } from "./env.js";
 import {
@@ -14,6 +16,7 @@ export interface GatewayContext {
   region: string;
   allowedRegions: string[];
   cache?: KVNamespace;
+  execution: ExecutionCollector;
   /** MCP resource URL for ChatGPT search/fetch citations (oauth production). */
   mcpResourceUrl?: string;
   authMode?: AuthMode;
@@ -43,6 +46,7 @@ export function buildGatewayContext(
     region: config.AWS_REGION,
     allowedRegions: parseRegions(config.AWS_ALLOWED_REGIONS),
     cache: config.AWS_MCP_CACHE,
+    execution: createExecutionCollector(),
     mcpResourceUrl: config.oauth?.MCP_RESOURCE_URL,
     authMode: config.authMode,
     oauthRequiredScopes: config.oauth?.OAUTH_REQUIRED_SCOPES,

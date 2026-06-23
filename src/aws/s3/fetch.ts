@@ -1,4 +1,5 @@
 import { AwsClient } from "aws4fetch";
+import type { ExecutionTelemetry } from "../../telemetry/types.js";
 import { assertAwsCapability } from "../capabilities.js";
 import { AwsRequestError } from "../errors.js";
 import type { AwsCredentials } from "../types.js";
@@ -8,6 +9,7 @@ const S3_REQUEST_TIMEOUT_MS = 15_000;
 
 export async function s3ListBucketsFetch(
   credentials: AwsCredentials,
+  execution?: ExecutionTelemetry,
 ): Promise<string> {
   assertAwsCapability("s3:ListAllMyBuckets");
 
@@ -39,6 +41,8 @@ export async function s3ListBucketsFetch(
         region: S3_GLOBAL_REGION,
       });
     }
+
+    execution?.recordAwsRequest("s3:ListAllMyBuckets", S3_GLOBAL_REGION);
 
     return await response.text();
   } catch (err) {

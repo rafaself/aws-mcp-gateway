@@ -54,7 +54,7 @@ describe("registerListS3BucketsTool", () => {
     registerMcpToolForTest(mock.server, testContext, "list_s3_buckets");
     const result = await mock.getTool("list_s3_buckets")!.handler({}) as Record<string, unknown>;
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       count: 1,
       buckets: [{ name: "my-bucket", createdAt: "2020-01-01T00:00:00.000Z" }],
     });
@@ -85,5 +85,38 @@ describe("registerListS3BucketsTool", () => {
     };
 
     expect(Object.keys(result.structuredContent.buckets[0])).toEqual(["name", "createdAt"]);
+  });
+
+  it("records S3 list-buckets telemetry via the dedicated fetch path", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(
+        s3ListBucketsXml([{ name: "my-bucket", createdAt: "2020-01-01T00:00:00.000Z" }]),
+      ),
+    );
+
+    const mock = makeMockServer();
+    registerMcpToolForTest(mock.server, testContext, "list_s3_buckets");
+    const result = await mock.getTool("list_s3_buckets")!.handler({}) as {
+      structuredContent: Record<string, unknown>;
+    };
+
+    const execution = result.structuredContent.execution as {
+      cache: { status: string };
+      awsRequestCount: number;
+      awsRequests: Array<{ service: string; action: string; requestCount: number }>;
+    };
+
+    expect(execution.cache.status).toBe("disabled");
+    expect(execution.awsRequestCount).toBe(1);
+    expect(execution.awsRequests).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          service: "s3",
+          action: "s3:ListAllMyBuckets",
+          requestCount: 1,
+        }),
+      ]),
+    );
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });

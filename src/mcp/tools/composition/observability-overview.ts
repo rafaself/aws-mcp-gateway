@@ -51,7 +51,7 @@ export async function buildObservabilityOverview(
 
   if (include.includes("alarms")) {
     tasks.push(
-      listAlarms({ regions }, ctx.allowedRegions, ctx.credentials, ctx.cache).then((alarms) => {
+      listAlarms({ regions }, ctx.allowedRegions, ctx.credentials, ctx.cache, ctx.execution).then((alarms) => {
         const countsByState = alarms.reduce<Record<string, number>>((acc, a) => {
           acc[a.state] = (acc[a.state] || 0) + 1;
           return acc;
@@ -87,6 +87,7 @@ export async function buildObservabilityOverview(
             region,
             ctx.credentials,
             ctx.cache,
+            ctx.execution,
           );
           for (const group of groups) {
             allGroups.push({ name: group.name, region });

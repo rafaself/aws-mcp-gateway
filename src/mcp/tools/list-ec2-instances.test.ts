@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
+import type { GatewayContext } from "../../config/context.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerMcpToolForTest } from "../../test/register-mcp-tool-for-test.js";
 import {
@@ -110,7 +111,7 @@ describe("registerListEc2InstancesTool", () => {
     const content = (result.content as Array<{ type: string; text: string }>)[0];
     expect(content.text).toContain("Found 1 EC2 instance(s) across 1 region(s).");
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       regions: ["us-east-1"],
       count: 1,
       instances: [
@@ -179,7 +180,7 @@ describe("registerListEc2InstancesTool", () => {
     const tool = mock.getTool("list_ec2_instances")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       regions: [],
       count: 0,
       instances: [],
@@ -231,7 +232,7 @@ describe("registerListEc2InstancesTool", () => {
     const result = await tool.handler({ states: ["INVALID"] }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
   });
@@ -247,7 +248,7 @@ describe("registerListEc2InstancesTool", () => {
     const result = await tool.handler({ regions: ["eu-central-1"] }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
   });
@@ -323,8 +324,50 @@ describe("registerListEc2InstancesTool", () => {
     const result = await tool.handler({}) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "aws_request_failed", retryable: false },
     });
+    expect(result.structuredContent).not.toHaveProperty("execution");
+  });
+
+  it("records fanout AWS request counts across regions on cache miss", async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes("us-east-1") || url.includes("us-west-2")) {
+        return Promise.resolve(
+          ec2XmlResponse(describeInstancesXml([instanceXml({ instanceId: "i-fanout" })])),
+        );
+      }
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
+    });
+
+    const mockKv = {
+      get: vi.fn(async () => null),
+      put: vi.fn(),
+    } as never;
+
+    const ctxWithCache: GatewayContext = { ...testContext, cache: mockKv };
+    const mock = makeMockServer();
+    registerMcpToolForTest(mock.server, ctxWithCache, "list_ec2_instances");
+    const result = await mock.getTool("list_ec2_instances")!.handler({}) as {
+      structuredContent: Record<string, unknown>;
+    };
+
+    const execution = result.structuredContent.execution as {
+      cache: { status: string };
+      awsRequestCount: number;
+      awsRequests: Array<{ action: string; requestCount: number }>;
+    };
+
+    expect(execution.cache.status).toBe("miss");
+    expect(execution.awsRequestCount).toBe(2);
+    expect(execution.awsRequests).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "ec2:DescribeInstances",
+          requestCount: 2,
+        }),
+      ]),
+    );
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });

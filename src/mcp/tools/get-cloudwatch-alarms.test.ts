@@ -116,7 +116,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     const content = (result.content as Array<{ type: string; text: string }>)[0];
     expect(content.text).toContain("Found 1 alarm(s) across 1 region(s).");
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       regions: ["us-east-1"],
       count: 1,
       alarms: [
@@ -171,7 +171,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     const tool = mock.getTool("get_cloudwatch_alarms")!;
     const result = await tool.handler({}) as Record<string, unknown>;
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       regions: ["us-east-1"],
       count: 0,
       alarms: [],
@@ -223,7 +223,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     const result = await tool.handler({ states: ["INVALID"] }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
   });
@@ -239,7 +239,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     const result = await tool.handler({ regions: ["eu-central-1"] }) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "validation_error", retryable: false },
     });
   });
@@ -307,7 +307,7 @@ describe("registerGetCloudwatchAlarmsTool", () => {
     const result = await tool.handler({}) as Record<string, unknown>;
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       error: { code: "aws_request_failed", retryable: false },
     });
   });

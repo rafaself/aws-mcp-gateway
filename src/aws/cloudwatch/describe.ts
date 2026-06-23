@@ -1,4 +1,5 @@
 import { awsRequest } from "../client.js";
+import type { ExecutionTelemetry } from "../../telemetry/types.js";
 import type { AwsCredentials } from "../types.js";
 import { normalizeAlarm } from "./parse.js";
 import type { CloudWatchAlarm, DescribeAlarmsResponse } from "./types.js";
@@ -9,6 +10,7 @@ export async function describeAlarmsInRegion(
   region: string,
   stateFilter: string[],
   credentials: AwsCredentials,
+  execution?: ExecutionTelemetry,
 ): Promise<CloudWatchAlarm[]> {
   const allAlarms: CloudWatchAlarm[] = [];
   let nextToken: string | undefined;
@@ -41,6 +43,7 @@ export async function describeAlarmsInRegion(
           "Content-Type": "application/x-amz-json-1.1",
         },
         body,
+        execution,
       },
       credentials,
     );

@@ -1,7 +1,9 @@
 import { awsRequest } from "../client.js";
 import { LOGS_MAX_HOURS, LOGS_MAX_EVENTS, LOGS_CACHE_TTL_SECONDS, LOG_GROUPS_MAX_COUNT } from "../../security/limits.js";
 import { buildCacheKey } from "../../cache/keys.js";
-import { cacheGet, cacheSet } from "../../cache/kv.js";
+import { cacheReadWithStatus } from "../../cache/read.js";
+import { cacheSet } from "../../cache/kv.js";
+import type { ExecutionTelemetry } from "../../telemetry/types.js";
 import type { AwsCredentials } from "../types.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
 import { validateLogOptions, validateLogGroupListOptions } from "./validation.js";
@@ -19,6 +21,7 @@ export async function filterLogEvents(
   region: string,
   credentials: AwsCredentials,
   cache?: KVNamespace,
+  execution?: ExecutionTelemetry,
 ): Promise<LogEvent[]> {
   const now = Date.now();
   const cacheBucketMs = LOGS_CACHE_TTL_SECONDS * 1000;
@@ -30,18 +33,16 @@ export async function filterLogEvents(
 
   validateLogOptions(logGroupName, startTime, endTime, limit);
 
-  if (cache) {
-    const cacheKey = await buildCacheKey("get_recent_log_errors", {
-      logGroupName,
-      region,
-      filterPattern,
-      startTime,
-      endTime,
-      limit,
-    });
-    const cached = await cacheGet<LogEvent[]>(cache, cacheKey);
-    if (cached) return cached;
-  }
+  const cacheKey = await buildCacheKey("get_recent_log_errors", {
+    logGroupName,
+    region,
+    filterPattern,
+    startTime,
+    endTime,
+    limit,
+  });
+  const { value: cached } = await cacheReadWithStatus<LogEvent[]>(cache, cacheKey, execution);
+  if (cached) return cached;
 
   const body: Record<string, unknown> = {
     logGroupName,
@@ -63,6 +64,7 @@ export async function filterLogEvents(
         "Content-Type": "application/x-amz-json-1.1",
       },
       body,
+      execution,
     },
     credentials,
   );
@@ -99,21 +101,20 @@ export async function describeLogGroups(
   region: string,
   credentials: AwsCredentials,
   cache?: KVNamespace,
+  execution?: ExecutionTelemetry,
 ): Promise<LogGroup[]> {
   const limit = options.limit ?? LOG_GROUPS_MAX_COUNT;
   const prefix = options.prefix;
 
   validateLogGroupListOptions(prefix, limit);
 
-  if (cache) {
-    const cacheKey = await buildCacheKey("list_log_groups", {
-      region,
-      prefix: prefix ?? "",
-      limit,
-    });
-    const cached = await cacheGet<LogGroup[]>(cache, cacheKey);
-    if (cached) return cached;
-  }
+  const cacheKey = await buildCacheKey("list_log_groups", {
+    region,
+    prefix: prefix ?? "",
+    limit,
+  });
+  const { value: cached } = await cacheReadWithStatus<LogGroup[]>(cache, cacheKey, execution);
+  if (cached) return cached;
 
   const body: Record<string, unknown> = { limit };
   if (prefix !== undefined && prefix.length > 0) {
@@ -132,6 +133,7 @@ export async function describeLogGroups(
         "Content-Type": "application/x-amz-json-1.1",
       },
       body,
+      execution,
     },
     credentials,
   );

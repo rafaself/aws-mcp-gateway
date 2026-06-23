@@ -81,6 +81,7 @@ export function createListEc2InstancesToolManifest(
         ctx.allowedRegions,
         ctx.credentials,
         ctx.cache,
+        ctx.execution,
       );
 
       const resultRegions = [...new Set(instances.map((i) => i.region))].sort();

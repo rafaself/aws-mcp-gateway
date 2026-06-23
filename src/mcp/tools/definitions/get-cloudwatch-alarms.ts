@@ -81,6 +81,7 @@ export function createGetCloudwatchAlarmsToolManifest(
         ctx.allowedRegions,
         ctx.credentials,
         ctx.cache,
+        ctx.execution,
       );
       const count = alarms.length;
 

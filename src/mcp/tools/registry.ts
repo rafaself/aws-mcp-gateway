@@ -89,7 +89,7 @@ export function createToolManifests(ctx: GatewayContext): AnyToolManifest[] {
 export function createToolRegistry(ctx: GatewayContext): GatewayToolDefinition[] {
   const manifests = createToolManifests(ctx);
   const policyContext = buildToolPolicyContext(ctx, manifests);
-  return manifests.map((manifest) => manifestToGatewayDefinition(manifest, policyContext));
+  return manifests.map((manifest) => manifestToGatewayDefinition(manifest, policyContext, ctx));
 }
 
 export function buildToolRegistryState(ctx: GatewayContext): {
@@ -99,7 +99,7 @@ export function buildToolRegistryState(ctx: GatewayContext): {
 } {
   const manifests = createToolManifests(ctx);
   const policyContext = buildToolPolicyContext(ctx, manifests);
-  const registry = manifests.map((manifest) => manifestToGatewayDefinition(manifest, policyContext));
+  const registry = manifests.map((manifest) => manifestToGatewayDefinition(manifest, policyContext, ctx));
   return { manifests, policyContext, registry };
 }
 

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
+import { withOptionalExecutionMetadata } from "../execution/output-schema.js";
 import type { GatewayToolDefinition } from "./registry.js";
 
 export const OAUTH_REQUIRED_SCOPE = "aws:read";
@@ -140,14 +141,17 @@ export const costPeriodSchema = z.object({
   endDate: z.string(),
 });
 
-export const costSummaryOutputSchema = z.object({
+const costSummaryShape = {
   period: costPeriodSchema,
   granularity: z.enum(["DAILY", "MONTHLY"]),
   total: z.number(),
   currency: z.string(),
-});
+} as const;
 
-export const costByServiceOutputSchema = costSummaryOutputSchema.extend({
+export const costSummaryOutputSchema = withOptionalExecutionMetadata(costSummaryShape);
+
+export const costByServiceOutputSchema = withOptionalExecutionMetadata({
+  ...costSummaryShape,
   services: z.array(
     z.object({
       service: z.string(),
@@ -156,7 +160,7 @@ export const costByServiceOutputSchema = costSummaryOutputSchema.extend({
   ),
 });
 
-export const listEc2InstancesOutputSchema = z.object({
+export const listEc2InstancesOutputSchema = withOptionalExecutionMetadata({
   regions: z.array(z.string()),
   count: z.number(),
   instances: z.array(
@@ -170,7 +174,7 @@ export const listEc2InstancesOutputSchema = z.object({
   ),
 });
 
-export const cloudwatchAlarmsOutputSchema = z.object({
+export const cloudwatchAlarmsOutputSchema = withOptionalExecutionMetadata({
   regions: z.array(z.string()),
   count: z.number(),
   alarms: z.array(
@@ -184,7 +188,7 @@ export const cloudwatchAlarmsOutputSchema = z.object({
   ),
 });
 
-export const recentLogErrorsOutputSchema = z.object({
+export const recentLogErrorsOutputSchema = withOptionalExecutionMetadata({
   region: z.string(),
   logGroupName: z.string(),
   count: z.number(),
@@ -197,7 +201,7 @@ export const recentLogErrorsOutputSchema = z.object({
   ),
 });
 
-export const listLambdaFunctionsOutputSchema = z.object({
+export const listLambdaFunctionsOutputSchema = withOptionalExecutionMetadata({
   regions: z.array(z.string()),
   count: z.number(),
   functions: z.array(
@@ -210,7 +214,7 @@ export const listLambdaFunctionsOutputSchema = z.object({
   ),
 });
 
-export const listS3BucketsOutputSchema = z.object({
+export const listS3BucketsOutputSchema = withOptionalExecutionMetadata({
   count: z.number(),
   buckets: z.array(
     z.object({
@@ -220,7 +224,7 @@ export const listS3BucketsOutputSchema = z.object({
   ),
 });
 
-export const listLogGroupsOutputSchema = z.object({
+export const listLogGroupsOutputSchema = withOptionalExecutionMetadata({
   region: z.string(),
   count: z.number(),
   logGroups: z.array(
@@ -268,14 +272,14 @@ const overviewS3SectionSchema = z.object({
   ),
 });
 
-export const awsAccountOverviewOutputSchema = z.object({
+export const awsAccountOverviewOutputSchema = withOptionalExecutionMetadata({
   regions: z.array(z.string()),
   ec2: overviewEc2SectionSchema.optional(),
   lambda: overviewLambdaSectionSchema.optional(),
   s3: overviewS3SectionSchema.optional(),
 });
 
-export const awsCostOverviewOutputSchema = z.object({
+export const awsCostOverviewOutputSchema = withOptionalExecutionMetadata({
   period: costPeriodSchema,
   granularity: z.enum(["DAILY", "MONTHLY"]),
   total: z.number(),
@@ -312,7 +316,7 @@ const overviewLogGroupsSectionSchema = z.object({
   ),
 });
 
-export const awsObservabilityOverviewOutputSchema = z.object({
+export const awsObservabilityOverviewOutputSchema = withOptionalExecutionMetadata({
   regions: z.array(z.string()),
   alarms: overviewAlarmsSectionSchema.optional(),
   logGroups: overviewLogGroupsSectionSchema.optional(),

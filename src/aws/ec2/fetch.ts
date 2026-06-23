@@ -1,4 +1,5 @@
 import { AwsClient } from "aws4fetch";
+import type { ExecutionTelemetry } from "../../telemetry/types.js";
 import { assertAwsCapability, AwsCapabilityError, type AwsCapabilityId } from "../capabilities.js";
 import { AwsRequestError } from "../errors.js";
 import type { AwsCredentials } from "../types.js";
@@ -13,6 +14,7 @@ export async function ec2Fetch<T>(
   params: Record<string, string>,
   region: string,
   credentials: AwsCredentials,
+  execution?: ExecutionTelemetry,
 ): Promise<T> {
   assertAwsCapability(capability);
   if (capability !== "ec2:DescribeInstances") {
@@ -60,6 +62,8 @@ export async function ec2Fetch<T>(
         region,
       });
     }
+
+    execution?.recordAwsRequest(capability, region);
 
     const text = await response.text();
 

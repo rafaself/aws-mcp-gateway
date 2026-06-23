@@ -84,7 +84,7 @@ describe("tool policy gate", () => {
       ),
     });
 
-    const tool = manifestToGatewayDefinition(manifestWithSpy, policy);
+    const tool = manifestToGatewayDefinition(manifestWithSpy, policy, testContext);
     const result = (await tool.handler({})) as {
       isError?: boolean;
       structuredContent?: { error: { code: string } };
@@ -106,7 +106,7 @@ describe("tool policy gate", () => {
       enabledPacks: new Set(["core", "cost", "inventory"]),
     });
 
-    const tool = manifestToGatewayDefinition(manifestWithSpy, policy);
+    const tool = manifestToGatewayDefinition(manifestWithSpy, policy, testContext);
     const result = (await tool.handler({})) as {
       isError?: boolean;
       structuredContent?: { error: { code: string } };
@@ -160,7 +160,7 @@ describe("tool policy gate", () => {
       ),
     });
 
-    const tool = manifestToGatewayDefinition(manifest, policy);
+    const tool = manifestToGatewayDefinition(manifest, policy, testContext);
     const result = (await tool.handler({ query: "ec2" })) as {
       isError: boolean;
       structuredContent: { error: { code: string; retryable: boolean } };
@@ -185,7 +185,7 @@ describe("tool policy gate", () => {
       ),
     });
 
-    const tool = manifestToGatewayDefinition(manifest, policy);
+    const tool = manifestToGatewayDefinition(manifest, policy, testContext);
     await tool.handler({ regions: ["us-east-1"] });
 
     expect(log).toHaveBeenCalledTimes(1);
@@ -213,7 +213,7 @@ describe("tool policy gate", () => {
       ),
     });
 
-    const tool = manifestToGatewayDefinition(manifest, policy);
+    const tool = manifestToGatewayDefinition(manifest, policy, testContext);
     await tool.handler({ regions: ["us-east-1"] });
 
     expect(mockFetch).not.toHaveBeenCalled();
@@ -227,7 +227,7 @@ describe("tool policy gate", () => {
       handler: handlerSpy,
     };
 
-    const tool = manifestToGatewayDefinition(manifestWithSpy, defaultPolicy);
+    const tool = manifestToGatewayDefinition(manifestWithSpy, defaultPolicy, testContext);
     const result = (await tool.handler({ regions: ["eu-west-1"] })) as {
       isError?: boolean;
       structuredContent?: { error: { code: string } };
@@ -312,7 +312,7 @@ describe("tool policy gate", () => {
       handler: handlerSpy,
     };
 
-    const tool = manifestToGatewayDefinition(manifestWithSpy, defaultPolicy);
+    const tool = manifestToGatewayDefinition(manifestWithSpy, defaultPolicy, testContext);
     const result = (await tool.handler({
       startDate: "2024-01-01",
       endDate: "2024-06-01",
@@ -336,7 +336,7 @@ describe("tool policy gate", () => {
       handler: handlerSpy,
     };
 
-    const tool = manifestToGatewayDefinition(manifestWithSpy, defaultPolicy);
+    const tool = manifestToGatewayDefinition(manifestWithSpy, defaultPolicy, testContext);
     const result = (await tool.handler({
       startDate: "2025-01-01",
       endDate: "2025-01-31",
@@ -365,7 +365,7 @@ describe("tool policy gate", () => {
       handler: handlerSpy,
     };
 
-    const tool = manifestToGatewayDefinition(manifestWithSpy, defaultPolicy);
+    const tool = manifestToGatewayDefinition(manifestWithSpy, defaultPolicy, testContext);
     const result = (await tool.handler({
       regions: ["us-east-1", "us-west-2"],
     })) as {
@@ -443,7 +443,7 @@ describe("tool policy gate", () => {
       grantedScopes: ["aws:read"],
     });
 
-    const tool = manifestToGatewayDefinition(manifestWithSpy, policy);
+    const tool = manifestToGatewayDefinition(manifestWithSpy, policy, testContext);
     const result = (await tool.handler({ regions: ["us-east-1"] })) as {
       isError?: boolean;
       structuredContent?: { error: { code: string; message?: string } };
@@ -465,7 +465,7 @@ describe("tool policy gate", () => {
       grantedScopes: ["aws:read"],
     });
 
-    const tool = manifestToGatewayDefinition(manifestWithExtraScope, policy);
+    const tool = manifestToGatewayDefinition(manifestWithExtraScope, policy, testContext);
     const result = (await tool.handler({ query: "ec2" })) as {
       isError: boolean;
       structuredContent: { error: { code: string; retryable: boolean } };
@@ -492,7 +492,7 @@ describe("tool policy gate", () => {
       grantedScopes: ["aws:read"],
     });
 
-    const tool = manifestToGatewayDefinition(manifestWithExtraScope, policy);
+    const tool = manifestToGatewayDefinition(manifestWithExtraScope, policy, testContext);
     await tool.handler({ regions: ["us-east-1"] });
 
     expect(log).toHaveBeenCalledTimes(1);

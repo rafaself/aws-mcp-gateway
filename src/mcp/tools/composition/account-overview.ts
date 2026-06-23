@@ -71,7 +71,7 @@ export async function buildAccountOverview(
 
   if (include.includes("ec2")) {
     tasks.push(
-      listInstances({ regions }, ctx.allowedRegions, ctx.credentials, ctx.cache).then((instances) => {
+      listInstances({ regions }, ctx.allowedRegions, ctx.credentials, ctx.cache, ctx.execution).then((instances) => {
         const countsByState = instances.reduce<Record<string, number>>((acc, i) => {
           acc[i.state] = (acc[i.state] || 0) + 1;
           return acc;
@@ -98,7 +98,7 @@ export async function buildAccountOverview(
 
   if (include.includes("lambda")) {
     tasks.push(
-      listFunctions({ regions }, ctx.allowedRegions, ctx.credentials, ctx.cache).then((functions) => {
+      listFunctions({ regions }, ctx.allowedRegions, ctx.credentials, ctx.cache, ctx.execution).then((functions) => {
         result.lambda = {
           count: functions.length,
           countsByRegion: countByRegion(functions),
@@ -118,7 +118,7 @@ export async function buildAccountOverview(
 
   if (include.includes("s3")) {
     tasks.push(
-      listBuckets({}, ctx.credentials, ctx.cache).then((buckets) => {
+      listBuckets({}, ctx.credentials, ctx.cache, ctx.execution).then((buckets) => {
         result.s3 = {
           count: buckets.length,
           sample: takeSample(
