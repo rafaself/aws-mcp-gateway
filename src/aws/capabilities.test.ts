@@ -28,6 +28,8 @@ describe("aws capabilities registry", () => {
       "rds:DescribeDBInstances",
       "rds:DescribeDBSubnetGroups",
       "s3:ListAllMyBuckets",
+      "ssm:DescribeParameters",
+      "ssm:GetParameters",
       "sts:AssumeRole",
     ]);
   });
@@ -58,6 +60,8 @@ describe("aws capabilities registry", () => {
       "rds:DescribeDBInstances",
       "rds:DescribeDBSubnetGroups",
       "s3:ListAllMyBuckets",
+      "ssm:DescribeParameters",
+      "ssm:GetParameters",
       "sts:AssumeRole",
     ]);
     expect(awsServicesForCapabilities(AWS_CAPABILITY_IDS)).toEqual([
@@ -69,6 +73,7 @@ describe("aws capabilities registry", () => {
       "logs",
       "rds",
       "s3",
+      "ssm",
       "sts",
     ]);
   });

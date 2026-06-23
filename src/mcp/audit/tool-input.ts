@@ -166,3 +166,13 @@ export function summarizeRdsMetricsInput(args: {
     ...(args.periodSeconds !== undefined ? { periodSeconds: args.periodSeconds } : {}),
   };
 }
+
+export function summarizeSsmParameterInventoryInput(args: {
+  parameterPrefix?: string;
+  requiredParameterNames?: string[];
+}): Record<string, unknown> {
+  return {
+    prefixLength: args.parameterPrefix?.length ?? 0,
+    requiredParameterCount: args.requiredParameterNames?.length ?? 0,
+  };
+}

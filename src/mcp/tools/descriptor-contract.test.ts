@@ -155,6 +155,36 @@ describe("MCP tool descriptor contract", () => {
   });
 });
 
+describe("security MCP tool descriptor contract", () => {
+  const ctx = createTestGatewayContext({
+    mcpResourceUrl: "https://aws-mcp-gateway.example.workers.dev",
+    toolExposure: {
+      ...testContext.toolExposure,
+      enabledToolPacks: new Set([
+        "core",
+        "cost",
+        "inventory",
+        "observability",
+        "database",
+        "security",
+      ]),
+    },
+  });
+  const { registry, policyContext } = buildToolRegistryState(ctx);
+  const { tools } = buildPublicToolList(registry, policyContext.enabledToolNames);
+  const toolsByName = Object.fromEntries(tools.map((tool) => [tool.name, tool]));
+
+  it("check_ssm_parameter_inventory is listed when security pack is enabled", () => {
+    expect(toolsByName.check_ssm_parameter_inventory).toBeDefined();
+    expect(toolsByName.check_ssm_parameter_inventory.outputSchema).toMatchObject({
+      type: "object",
+    });
+    expect(toolsByName.check_ssm_parameter_inventory.title).toBe(
+      PUBLIC_TOOL_TITLES.check_ssm_parameter_inventory,
+    );
+  });
+});
+
 describe("aggregate MCP tool descriptor contract", () => {
   const ctx = createTestGatewayContext({
     mcpResourceUrl: "https://aws-mcp-gateway.example.workers.dev",

@@ -26,6 +26,7 @@ list_ecs_tasks
 get_recent_stopped_ecs_tasks
 get_rds_instance_health
 get_rds_metrics
+check_ssm_parameter_inventory
 aws_account_overview
 aws_cost_overview
 aws_observability_overview

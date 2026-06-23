@@ -53,3 +53,6 @@ export {
 export {
   createGetRdsMetricsToolManifest,
 } from "./get-rds-metrics.js";
+export {
+  createCheckSsmParameterInventoryToolManifest,
+} from "./check-ssm-parameter-inventory.js";

@@ -112,12 +112,15 @@ See [`docs/specs/tool-execution-metadata.md`](specs/tool-execution-metadata.md) 
 | 17 | `get_cloudwatch_alarm_summary` | Single-region alarm summary | Yes | [↓](#17-get_cloudwatch_alarm_summary) |
 | 18 | `get_rds_instance_health` | RDS instance health | Yes | [↓](#18-get_rds_instance_health) |
 | 19 | `get_rds_metrics` | RDS CloudWatch metrics | Yes | [↓](#19-get_rds_metrics) |
+| 20 | `check_ssm_parameter_inventory` | SSM parameter inventory metadata | Yes | [↓](#20-check_ssm_parameter_inventory) |
 
 \* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
 
 All public tools require OAuth (`aws:read`) or local bearer authentication and are read-only.
 
 **Aggregate overview tools (10–12)** compose existing manifest-backed capabilities into bounded summaries. They are in the `aggregates` tool pack, which is **disabled by default**. Enable with `AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,aggregates` when you want higher-level summaries instead of calling each inventory or observability tool separately. Aggregates are not full account crawlers — they return counts and short normalized samples only.
+
+**Security tools (20)** are in the `security` tool pack, which is **disabled by default**. Enable with `AWS_MCP_ENABLED_TOOL_PACKS=...,security` or `AWS_MCP_ENABLED_TOOLS=check_ssm_parameter_inventory` when you need SSM parameter inventory checks. These tools return metadata only and never read or return parameter values.
 
 ---
 
@@ -1604,6 +1607,96 @@ Optional series (included with `status: "no_data"` when unavailable):
 
 ---
 
+## 20. `check_ssm_parameter_inventory`
+
+**Purpose:** Verifies that required SSM parameter names exist under a path prefix and
+returns metadata only (type, version, last modified date, key id). Use direct inputs —
+no application profile is required.
+
+**Important:** This tool proves inventory metadata only. It does **not** read parameter
+values, verify secret correctness, or confirm that stored values match expectations.
+
+**Pack:** `security` (disabled by default — enable the `security` pack or list this tool
+in `AWS_MCP_ENABLED_TOOLS`)
+
+### Input
+
+| Field | Type | Required | Default | Validation |
+|-------|------|----------|---------|------------|
+| `parameterPrefix` | `string` | yes | — | Path-like SSM prefix starting with `/`; max 512 characters. Rejects connection strings and secret-like patterns. |
+| `requiredParameterNames` | `string[]` | yes | — | Non-empty array, max 50 entries. Each name is relative (no leading `/`); max 256 characters per name. |
+| `region` | `string` | no | `AWS_REGION` | Must be in `AWS_ALLOWED_REGIONS`. |
+
+### Region behavior
+
+Single-region. Defaults to gateway `AWS_REGION` when omitted.
+
+### AWS API
+
+- **Service:** SSM
+- **Actions:** `DescribeParameters` (metadata-only; `GetParameters` is not called)
+- **Capabilities:** `ssm:DescribeParameters`
+
+### Cache behavior
+
+| Property | Value |
+|----------|-------|
+| Cached | Yes |
+| Key components | `parameterPrefix`, sorted `requiredParameterNames`, `region` |
+| TTL | 300 seconds (5 minutes) |
+
+### Output
+
+```typescript
+{
+  content: [{ type: "text", text: string }],
+  structuredContent: {
+    region: string,
+    parameterPrefix: string,
+    missingCount: number,
+    parameters: [{
+      name: string,
+      path: string,
+      exists: boolean,
+      type?: string,
+      version?: number,
+      lastModifiedDate?: string,
+      keyId?: string,
+      suspiciousMetadata?: boolean
+    }]
+  }
+}
+```
+
+### Example
+
+```json
+{
+  "parameterPrefix": "/app/prod",
+  "requiredParameterNames": ["db/host", "api/key"],
+  "region": "us-east-1"
+}
+```
+
+### Error codes
+
+| Condition | Code | Retryable |
+|-----------|------|-----------|
+| Region not in allowlist | `validation_error` | false |
+| Invalid prefix or required names | `validation_error` | false |
+| Security pack disabled | `validation_error` | false |
+| AWS API failure | `aws_request_failed` | varies |
+
+### Safety boundaries
+
+- Never requests decrypted values or calls `GetParameters`.
+- Never returns `Value` or other secret payload fields.
+- Missing parameters are reported with `exists: false` without failing the whole request.
+- `suspiciousMetadata` is set only when description metadata matches placeholder heuristics — it does not read parameter values.
+- Invalid input fails before any downstream AWS call.
+
+---
+
 ## Error codes reference
 
 All tool errors use the `GatewayError` class hierarchy and return a consistent
@@ -1695,6 +1788,7 @@ Every tool handler is wrapped in `safeMcpHandler` which:
 | `get_recent_stopped_ecs_tasks` | Yes | clusterName, serviceName, lookbackMinutes, limit, region | 300s (5 min) |
 | `get_rds_instance_health` | Yes | dbInstanceIdentifier, region | 300s (5 min) |
 | `get_rds_metrics` | Yes | dbInstanceIdentifier, region, lookbackMinutes, periodSeconds | 300s (5 min) |
+| `check_ssm_parameter_inventory` | Yes | parameterPrefix, requiredParameterNames, region | 300s (5 min) |
 | `aws_account_overview` | Yes | per composed client keys | 300s (5 min) |
 | `aws_cost_overview` | Yes | startDate, endDate, granularity (×2 CE calls) | 1800s (30 min) |
 | `aws_observability_overview` | Yes | per composed client keys | 300s (5 min) |

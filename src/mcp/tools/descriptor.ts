@@ -31,6 +31,7 @@ export const PUBLIC_TOOL_TITLES = {
   get_recent_stopped_ecs_tasks: "Get Recent Stopped ECS Tasks",
   get_rds_instance_health: "Get RDS Instance Health",
   get_rds_metrics: "Get RDS Metrics",
+  check_ssm_parameter_inventory: "Check SSM Parameter Inventory",
   aws_account_overview: "AWS Account Overview",
   aws_cost_overview: "AWS Cost Overview",
   aws_observability_overview: "AWS Observability Overview",
@@ -382,6 +383,24 @@ export const rdsMetricsOutputSchema = withOptionalExecutionMetadata({
   lookbackMinutes: z.number(),
   periodSeconds: z.number(),
   metrics: z.array(rdsMetricSeriesSchema),
+});
+
+const ssmParameterInventoryEntrySchema = z.object({
+  name: z.string(),
+  path: z.string(),
+  exists: z.boolean(),
+  type: z.string().optional(),
+  version: z.number().optional(),
+  lastModifiedDate: z.string().optional(),
+  keyId: z.string().optional(),
+  suspiciousMetadata: z.boolean().optional(),
+});
+
+export const checkSsmParameterInventoryOutputSchema = withOptionalExecutionMetadata({
+  region: z.string(),
+  parameterPrefix: z.string(),
+  missingCount: z.number(),
+  parameters: z.array(ssmParameterInventoryEntrySchema),
 });
 
 const overviewEc2SectionSchema = z.object({
