@@ -10,6 +10,7 @@ Current shipped specs:
 
 - [`oauth-chatgpt-connector.md`](oauth-chatgpt-connector.md) — current OAuth authorization contract for ChatGPT connector deployments.
 - [`secure-tool-platform.md`](secure-tool-platform.md) — current manifest-driven architecture for the secure read-only AWS tool platform.
+- [`tool-execution-metadata.md`](tool-execution-metadata.md) — execution metadata contract for cache, billing estimates, and AWS request telemetry on tool results.
 
 ## Target architecture specs
 

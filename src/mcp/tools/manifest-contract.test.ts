@@ -11,6 +11,8 @@ import {
 } from "./registry.js";
 import type { AnyToolManifest } from "./manifest.js";
 import { isAwsBackedManifest } from "./policy.js";
+import { buildAwsExecutionMetadataFromManifest } from "../execution/build.js";
+import { toolExecutionMetadataSchema } from "../execution/metadata.js";
 import { DEFAULT_ENABLED_TOOL_PACKS } from "../../config/tool-exposure.js";
 
 import {
@@ -253,6 +255,18 @@ describe("tool manifest contract", () => {
       expect(manifest.aws.actions.length).toBeGreaterThan(0);
       expect(manifest.aws.capabilities.length).toBeGreaterThan(0);
       expect(manifest.aws.regionMode).not.toBe("none");
+    });
+  }
+
+  for (const toolName of AWS_BACKED_TOOLS) {
+    it(`${toolName} maps manifest cost metadata into execution metadata`, () => {
+      const manifest = byName[toolName];
+      const metadata = buildAwsExecutionMetadataFromManifest(manifest);
+
+      expect(toolExecutionMetadataSchema.safeParse(metadata).success).toBe(true);
+      expect(metadata.billing.costClass).toBe(manifest.costControl.class);
+      expect(metadata.cache.ttlSeconds).toBe(manifest.safety.cacheTtlSeconds);
+      expect(metadata.awsRequests.length).toBeGreaterThan(0);
     });
   }
 
