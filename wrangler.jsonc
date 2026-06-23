@@ -11,18 +11,18 @@
 	},
 	"vars": {
 		"AWS_REGION": "us-east-1",
-		"AWS_ALLOWED_REGIONS": "us-east-1",
+		"AWS_ALLOWED_REGIONS": "us-east-1,sa-east-1",
 		"AUTH_MODE": "oauth",
 		"RATE_LIMIT_MAX_REQUESTS": "120",
 		"RATE_LIMIT_WINDOW_SECONDS": "60",
 		// OAuth resource identity — origin only; do NOT append /mcp.
 		// ChatGPT Connector Server URL = MCP_RESOURCE_URL + "/mcp"
-		"MCP_RESOURCE_URL": "https://aws-mcp-gateway.rafaondjango.workers.dev",
-		"OAUTH_ISSUER": "https://dev-e11vv5o0nhbqsq70.us.auth0.com/",
+		"MCP_RESOURCE_URL": "https://<your-worker-host>",
+		"OAUTH_ISSUER": "https://<your-auth0-tenant>/",
 		// Must equal MCP_RESOURCE_URL (origin only — do not append /mcp)
-		"OAUTH_AUDIENCE": "https://aws-mcp-gateway.rafaondjango.workers.dev",
+		"OAUTH_AUDIENCE": "https://<your-worker-host>",
 		"OAUTH_TOKEN_VALIDATION_MODE": "jwks",
-		"OAUTH_JWKS_URI": "https://dev-e11vv5o0nhbqsq70.us.auth0.com/.well-known/jwks.json",
+		"OAUTH_JWKS_URI": "https://<your-auth0-tenant>/.well-known/jwks.json",
 		"OAUTH_REQUIRED_SCOPES": "aws:read",
 		// Introspection mode (alternative to JWKS):
 		// "OAUTH_TOKEN_VALIDATION_MODE": "introspection",
@@ -42,7 +42,7 @@
 	"kv_namespaces": [
 		{
 			"binding": "AWS_MCP_CACHE",
-			"id": "5e3e4ee0a3194c7e9a34256b0febda8a",
+			"id": "<your-kv-namespace-id>",
 			"remote": true
 		}
 	],
