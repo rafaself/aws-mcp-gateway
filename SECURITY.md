@@ -225,6 +225,19 @@ Caching is optional via the `AWS_MCP_CACHE` KV binding. See [README.md](README.m
 
 ---
 
+## Execution metadata checklist
+
+Execution metadata on AWS-backed tool results (`structuredContent.execution`) is defined in [`docs/specs/tool-execution-metadata.md`](docs/specs/tool-execution-metadata.md).
+
+- [ ] Metadata includes only sanitized cache status, AWS service/action names, optional region names, request counts, and gateway-side cost estimates.
+- [ ] Metadata never includes secrets, bearer or OAuth tokens, cache keys, raw AWS response bodies, request payloads, billing account identifiers, or stack traces.
+- [ ] `billing.estimatedCostUsd` and visible billing notes are labeled as estimates — not final AWS invoice totals.
+- [ ] Execution metadata is not a durable audit ledger; structured audit events remain in `src/observability/audit.ts`.
+- [ ] Cloudflare Worker, KV, Durable Object, and bandwidth costs are not included in AWS billing estimates.
+- [ ] Contract tests pass: `src/mcp/tools/execution-contract.test.ts`, `src/mcp/tools/manifest-contract.test.ts`.
+
+---
+
 ## Audit and logging checklist
 
 Audit events are emitted from `src/observability/audit.ts` via `safeEmitAuditEvent` in `src/mcp/audit/log.ts` and tool handlers via `safeMcpHandler`.

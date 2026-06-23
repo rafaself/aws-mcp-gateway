@@ -135,7 +135,7 @@ Core tools (`search`, `fetch`, `get_gateway_status`) are not forced into AWS bil
 
 - [x] Reusable `ToolExecutionMetadata` type and Zod schema exist (`src/mcp/execution/metadata.ts`).
 - [x] Central helpers exist to build metadata from manifests and attach it to `structuredContent` (`src/mcp/execution/build.ts`, `src/mcp/execution/attach.ts`).
-- [x] Per-invocation execution metadata is collected centrally (`src/mcp/execution/collector.ts`).
+- [x] Per-invocation execution metadata is collected centrally (`src/telemetry/collector.ts`).
 - [x] Cache hit/miss/disabled/unavailable status is reported accurately for AWS-backed tools.
 - [x] AWS request counts are collected without duplicating code in each tool handler.
 - [x] S3's dedicated signed fetch path is included in request telemetry.
@@ -145,6 +145,16 @@ Core tools (`search`, `fetch`, `get_gateway_status`) are not forced into AWS bil
 - [x] Paid Cost Explorer tools expose cache-aware billing metadata and optional visible billing notes.
 - [x] Contract tests enforce modeled unit costs for paid manifests.
 - [x] This spec documents the contract and safety constraints.
+
+## Documentation contract (issue #143)
+
+Public docs and contract tests must keep execution metadata a maintained contract:
+
+- [x] `docs/mcp-tools.md` documents `structuredContent.execution` fields and limitations.
+- [x] README includes a concise cost-transparency note linking to execution metadata.
+- [x] `SECURITY.md` clarifies that execution metadata is sanitized.
+- [x] `src/mcp/tools/execution-contract.test.ts` verifies every AWS-backed tool attaches validated `execution` on success.
+- [x] Capability matrix tests fail when paid-tool unit costs drift from manifests.
 
 ## Test plan
 
@@ -156,6 +166,7 @@ Core tools (`search`, `fetch`, `get_gateway_status`) are not forced into AWS bil
 - `src/mcp/execution/collector.test.ts` — cache aggregation, AWS count merge, collector isolation.
 - `src/cache/read.test.ts` — cache status outcomes.
 - `src/mcp/tools/manifest-contract.test.ts` — every AWS-backed manifest maps to valid execution metadata.
-- Tool integration tests (for example `cost-summary.test.ts`, `list-ec2-instances.test.ts`, `list-s3-buckets.test.ts`) — live `structuredContent.execution` on success paths.
+- `src/mcp/tools/execution-contract.test.ts` — live handler success paths attach validated `structuredContent.execution` for all AWS-backed tools; paid vs non-paid billing note rules.
+- Tool integration tests (for example `cost-summary.test.ts`, `list-ec2-instances.test.ts`, `list-s3-buckets.test.ts`) — focused cache and telemetry scenarios.
 
 Run `pnpm run typecheck`, `pnpm test`, and `pnpm run test:integrity` before merge.
