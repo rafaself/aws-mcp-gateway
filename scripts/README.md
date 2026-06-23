@@ -56,6 +56,10 @@ pnpm run setup:auth0
 pnpm run verify:oauth
 pnpm run verify:oauth:authenticated
 pnpm run verify:connector-contract
+pnpm run app-profile:validate -- --file examples/app-profiles/example-prod.profile.json
+pnpm run app-profile:put -- --file examples/app-profiles/example-prod.profile.json
+pnpm run app-profile:list
+pnpm run app-profile:delete -- --profile-id example-prod --yes
 ```
 
 ## Validation tiers
@@ -137,6 +141,24 @@ This script calls the deployed Worker and may call the OAuth provider.
 #### `verify-connector-contract.sh`
 
 Runs the local contract gate for the ChatGPT connector integration. It executes typecheck, tests, and test-integrity checks without depending on live ChatGPT, Auth0, Cloudflare, or AWS services.
+
+### `app-profiles/` CLI scripts
+
+#### `app-profiles/validate-profile.ts`
+
+Validates a local profile JSON file against the Worker schema. Prints metadata-only results. Local-only; does not call KV.
+
+#### `app-profiles/put-profile.ts`
+
+Validates a profile file, uploads it to `app-profiles/profiles/<profileId>.json`, and updates `app-profiles/index.json` safely. Uses Wrangler KV (`--local` by default, `--remote` for production KV).
+
+#### `app-profiles/list-profiles.ts`
+
+Reads and prints profile index metadata only. Does not print full profile resource internals.
+
+#### `app-profiles/delete-profile.ts`
+
+Removes a profile KV key and updates the index. Requires `--profile-id` and `--yes` for destructive deletes.
 
 #### `verify-oauth-deployment.sh`
 
