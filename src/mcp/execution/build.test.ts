@@ -113,5 +113,27 @@ describe("buildAwsExecutionMetadataFromManifest", () => {
       estimatedCostUsd: 0,
       charged: false,
     });
+    expect(metadata.billing.note).toContain("No new AWS Cost Explorer API request was made");
+  });
+
+  it("estimates multi-request Cost Explorer charges", () => {
+    const manifest = createCostSummaryToolManifest(testContext) as AnyToolManifest;
+    const metadata = buildAwsExecutionMetadataFromManifest(manifest, {
+      cacheStatus: "miss",
+      awsRequests: [
+        {
+          service: "ce",
+          action: "ce:GetCostAndUsage",
+          region: "us-east-1",
+          requestCount: 2,
+          estimatedUnitCostUsd: 0.01,
+        },
+      ],
+    });
+
+    expect(metadata.billing).toMatchObject({
+      estimatedCostUsd: 0.02,
+      charged: true,
+    });
   });
 });

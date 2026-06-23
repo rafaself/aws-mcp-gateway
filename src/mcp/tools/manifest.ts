@@ -2,6 +2,11 @@ import type { z } from "zod";
 import type { AwsCapabilityId } from "../../aws/capabilities.js";
 import type { GatewayContext } from "../../config/context.js";
 import { attachExecutionMetadata } from "../execution/attach.js";
+import {
+  appendVisibleBillingNoteToContent,
+  formatVisibleBillingNote,
+  shouldAppendVisibleBillingNote,
+} from "../execution/billing-content.js";
 import { buildAwsExecutionMetadataFromManifest } from "../execution/build.js";
 import { buildRuntimeFactsFromSnapshot } from "../execution/runtime-facts.js";
 import {
@@ -159,6 +164,16 @@ function wrapManifestHandler<TInput>(
         const facts = buildRuntimeFactsFromSnapshot(manifest as AnyToolManifest, ctx.execution.snapshot());
         const execution = buildAwsExecutionMetadataFromManifest(manifest as AnyToolManifest, facts);
         result.structuredContent = attachExecutionMetadata(result.structuredContent, execution);
+
+        if (
+          shouldAppendVisibleBillingNote(manifest as AnyToolManifest) &&
+          result.content
+        ) {
+          const billingNote = formatVisibleBillingNote(execution);
+          if (billingNote) {
+            appendVisibleBillingNoteToContent(result.content, billingNote);
+          }
+        }
       }
 
       return result;

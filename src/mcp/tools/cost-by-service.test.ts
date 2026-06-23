@@ -444,4 +444,88 @@ describe("registerCostByServiceTool", () => {
       error: { code: "aws_request_failed", retryable: false },
     });
   });
+
+  describe("execution metadata", () => {
+    it("reports cache hit with zero AWS requests and visible billing note", async () => {
+      const cachedByService = {
+        period: { startDate: "2025-01-01", endDate: "2025-02-01" },
+        currency: "USD",
+        total: 99,
+        services: [{ service: "Amazon EC2", amount: 99 }],
+      };
+
+      const mockKv = {
+        get: vi.fn(async () => cachedByService),
+        put: vi.fn(),
+      } as never;
+
+      const ctxWithCache: GatewayContext = { ...testContext, cache: mockKv };
+      const mock = makeMockServer();
+      registerMcpToolForTest(mock.server, ctxWithCache, "get_aws_cost_by_service");
+      const result = await mock.capturedHandler!({
+        startDate: "2025-01-01",
+        endDate: "2025-02-01",
+        granularity: "MONTHLY",
+      }) as { structuredContent: Record<string, unknown>; content: Array<{ type: string; text: string }> };
+
+      const execution = result.structuredContent.execution as {
+        cache: { status: string };
+        awsRequestCount: number;
+        billing: { charged: boolean; note: string };
+      };
+
+      expect(execution.cache.status).toBe("hit");
+      expect(execution.awsRequestCount).toBe(0);
+      expect(execution.billing.charged).toBe(false);
+      expect(execution.billing.note).toContain("No new AWS Cost Explorer API request was made");
+      expect(result.content[0].text).toContain(
+        "Billing note: served from cache. No new AWS Cost Explorer API request was made.",
+      );
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("reports cache miss with AWS request telemetry, billing charge, and visible note", async () => {
+      mockFetch.mockResolvedValue(
+        ceResponse([
+          makeDayWithGroups("2025-01-01", "2025-02-01", "42.50", [
+            { key: "Amazon EC2", amount: "42.50" },
+          ]),
+        ]),
+      );
+
+      const mockKv = {
+        get: vi.fn(async () => null),
+        put: vi.fn(),
+      } as never;
+
+      const ctxWithCache: GatewayContext = { ...testContext, cache: mockKv };
+      const mock = makeMockServer();
+      registerMcpToolForTest(mock.server, ctxWithCache, "get_aws_cost_by_service");
+      const result = await mock.capturedHandler!({
+        startDate: "2025-01-01",
+        endDate: "2025-02-01",
+        granularity: "MONTHLY",
+      }) as { structuredContent: Record<string, unknown>; content: Array<{ type: string; text: string }> };
+
+      const execution = result.structuredContent.execution as {
+        cache: { status: string };
+        awsRequestCount: number;
+        billing: { charged: boolean; estimatedCostUsd: number };
+        awsRequests: Array<{ action: string; requestCount: number }>;
+      };
+
+      expect(execution.cache.status).toBe("miss");
+      expect(execution.awsRequestCount).toBe(1);
+      expect(execution.billing.charged).toBe(true);
+      expect(execution.billing.estimatedCostUsd).toBe(0.01);
+      expect(execution.awsRequests[0]).toMatchObject({
+        action: "ce:GetCostAndUsage",
+        requestCount: 1,
+      });
+      expect(result.content[0].text).toContain(
+        "Billing note: served from AWS Cost Explorer, not cache. Estimated AWS API cost: US$ 0.01.",
+      );
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+  });
 });

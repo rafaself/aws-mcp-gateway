@@ -12,7 +12,7 @@ This spec covers types, schemas, manifest-backed builders, a central attach help
 - Do not add write or management tools.
 - Do not expose cache keys, KV internals, raw AWS responses, credentials, bearer tokens, OAuth tokens, or stack traces.
 - Do not estimate exact billing for services without a reliable fixed per-request price.
-- Do not add visible user-facing billing text in `content`.
+- Do not estimate Cloudflare Worker, KV, bandwidth, or service-resource runtime costs.
 - Do not replace Cloudflare KV or introduce a persistent usage ledger.
 
 ## Behavior
@@ -71,6 +71,28 @@ Implementation lives in `src/mcp/execution/`:
 
 `billing.estimatedCostUsd` is an **estimate** only. Final AWS billing is determined by AWS account usage and pricing; this field is not a source of truth for invoices.
 
+### Billing notes (structured and visible)
+
+- `billing.note` is cache-aware for paid Cost Explorer tools:
+  - **Cache hit:** states that no new AWS Cost Explorer API request was made.
+  - **Cache miss / bypass with charge:** states the estimated non-cached Cost Explorer API charge.
+- Paid tools with `pricingModel: "per-request"` may append a short **visible billing note** to the first `content` text block when cache status is `hit`, `miss`, or `bypass`.
+- Non-paid AWS-backed tools include conservative structured billing metadata but do not append visible billing notes by default.
+
+Visible text examples (paid Cost Explorer tools):
+
+```text
+Billing note: served from cache. No new AWS Cost Explorer API request was made.
+```
+
+```text
+Billing note: served from AWS Cost Explorer, not cache. Estimated AWS API cost: US$ 0.01.
+```
+
+Multi-request Cost Explorer calls use `requestCount * unitCost` for `estimatedCostUsd` and the visible note amount.
+
+Paid manifests must declare modeled unit costs for every capability (`AWS_CAPABILITY_UNIT_COST_USD`); contract tests enforce this mapping.
+
 ### Cache status semantics (runtime)
 
 | Status | Meaning |
@@ -90,7 +112,7 @@ Composite tools that perform multiple cache reads aggregate status with priority
 - Cache reads use `cacheReadWithStatus` in `src/cache/read.ts`.
 - AWS request counting is centralized in `awsRequest`, `ec2Fetch`, and `s3ListBucketsFetch`.
 - Successful AWS responses increment counts by capability and region; failed requests do not increment counts and retain existing sanitized error behavior.
-- `wrapManifestHandler` attaches validated metadata after successful AWS-backed tool execution.
+- `wrapManifestHandler` attaches validated metadata after successful AWS-backed tool execution and may append a visible billing note to `content` for paid per-request tools.
 
 ### Non-AWS tools
 
@@ -120,12 +142,15 @@ Core tools (`search`, `fetch`, `get_gateway_status`) are not forced into AWS bil
 - [x] Existing structured domain fields remain backward-compatible and additive.
 - [x] Non-AWS public tools are not forced into misleading AWS billing metadata.
 - [x] Tests cover valid and invalid metadata shapes, cache paths, fanout, and concurrency isolation.
+- [x] Paid Cost Explorer tools expose cache-aware billing metadata and optional visible billing notes.
+- [x] Contract tests enforce modeled unit costs for paid manifests.
 - [x] This spec documents the contract and safety constraints.
 
 ## Test plan
 
 - `src/mcp/execution/metadata.test.ts` — schema validation, negative enum cases.
-- `src/mcp/execution/pricing.test.ts` — cost-control class to pricing model mapping.
+- `src/mcp/execution/billing-content.test.ts` — visible billing note formatting for paid tools.
+- `src/mcp/execution/pricing.test.ts` — cost-control class to pricing model mapping, cache-aware notes, paid unit-cost contract helper.
 - `src/mcp/execution/build.test.ts` — manifest mapping, non-AWS rejection, runtime fact overrides.
 - `src/mcp/execution/attach.test.ts` — domain field preservation.
 - `src/mcp/execution/collector.test.ts` — cache aggregation, AWS count merge, collector isolation.

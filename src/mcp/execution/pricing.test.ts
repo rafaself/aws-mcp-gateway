@@ -6,7 +6,9 @@ import { createStatusToolManifest } from "../tools/definitions/status.js";
 import type { AnyToolManifest } from "../tools/manifest.js";
 import {
   getCapabilityUnitCostUsd,
+  paidManifestHasModeledUnitCosts,
   resolveBillingFromManifest,
+  resolveBillingNote,
   resolveDefaultCacheBlock,
   resolvePricingModel,
 } from "./pricing.js";
@@ -36,6 +38,38 @@ describe("getCapabilityUnitCostUsd", () => {
   it("returns a fixed unit cost only for Cost Explorer", () => {
     expect(getCapabilityUnitCostUsd("ce:GetCostAndUsage")).toBe(0.01);
     expect(getCapabilityUnitCostUsd("ec2:DescribeInstances")).toBeUndefined();
+  });
+});
+
+describe("resolveBillingNote", () => {
+  it("returns cache-hit note for paid tools served from cache", () => {
+    expect(resolveBillingNote("paid", { cacheStatus: "hit", charged: false })).toContain(
+      "No new AWS Cost Explorer API request was made",
+    );
+  });
+
+  it("returns non-cached estimate disclaimer for paid cache miss", () => {
+    expect(resolveBillingNote("paid", { cacheStatus: "miss", charged: true })).toContain(
+      "Estimated AWS Cost Explorer API charge for a non-cached request",
+    );
+  });
+
+  it("uses usage-dependent disclaimer for fanout-sensitive tools", () => {
+    expect(resolveBillingNote("fanout-sensitive")).toContain(
+      "No fixed per-request AWS API charge is estimated",
+    );
+  });
+});
+
+describe("paidManifestHasModeledUnitCosts", () => {
+  it("requires unit costs for every capability on paid manifests", () => {
+    const manifest = createCostSummaryToolManifest(testContext) as AnyToolManifest;
+    expect(paidManifestHasModeledUnitCosts(manifest)).toBe(true);
+  });
+
+  it("does not require unit costs for non-paid manifests", () => {
+    const manifest = createListEc2InstancesToolManifest(testContext) as AnyToolManifest;
+    expect(paidManifestHasModeledUnitCosts(manifest)).toBe(true);
   });
 });
 

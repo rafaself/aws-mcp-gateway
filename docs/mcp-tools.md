@@ -18,7 +18,63 @@ error behavior, caching, region handling, and safety boundaries.
 
 **IAM mapping:** See [aws-capability-matrix.md](aws-capability-matrix.md) for the authoritative tool-to-IAM action matrix.
 
+**Execution metadata:** AWS-backed tool results include `structuredContent.execution` with cache status, conservative billing estimates, and AWS request telemetry. See [Execution metadata](#execution-metadata) below. Paid Cost Explorer tools also append a short billing note to `content` when useful.
+
 **ChatGPT connector:** ChatGPT discovers public actions through authenticated `tools/list`. Tools `search` and `fetch` implement the OpenAI MCP catalog schema — they help inspect the AWS tool catalog but do not replace `tools/list` action discovery. Neither `search` nor `fetch` calls AWS directly (except `fetch` may embed live `get_gateway_status` JSON for that catalog entry). See [chatgpt-connector.md](chatgpt-connector.md).
+
+---
+
+## Execution metadata
+
+AWS-backed tools attach an `execution` object to successful `structuredContent` responses. Domain fields (`period`, `instances`, and so on) remain at their existing top-level locations.
+
+```json
+{
+  "execution": {
+    "cache": {
+      "enabled": true,
+      "status": "miss",
+      "ttlSeconds": 1800
+    },
+    "billing": {
+      "provider": "aws",
+      "costClass": "paid",
+      "estimatedCostUsd": 0.01,
+      "currency": "USD",
+      "charged": true,
+      "pricingModel": "per-request",
+      "note": "Estimated AWS Cost Explorer API charge for a non-cached request. Final billing is determined by AWS."
+    },
+    "awsRequests": [
+      {
+        "service": "ce",
+        "action": "ce:GetCostAndUsage",
+        "region": "us-east-1",
+        "requestCount": 1,
+        "estimatedUnitCostUsd": 0.01
+      }
+    ],
+    "awsRequestCount": 1
+  }
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `cache.status` | `hit`, `miss`, `disabled`, `unavailable`, or `bypass` |
+| `billing.estimatedCostUsd` | Conservative estimate only — not an AWS invoice total |
+| `billing.charged` | `true` when a non-cached paid API request likely incurred a modeled charge |
+| `billing.pricingModel` | `none`, `per-request`, `per-1000-requests`, or `usage-dependent` |
+| `awsRequestCount` | Total successful AWS API calls for the invocation |
+
+**Paid Cost Explorer tools** (`get_aws_cost_summary`, `get_aws_cost_by_service`, and opt-in `aws_cost_overview`) append a short billing note to `content` on cache hit or miss:
+
+- Cache hit: `Billing note: served from cache. No new AWS Cost Explorer API request was made.`
+- Cache miss: `Billing note: served from AWS Cost Explorer, not cache. Estimated AWS API cost: US$ 0.01.`
+
+Non-paid tools include structured billing metadata but do not append visible billing notes by default.
+
+See [`docs/specs/tool-execution-metadata.md`](specs/tool-execution-metadata.md) for the full contract.
 
 ---
 
@@ -214,7 +270,9 @@ Explorer.
   content: [
     {
       type: "text",
-      text: string, // e.g. "AWS cost from 2025-01-01 to 2025-01-31 is 1234.56 USD."
+      text: string, // Domain summary plus optional billing note for cache hit/miss
+      // Cache miss example suffix:
+      // "\n\nBilling note: served from AWS Cost Explorer, not cache. Estimated AWS API cost: US$ 0.01."
     }
   ],
   structuredContent: {
@@ -224,7 +282,27 @@ Explorer.
     },
     granularity: "DAILY" | "MONTHLY",
     total: number,       // e.g. 1234.56
-    currency: string     // e.g. "USD"
+    currency: string,    // e.g. "USD"
+    execution: {
+      cache: { enabled: boolean, status: string, ttlSeconds?: number },
+      billing: {
+        provider: "aws",
+        costClass: "paid",
+        estimatedCostUsd: number,
+        currency: "USD",
+        charged: boolean,
+        pricingModel: "per-request",
+        note: string
+      },
+      awsRequests: Array<{
+        service: string,
+        action: string,
+        region?: string,
+        requestCount: number,
+        estimatedUnitCostUsd?: number
+      }>,
+      awsRequestCount: number
+    }
   }
 }
 ```

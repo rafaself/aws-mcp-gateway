@@ -293,6 +293,8 @@ Default cache TTLs:
 
 The cache is optional for local development and tests. If the binding is absent, tools run without caching.
 
+**Cost Explorer billing estimates:** Non-cached `ce:GetCostAndUsage` requests are estimated at approximately **US$ 0.01** per live API call. Cached responses report `estimatedCostUsd: 0` and do not make a new Cost Explorer request. These values are approximate gateway estimates only — final AWS billing is determined by your AWS account usage and pricing.
+
 ## Deploy to Cloudflare Workers
 
 Prepare deploy-time credentials:
