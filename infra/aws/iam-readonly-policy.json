@@ -81,6 +81,15 @@
       "Resource": "*"
     },
     {
+      "Sid": "SSMRead",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:DescribeParameters",
+        "ssm:GetParameters"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "StsAssumeRole",
       "Effect": "Allow",
       "Action": [

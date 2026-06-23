@@ -67,6 +67,7 @@ const AWS_BACKED_TOOLS = [
   "get_recent_stopped_ecs_tasks",
   "get_rds_instance_health",
   "get_rds_metrics",
+  "check_ssm_parameter_inventory",
   "aws_account_overview",
   "aws_cost_overview",
   "aws_observability_overview",
@@ -101,6 +102,7 @@ const EXPECTED_PACKS: Record<string, string> = {
   get_recent_stopped_ecs_tasks: "observability",
   get_rds_instance_health: "database",
   get_rds_metrics: "database",
+  check_ssm_parameter_inventory: "security",
   aws_account_overview: "aggregates",
   aws_cost_overview: "aggregates",
   aws_observability_overview: "aggregates",
@@ -123,13 +125,15 @@ const EXPECTED_CATALOG_ANCHORS = [
   { toolName: "get_cloudwatch_alarm_summary", docsAnchor: "17-get_cloudwatch_alarm_summary" },
   { toolName: "get_rds_instance_health", docsAnchor: "18-get_rds_instance_health" },
   { toolName: "get_rds_metrics", docsAnchor: "19-get_rds_metrics" },
+  { toolName: "check_ssm_parameter_inventory", docsAnchor: "20-check_ssm_parameter_inventory" },
   { toolName: "aws_account_overview", docsAnchor: "10-aws_account_overview" },
   { toolName: "aws_cost_overview", docsAnchor: "11-aws_cost_overview" },
   { toolName: "aws_observability_overview", docsAnchor: "12-aws_observability_overview" },
 ] as const;
 
 const DEFAULT_EXPOSED_CATALOG_ANCHORS = EXPECTED_CATALOG_ANCHORS.filter(
-  ({ toolName }) => EXPECTED_PACKS[toolName] !== "aggregates",
+  ({ toolName }) =>
+    EXPECTED_PACKS[toolName] !== "aggregates" && EXPECTED_PACKS[toolName] !== "security",
 );
 
 function defaultExposedToolNames(manifests: AnyToolManifest[]): string[] {
@@ -349,6 +353,7 @@ describe("tool manifest contract", () => {
         enabledToolPacks: new Set([
           ...DEFAULT_ENABLED_TOOL_PACKS,
           "aggregates",
+          "security",
         ]),
       },
     });

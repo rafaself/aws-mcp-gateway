@@ -15,6 +15,8 @@ export type AwsCapabilityId =
   | "rds:DescribeDBInstances"
   | "rds:DescribeDBSubnetGroups"
   | "cloudwatch:GetMetricData"
+  | "ssm:DescribeParameters"
+  | "ssm:GetParameters"
   | "sts:AssumeRole";
 
 export type AwsCapabilityCostSensitivity =
@@ -166,6 +168,20 @@ export const AWS_CAPABILITY_REGISTRY: Readonly<Record<AwsCapabilityId, AwsCapabi
       requestService: "monitoring",
       readonly: true,
       costSensitivity: "volume-sensitive",
+    },
+    "ssm:DescribeParameters": {
+      id: "ssm:DescribeParameters",
+      iamService: "ssm",
+      iamAction: "ssm:DescribeParameters",
+      readonly: true,
+      costSensitivity: "fanout-sensitive",
+    },
+    "ssm:GetParameters": {
+      id: "ssm:GetParameters",
+      iamService: "ssm",
+      iamAction: "ssm:GetParameters",
+      readonly: true,
+      costSensitivity: "low",
     },
     "sts:AssumeRole": {
       id: "sts:AssumeRole",

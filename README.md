@@ -27,7 +27,7 @@ ChatGPT Connector
   -> Normalized AWS cost, inventory, alarm, and log data
 ```
 
-The registry defines **21** public tools. Default deployments expose **18** through tool packs (`core`, `cost`, `inventory`, `observability`, `database`). Three aggregate overview tools are opt-in via the `aggregates` pack. See [tool exposure](#tool-exposure-optional) and [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md).
+The registry defines **22** public tools. Default deployments expose **18** through tool packs (`core`, `cost`, `inventory`, `observability`, `database`). Three aggregate overview tools are opt-in via the `aggregates` pack. One security tool is opt-in via the `security` pack. See [tool exposure](#tool-exposure-optional) and [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md).
 
 ## Current status
 
@@ -236,10 +236,10 @@ inventory:      list_ec2_instances, list_lambda_functions, list_s3_buckets
 observability:  get_cloudwatch_alarms, get_cloudwatch_logs, get_cloudwatch_alarm_summary, get_recent_log_errors, list_log_groups, get_ecs_service_health, list_ecs_tasks, get_recent_stopped_ecs_tasks
 database:       get_rds_instance_health, get_rds_metrics
 aggregates:     aws_account_overview, aws_cost_overview, aws_observability_overview (disabled by default)
-security:       (no tools yet)
+security:       check_ssm_parameter_inventory (disabled by default)
 ```
 
-The `aggregates` pack is opt-in. Enable it when you want bounded overview tools that compose existing inventory, cost, observability, and database capabilities. Default deployments expose 18 tools; enabling `aggregates` adds three more.
+The `aggregates` pack is opt-in. Enable it when you want bounded overview tools that compose existing inventory, cost, observability, and database capabilities. The `security` pack is opt-in for SSM parameter inventory metadata. Default deployments expose 18 tools; enabling `aggregates` adds three more; enabling `security` adds one more.
 
 Exposure rules:
 

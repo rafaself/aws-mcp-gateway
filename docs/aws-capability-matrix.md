@@ -19,6 +19,7 @@ the unique IAM actions listed in this matrix. Drift is enforced by
 | aws_cost_overview | aggregates | ce | ce:GetCostAndUsage | single-region | read-only | 1800 | cached-read | paid | paid | 0.01 |
 | aws_observability_overview | aggregates | cloudwatch | cloudwatch:DescribeAlarms | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |
 | aws_observability_overview | aggregates | logs | logs:DescribeLogGroups | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | volume-sensitive |  |
+| check_ssm_parameter_inventory | security | ssm | ssm:DescribeParameters | single-region | read-only | 300 | cached-read | low | fanout-sensitive |  |
 | get_aws_cost_by_service | cost | ce | ce:GetCostAndUsage | single-region | read-only | 1800 | cached-read | paid | paid | 0.01 |
 | get_aws_cost_summary | cost | ce | ce:GetCostAndUsage | single-region | read-only | 1800 | cached-read | paid | paid | 0.01 |
 | get_cloudwatch_alarm_summary | observability | cloudwatch | cloudwatch:DescribeAlarms | single-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |
