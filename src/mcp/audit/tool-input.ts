@@ -85,3 +85,37 @@ export function summarizeObservabilityOverviewInput(args: {
     ...(args.limit !== undefined ? { limit: args.limit } : {}),
   };
 }
+
+export function summarizeEcsServiceHealthInput(args: {
+  clusterName?: string;
+  serviceName?: string;
+}): Record<string, unknown> {
+  return {
+    hasClusterName: Boolean(args.clusterName),
+    hasServiceName: Boolean(args.serviceName),
+  };
+}
+
+export function summarizeEcsTasksInput(args: {
+  serviceName?: string;
+  desiredStatus?: string;
+  limit?: number;
+}): Record<string, unknown> {
+  return {
+    hasServiceName: Boolean(args.serviceName),
+    desiredStatus: args.desiredStatus,
+    ...(args.limit !== undefined ? { limit: args.limit } : {}),
+  };
+}
+
+export function summarizeEcsStoppedTasksInput(args: {
+  serviceName?: string;
+  lookbackMinutes?: number;
+  limit?: number;
+}): Record<string, unknown> {
+  return {
+    hasServiceName: Boolean(args.serviceName),
+    lookbackMinutes: args.lookbackMinutes,
+    ...(args.limit !== undefined ? { limit: args.limit } : {}),
+  };
+}

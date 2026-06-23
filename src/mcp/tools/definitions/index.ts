@@ -32,3 +32,12 @@ export {
 export {
   createAwsObservabilityOverviewToolManifest,
 } from "./aws-observability-overview.js";
+export {
+  createGetEcsServiceHealthToolManifest,
+} from "./get-ecs-service-health.js";
+export {
+  createListEcsTasksToolManifest,
+} from "./list-ecs-tasks.js";
+export {
+  createGetRecentStoppedEcsTasksToolManifest,
+} from "./get-recent-stopped-ecs-tasks.js";

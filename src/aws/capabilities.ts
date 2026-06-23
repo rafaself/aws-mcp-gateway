@@ -6,6 +6,11 @@ export type AwsCapabilityId =
   | "lambda:ListFunctions"
   | "s3:ListAllMyBuckets"
   | "logs:DescribeLogGroups"
+  | "ecs:DescribeClusters"
+  | "ecs:DescribeServices"
+  | "ecs:ListTasks"
+  | "ecs:DescribeTasks"
+  | "ecs:DescribeTaskDefinition"
   | "sts:AssumeRole";
 
 export type AwsCapabilityCostSensitivity =
@@ -93,6 +98,41 @@ export const AWS_CAPABILITY_REGISTRY: Readonly<Record<AwsCapabilityId, AwsCapabi
       iamAction: "logs:DescribeLogGroups",
       readonly: true,
       costSensitivity: "volume-sensitive",
+    },
+    "ecs:DescribeClusters": {
+      id: "ecs:DescribeClusters",
+      iamService: "ecs",
+      iamAction: "ecs:DescribeClusters",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "ecs:DescribeServices": {
+      id: "ecs:DescribeServices",
+      iamService: "ecs",
+      iamAction: "ecs:DescribeServices",
+      readonly: true,
+      costSensitivity: "low",
+    },
+    "ecs:ListTasks": {
+      id: "ecs:ListTasks",
+      iamService: "ecs",
+      iamAction: "ecs:ListTasks",
+      readonly: true,
+      costSensitivity: "volume-sensitive",
+    },
+    "ecs:DescribeTasks": {
+      id: "ecs:DescribeTasks",
+      iamService: "ecs",
+      iamAction: "ecs:DescribeTasks",
+      readonly: true,
+      costSensitivity: "volume-sensitive",
+    },
+    "ecs:DescribeTaskDefinition": {
+      id: "ecs:DescribeTaskDefinition",
+      iamService: "ecs",
+      iamAction: "ecs:DescribeTaskDefinition",
+      readonly: true,
+      costSensitivity: "low",
     },
     "sts:AssumeRole": {
       id: "sts:AssumeRole",

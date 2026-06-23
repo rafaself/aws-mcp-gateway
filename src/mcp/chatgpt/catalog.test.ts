@@ -27,7 +27,7 @@ describe("ChatGPT catalog", () => {
 
   it("returns the full catalog when the query is empty", () => {
     const { results } = searchCatalog("", RESOURCE_URL, catalogEntries);
-    expect(results).toHaveLength(9);
+    expect(results).toHaveLength(12);
   });
 
   it("fetches catalog documents by id", () => {

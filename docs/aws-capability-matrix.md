@@ -22,8 +22,14 @@ the unique IAM actions listed in this matrix. Drift is enforced by
 | get_aws_cost_by_service | cost | ce | ce:GetCostAndUsage | single-region | read-only | 1800 | cached-read | paid | paid | 0.01 |
 | get_aws_cost_summary | cost | ce | ce:GetCostAndUsage | single-region | read-only | 1800 | cached-read | paid | paid | 0.01 |
 | get_cloudwatch_alarms | observability | cloudwatch | cloudwatch:DescribeAlarms | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |
+| get_ecs_service_health | observability | ecs | ecs:DescribeClusters | single-region | read-only | 300 | cached-read | low | low |  |
+| get_ecs_service_health | observability | ecs | ecs:DescribeServices | single-region | read-only | 300 | cached-read | low | low |  |
 | get_recent_log_errors | observability | logs | logs:FilterLogEvents | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
+| get_recent_stopped_ecs_tasks | observability | ecs | ecs:DescribeTasks | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
+| get_recent_stopped_ecs_tasks | observability | ecs | ecs:ListTasks | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
 | list_ec2_instances | inventory | ec2 | ec2:DescribeInstances | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |
+| list_ecs_tasks | observability | ecs | ecs:DescribeTasks | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
+| list_ecs_tasks | observability | ecs | ecs:ListTasks | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
 | list_lambda_functions | inventory | lambda | lambda:ListFunctions | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |
 | list_log_groups | observability | logs | logs:DescribeLogGroups | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
 | list_s3_buckets | inventory | s3 | s3:ListAllMyBuckets | global | read-only | 300 | cached-read | low | low |  |

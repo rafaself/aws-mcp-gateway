@@ -19,6 +19,9 @@ const AWS_BACKED_TOOLS = [
   "list_lambda_functions",
   "list_s3_buckets",
   "list_log_groups",
+  "get_ecs_service_health",
+  "list_ecs_tasks",
+  "get_recent_stopped_ecs_tasks",
 ] as const;
 
 const AGGREGATE_TOOLS = [
