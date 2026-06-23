@@ -66,7 +66,9 @@ Replace `<worker-host>` with the URL output by `pnpm deploy`, e.g. `https://aws-
 
 ## Tool allowlist
 
-The gateway exposes the following tools. See [mcp-tools.md](mcp-tools.md) for the full input and output contracts. ChatGPT connector discovery is documented in [chatgpt-connector.md](chatgpt-connector.md).
+The registry defines **14** public tools. Default deployments expose **11** through packs `core`, `cost`, `inventory`, and `observability`. Three aggregate overview tools are opt-in via the `aggregates` pack. See [README.md](../README.md#tool-exposure-optional) for pack configuration.
+
+Default-exposed tools:
 
 | Tool | Purpose | Requires AWS call |
 |------|---------|-------------------|
@@ -76,8 +78,13 @@ The gateway exposes the following tools. See [mcp-tools.md](mcp-tools.md) for th
 | `get_aws_cost_summary` | Total AWS cost for a date range | Yes (Cost Explorer) |
 | `get_aws_cost_by_service` | AWS cost broken down by service | Yes (Cost Explorer) |
 | `list_ec2_instances` | EC2 instances across regions | Yes (EC2) |
+| `list_lambda_functions` | Lambda functions across regions | Yes (Lambda) |
+| `list_s3_buckets` | S3 buckets in the account | Yes (S3) |
 | `get_cloudwatch_alarms` | CloudWatch alarms across regions | Yes (CloudWatch) |
 | `get_recent_log_errors` | Recent error/warn log events | Yes (CloudWatch Logs) |
+| `list_log_groups` | CloudWatch log groups in a region | Yes (CloudWatch Logs) |
+
+Full input and output contracts — including three opt-in aggregate overview tools — are in [mcp-tools.md](mcp-tools.md). ChatGPT connector discovery is documented in [chatgpt-connector.md](chatgpt-connector.md).
 
 ## Smoke test sequence
 
@@ -121,7 +128,7 @@ curl -X POST https://<worker-host>/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-Expected: `200` with a `result.tools` array containing all 11 registered tools (`search`, `fetch`, and nine AWS tools).
+Expected: `200` with a `result.tools` array containing all **enabled** tools for this deployment (11 with default packs; 14 when `aggregates` is enabled).
 
 ### 4. Low-risk status tool
 

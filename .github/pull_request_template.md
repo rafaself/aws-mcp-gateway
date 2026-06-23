@@ -13,9 +13,7 @@
 ## Quality checklist
 
 - [ ] Issue acceptance criteria are met.
-- [ ] `pnpm run typecheck` passes.
-- [ ] `pnpm test` passes.
-- [ ] `pnpm run test:integrity` passes.
+- [ ] Full pre-PR validation passes ([README.md#testing](../README.md#testing)): `repo:safety`, `output:guardrail`, `verify:connector-contract`, `typecheck`, `test`, `test:integrity`.
 - [ ] Tests were not weakened only to pass.
 - [ ] No focused test marker (`.only`) was committed.
 - [ ] Skipped tests include an explicit `intentional-skip:` justification.

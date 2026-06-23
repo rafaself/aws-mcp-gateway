@@ -2,7 +2,7 @@
 
 Manual end-to-end validation for a deployed AWS MCP Gateway used as a **ChatGPT custom app connector** with `AUTH_MODE=oauth`.
 
-**Start with the production acceptance gate:** [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) (`pnpm run verify:connector-contract` locally, then the 18-step deployed and ChatGPT checklist). This runbook provides detailed expected responses for each HTTP and UI step.
+**Start with the production acceptance gate:** [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) (full pre-PR validation from [README.md](../README.md#testing), then the deployed and ChatGPT checklist). This runbook provides detailed expected responses for each HTTP and UI step.
 
 **Related documentation:**
 
@@ -96,7 +96,7 @@ Unauthenticated requests must never reach MCP tool execution.
 
 ## Step 4 — Validate authenticated `tools/list`
 
-Before relying on the ChatGPT Actions UI, confirm the deployed gateway returns all public tools with valid descriptors.
+Before relying on the ChatGPT Actions UI, confirm the deployed gateway returns all **enabled** tools with valid descriptors.
 
 Obtain an OAuth access token through the ChatGPT connector flow (or your OIDC provider's token endpoint for staging). Do **not** paste tokens into docs, issues, or terminal history.
 
@@ -117,7 +117,7 @@ Example JSON-RPC payload (no token required in the body):
 **Expected:**
 
 - HTTP `200`
-- `result.tools` includes all **11** public tools:
+- `result.tools` includes all **enabled** tools for this deployment (11 with default packs; 14 when `aggregates` is enabled). Default exposure lists:
   - `search`
   - `fetch`
   - `get_gateway_status`
@@ -162,7 +162,7 @@ Full Auth0 setup: [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
 
 After OAuth succeeds, open the connector and confirm **Actions** lists AWS tools.
 
-**Expected:** Tools such as `search`, `fetch`, `get_gateway_status`, and AWS read-only tools appear. You should **not** see “No app actions available yet” if the deployed gateway returns valid OAuth-backed `tools/list` descriptors for all public tools.
+**Expected:** Tools such as `search`, `fetch`, `get_gateway_status`, and AWS read-only tools appear. You should **not** see “No app actions available yet” if the deployed gateway returns valid OAuth-backed `tools/list` descriptors for all enabled tools.
 
 If Actions are empty but Step 4 passed, refresh the connector (Step 5) and verify ChatGPT is not serving a stale connector cache.
 

@@ -117,6 +117,8 @@ Follow this workflow when introducing a new public MCP tool:
    - `src/mcp/tools/descriptor-contract.test.ts`
    - `src/mcp/tools/exposure.test.ts`
 
+8. **Validation** — Run the full pre-PR validation block from [README.md](../README.md#testing) before opening a pull request.
+
 Assign the tool to an existing pack or a new pack in `src/config/tool-exposure.ts`. Opt-in packs require explicit enablement via `AWS_MCP_ENABLED_TOOL_PACKS`.
 
 See also [`docs/specs/secure-tool-platform.md`](specs/secure-tool-platform.md) for the platform architecture contract.

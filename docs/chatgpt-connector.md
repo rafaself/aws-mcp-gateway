@@ -4,7 +4,7 @@ This gateway is designed for use as a **ChatGPT custom app connector**. ChatGPT 
 
 For OAuth setup with Auth0, see [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md). For authorization contract details, see [specs/oauth-chatgpt-connector.md](specs/oauth-chatgpt-connector.md). For client identification modes (predefined client vs future CIMD), see [specs/oauth-client-identification.md](specs/oauth-client-identification.md).
 
-**Production acceptance:** Run `pnpm run verify:connector-contract` locally, then `pnpm run verify:oauth`, then `pnpm run verify:oauth:authenticated`, and finally complete [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) before treating a deployment as ChatGPT-ready.
+**Production acceptance:** Run the full pre-PR validation block from [README.md](../README.md#testing), then `pnpm run verify:oauth`, then `pnpm run verify:oauth:authenticated`, and finally complete [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) before treating a deployment as ChatGPT-ready.
 
 ## Final connector contract
 
@@ -15,7 +15,7 @@ Server URL in ChatGPT: https://<worker-host>/mcp
 OAuth resource/audience: https://<worker-host>
 Protected resource metadata: https://<worker-host>/.well-known/oauth-protected-resource
 Required scope: aws:read
-Expected enabled MCP tools: 11 (default packs) — see [tool exposure](#tool-exposure)
+Expected enabled MCP tools: 11 (default packs) or 14 (with `aggregates`) — see [tool exposure](#tool-exposure)
 ```
 
 Do not set `MCP_RESOURCE_URL` or `OAUTH_AUDIENCE` to `https://<worker-host>/mcp`. The OAuth resource identity is the Worker origin; the MCP transport endpoint is `/mcp`.

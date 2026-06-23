@@ -57,6 +57,29 @@ pnpm run verify:oauth:authenticated
 pnpm run verify:connector-contract
 ```
 
+## Validation tiers
+
+**Minimal local loop** (fast iteration during development):
+
+```bash
+pnpm run typecheck
+pnpm test
+pnpm run test:integrity
+```
+
+**Full pre-PR / pre-deploy validation** (same gate as [README.md](../README.md#testing) and [docs/deployment.md](../docs/deployment.md)):
+
+```bash
+pnpm run repo:safety
+pnpm run output:guardrail
+pnpm run verify:connector-contract
+pnpm run typecheck
+pnpm test
+pnpm run test:integrity
+```
+
+`verify:connector-contract` runs typecheck, unit tests, and test-integrity checks. CI runs `repo:safety`, `output:guardrail`, and `verify:connector-contract` in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml); Gitleaks runs in [`.github/workflows/secret-scan.yml`](../.github/workflows/secret-scan.yml).
+
 ## File guide
 
 ### Top-level scripts

@@ -47,6 +47,7 @@ Guidance for authors:
 
 <!-- Behavior changes need tests that prove intended behavior, not only test-suite success. -->
 <!-- Contract tests (validation, security, read-only, redaction) define the safety boundary. -->
+<!-- For code changes, run the full pre-PR validation block from README.md#testing before merge. -->
 
 - [ ] Tests required for this change
 - [ ] Tests not required — explain why:

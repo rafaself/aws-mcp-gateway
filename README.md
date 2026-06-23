@@ -137,13 +137,26 @@ AUTH_MODE=local-bearer
 MCP_AUTH_TOKEN=
 ```
 
-Run validation:
+**Minimal local loop** (fast iteration during development):
 
 ```bash
 pnpm run typecheck
 pnpm test
 pnpm run test:integrity
 ```
+
+**Full pre-PR / pre-deploy validation** (same gate as [`docs/deployment.md`](docs/deployment.md)):
+
+```bash
+pnpm run repo:safety
+pnpm run output:guardrail
+pnpm run verify:connector-contract
+pnpm run typecheck
+pnpm test
+pnpm run test:integrity
+```
+
+`verify:connector-contract` runs typecheck, unit tests, and test-integrity checks; the last three commands are listed explicitly to match CI and deployment docs. Gitleaks secret scanning runs separately on every PR via [`.github/workflows/secret-scan.yml`](.github/workflows/secret-scan.yml).
 
 Start the local Worker:
 
@@ -359,35 +372,41 @@ Required controls:
 Forbidden in the current scope:
 
 - no `run_aws_cli` tool;
-- no `call_any_aws_api` tool;
-- no AWS write permissions;
+- no `call_any_aws_api` or generic AWS API proxy;
+- no AWS write or management permissions;
+- no raw AWS API responses returned to MCP clients;
 - no committed `.env`, `.dev.vars`, `.env.deploy.local`, `.wrangler/`, or real credentials.
 
 For the full security checklist, see [`SECURITY.md`](SECURITY.md).
 
 ## Testing
 
-Run the standard local checks:
+**Minimal local loop:**
 
 ```bash
-pnpm run repo:safety
-pnpm run output:guardrail
 pnpm run typecheck
 pnpm test
 pnpm run test:integrity
 ```
 
-`pnpm run repo:safety` verifies tracked files stay public-safe (no local env files, secret-like values, or maintainer deployment defaults in Git).
+**Full pre-PR / pre-deploy validation:**
 
-`pnpm run output:guardrail` verifies production source routes runtime output through `src/observability/` and does not call `console.*` elsewhere.
+```bash
+pnpm run repo:safety
+pnpm run output:guardrail
+pnpm run verify:connector-contract
+pnpm run typecheck
+pnpm test
+pnpm run test:integrity
+```
+
+- `pnpm run repo:safety` — tracked files stay public-safe (no local env files, secret-like values, or maintainer deployment defaults in Git).
+- `pnpm run output:guardrail` — production source routes runtime output through `src/observability/` and does not call `console.*` elsewhere.
+- `pnpm run verify:connector-contract` — local ChatGPT Connector contract gate (manifest, policy, capability, exposure, descriptors, `tools/list`).
 
 Tests are offline by default. A global fetch guard fails any unmocked network request during unit tests.
 
-When changing MCP descriptors, OAuth behavior, or connector discovery, also run:
-
-```bash
-pnpm run verify:connector-contract
-```
+CI runs `repo:safety`, `output:guardrail`, and `verify:connector-contract` in [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Gitleaks secret scanning runs in [`.github/workflows/secret-scan.yml`](.github/workflows/secret-scan.yml).
 
 Runtime MCP/auth dependency upgrades must be treated as protocol changes. See [`docs/dependency-upgrade-contract.md`](docs/dependency-upgrade-contract.md).
 
@@ -435,17 +454,7 @@ Never commit:
 
 ## Contributing
 
-Before opening a pull request, run:
-
-```bash
-pnpm run repo:safety
-pnpm run output:guardrail
-pnpm run typecheck
-pnpm test
-pnpm run test:integrity
-```
-
-When changing MCP descriptors, tool manifests, or connector discovery, also run `pnpm run verify:connector-contract`.
+Before opening a pull request, run the full pre-PR validation block from [Testing](#testing) (all six commands). When changing MCP descriptors, tool manifests, or connector discovery, `pnpm run verify:connector-contract` is required.
 
 Use conventional commits:
 

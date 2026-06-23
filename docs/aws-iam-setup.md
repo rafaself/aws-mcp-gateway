@@ -106,7 +106,7 @@ pnpm run verify:oauth
 pnpm run verify:oauth:authenticated
 ```
 
-See [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) for the full production gate.
+See [chatgpt-connector-production-acceptance.md](chatgpt-connector-production-acceptance.md) for the full production gate. Before deploying, run the full pre-deploy validation block from [deployment.md](deployment.md#quality-checks).
 
 ### Deployed — local bearer
 

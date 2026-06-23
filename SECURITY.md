@@ -40,7 +40,11 @@ The gateway is a **read-only**, public-facing MCP endpoint for explicit AWS tool
 - Full deployment instructions — see [docs/deployment.md](docs/deployment.md).
 - Write-operation policy — see [docs/post-mvp-boundaries.md](docs/post-mvp-boundaries.md).
 - Automated dependency or SAST vulnerability scanning — not required for the current read-only scope.
-- Secret-pattern scanning in CI (Gitleaks plus `pnpm run repo:safety`) is in scope and expected on every PR.
+
+**CI secret scanning (in scope on every PR and `main` push):**
+
+- Gitleaks — [`.github/workflows/secret-scan.yml`](.github/workflows/secret-scan.yml).
+- Repository safety — `pnpm run repo:safety` in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 **OAuth (implemented):**
 
@@ -58,8 +62,9 @@ This repository is intended to be public-safe. Before pushing or opening a PR:
 - [ ] No AWS access keys, secret access keys, or session tokens appear in commits, issues, or PR descriptions.
 - [ ] No MCP bearer tokens, Cloudflare API tokens, or OAuth client secrets appear in commits.
 - [ ] `.env`, `.dev.vars`, and `.wrangler/` are not tracked (see [.gitignore](.gitignore)).
-- [ ] CI runs `pnpm run repo:safety` on every pull request and push to `main` to enforce the rules above.
-- [ ] CI runs `pnpm run output:guardrail` on every pull request and push to `main` to block direct `console.*` usage outside `src/observability/`.
+- [ ] CI runs `pnpm run repo:safety` on every pull request and push to `main` via [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+- [ ] CI runs Gitleaks secret-pattern scanning on every pull request and push to `main` via [`.github/workflows/secret-scan.yml`](.github/workflows/secret-scan.yml).
+- [ ] CI runs `pnpm run output:guardrail` on every pull request and push to `main` via [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 - [ ] Only [`.env.example`](.env.example) documents secret names — it contains no real values.
 - [ ] `wrangler.jsonc` `[vars]` contains operational configuration only (regions, app name), not credentials.
 - [ ] Documentation examples use placeholders, not real account IDs, ARNs, log group names, or worker URLs tied to a live deployment.
@@ -272,8 +277,7 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 - [ ] In `local-bearer` mode: `MCP_AUTH_TOKEN` secret is configured.
 - [ ] `AWS_ALLOWED_REGIONS` reflects only regions this deployment should serve.
 - [ ] IAM policy attached to the gateway principal matches [`infra/aws/iam-readonly-policy.json`](infra/aws/iam-readonly-policy.json) (or a narrower custom variant).
-- [ ] `pnpm run typecheck`, `pnpm test`, and `pnpm run test:integrity` pass on the commit being deployed.
-- [ ] `pnpm run verify:connector-contract` passes on the commit being deployed (ChatGPT Connector local gate).
+- [ ] Full pre-deploy validation passes on the commit being deployed (`pnpm run repo:safety`, `pnpm run output:guardrail`, `pnpm run verify:connector-contract`, `pnpm run typecheck`, `pnpm test`, `pnpm run test:integrity` — see [docs/deployment.md](docs/deployment.md)).
 - [ ] `GET /health` returns `{ "ok": true, "service": "aws-mcp-gateway" }` without authentication.
 - [ ] With valid runtime configuration, `POST /mcp` without authentication returns HTTP 401 (with `WWW-Authenticate` in `oauth` mode).
 - [ ] Authenticated MCP access works (local bearer token or ChatGPT OAuth flow — see [docs/mcp-testing.md](docs/mcp-testing.md)).

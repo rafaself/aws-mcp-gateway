@@ -51,9 +51,12 @@ Expected enabled MCP tools: 11 (default) or 14 (with aggregates pack)
 pnpm run repo:safety
 pnpm run output:guardrail
 pnpm run verify:connector-contract
+pnpm run typecheck
+pnpm test
+pnpm run test:integrity
 ```
 
-`verify:connector-contract` runs `typecheck`, the full test suite (including connector contract tests), and `test:integrity`. No live ChatGPT, Auth0, Cloudflare, or AWS calls are required.
+`verify:connector-contract` runs typecheck, the full test suite (including connector contract tests), and `test:integrity`. The last three commands are listed explicitly to match [docs/deployment.md](deployment.md). No live ChatGPT, Auth0, Cloudflare, or AWS calls are required. Gitleaks scanning runs in CI via [`.github/workflows/secret-scan.yml`](../.github/workflows/secret-scan.yml).
 
 | Contract surface | Guarded by |
 |------------------|------------|

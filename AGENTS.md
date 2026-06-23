@@ -29,6 +29,10 @@ pnpm run test:coverage
 pnpm dev
 ```
 
+**Minimal local loop** during development: `typecheck`, `test`, `test:integrity`.
+
+**Full pre-PR validation** before opening a pull request: see [README.md#testing](README.md#testing) (`repo:safety`, `output:guardrail`, `verify:connector-contract`, `typecheck`, `test`, `test:integrity`). CI also runs Gitleaks via [`.github/workflows/secret-scan.yml`](.github/workflows/secret-scan.yml).
+
 - `pnpm run typecheck` is required before finishing any code changes.
 - `pnpm test` is required when code or behavior changes.
 - `pnpm run test:coverage` is recommended before larger PRs but not mandatory for trivial or docs-only changes.
@@ -135,8 +139,10 @@ refactor(structure): organize source modules
 Before handing off:
 - The change matches the issue scope.
 - Required checks pass (`pnpm run typecheck`, `pnpm test`), or are skipped with a clear reason.
+- Before opening a PR, the full validation block from [README.md#testing](README.md#testing) passes when code, config, scripts, or MCP contracts changed.
 - When touching tracked config, scripts, or repository hygiene, `pnpm run repo:safety` passes.
 - When touching production logging, audit output, or observability code, `pnpm run output:guardrail` passes.
+- When changing MCP descriptors, tool manifests, or connector discovery, `pnpm run verify:connector-contract` passes.
 - No secrets or local-only files were added.
 - Documentation is updated when behavior or setup changed.
 - AGENTS.md remains concise and repository-specific — no architecture docs or issue backlog here.

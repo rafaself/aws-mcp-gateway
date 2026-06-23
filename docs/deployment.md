@@ -20,7 +20,15 @@ pnpm install
 
 ## Quality checks
 
-Run the following commands before deploying to catch issues early:
+Use a **minimal local loop** during day-to-day development:
+
+```bash
+pnpm run typecheck
+pnpm test
+pnpm run test:integrity
+```
+
+Run the **full pre-deploy validation** block before `pnpm deploy` or opening a pull request:
 
 ```bash
 pnpm run repo:safety
@@ -38,7 +46,14 @@ pnpm run test:integrity
 - `pnpm test` — Unit tests (offline, no network calls required).
 - `pnpm run test:integrity` — Ensures no focused or unjustified skipped tests.
 
-All six should pass before deploying.
+`verify:connector-contract` runs typecheck, unit tests, and test-integrity checks; the last three commands are listed explicitly for parity with CI. All six must pass before deploying.
+
+**CI on every PR and `main` push:**
+
+- [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — `repo:safety`, `output:guardrail`, `verify:connector-contract`
+- [`.github/workflows/secret-scan.yml`](../.github/workflows/secret-scan.yml) — Gitleaks secret-pattern scanning
+
+See [README.md](../README.md#testing) for the same validation tiers.
 
 ## Runtime configuration
 
@@ -350,7 +365,7 @@ For a non-UI smoke check, run `pnpm run verify:oauth:authenticated` with either 
 
 ### GitHub Actions: Connector Smoke workflow
 
-Contract checks run on every PR and `main` push via [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). The separate **Connector Smoke** workflow (`.github/workflows/connector-smoke.yml`) is **manual only** (`workflow_dispatch`) so deployed validation against a live Worker does not run automatically with repository secrets.
+Quality gates run on every PR and `main` push via [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) (`repo:safety`, `output:guardrail`, `verify:connector-contract`) and [`.github/workflows/secret-scan.yml`](../.github/workflows/secret-scan.yml) (Gitleaks). The separate **Connector Smoke** workflow (`.github/workflows/connector-smoke.yml`) is **manual only** (`workflow_dispatch`) so deployed validation against a live Worker does not run automatically with repository secrets.
 
 To run it after deployment:
 

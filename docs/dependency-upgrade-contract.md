@@ -24,10 +24,15 @@ Run all of the following after changing any pinned runtime dependency:
 
 ```bash
 pnpm install --frozen-lockfile
+pnpm run repo:safety
+pnpm run output:guardrail
+pnpm run verify:connector-contract
 pnpm run typecheck
 pnpm test
 pnpm run test:integrity
 ```
+
+`verify:connector-contract` runs typecheck, unit tests, and test-integrity checks; the last three commands are listed explicitly for parity with [README.md](../README.md#testing) and [docs/deployment.md](deployment.md).
 
 If `pnpm install --frozen-lockfile` cannot be run locally, run `pnpm install` and document why frozen-lockfile was skipped.
 
@@ -36,7 +41,7 @@ If `pnpm install --frozen-lockfile` cannot be run locally, run `pnpm install` an
 After automated checks pass, confirm ChatGPT Connector discovery safety:
 
 - [ ] HTTP `initialize` still works over `/mcp` and returns `mcp-session-id`
-- [ ] HTTP `tools/list` still returns all 11 public tools
+- [ ] HTTP `tools/list` still returns all **enabled** tools (11 with default packs; 14 when `aggregates` is enabled)
 - [ ] Descriptors still include `title`, `inputSchema`, `outputSchema` (where applicable), `annotations`, `securitySchemes`, and `_meta.securitySchemes`
 - [ ] Unauthenticated `POST /mcp` still returns an OAuth `401` challenge with `WWW-Authenticate`
 - [ ] `search`, `fetch`, and `get_gateway_status` still work without AWS calls

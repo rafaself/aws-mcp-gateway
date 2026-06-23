@@ -271,7 +271,12 @@ Automated contract verification:
 pnpm run repo:safety
 pnpm run output:guardrail
 pnpm run verify:connector-contract
+pnpm run typecheck
+pnpm test
+pnpm run test:integrity
 ```
+
+`verify:connector-contract` runs the last three commands. CI runs `repo:safety`, `output:guardrail`, and `verify:connector-contract` in [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml); Gitleaks runs in [`.github/workflows/secret-scan.yml`](../../.github/workflows/secret-scan.yml).
 
 Key contract tests:
 
