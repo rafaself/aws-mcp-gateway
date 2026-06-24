@@ -41,6 +41,17 @@ export async function resolveBlockCredentials(
   return ctx.credentialResolver.resolve(request);
 }
 
+export async function resolveSectionCredentials(
+  ctx: GatewayContext,
+  profile: ValidatedAppProfile,
+  block?: { auth?: ProfileAuthConfig },
+): Promise<{ credentials: AwsCredentials; authStrategy: AuthStrategyLabel }> {
+  const blockAuth = block?.auth;
+  const credentials = await resolveBlockCredentials(ctx, profile, blockAuth);
+  const authStrategy = authStrategyLabel(blockAuth, profile.auth);
+  return { credentials, authStrategy };
+}
+
 export async function isProfileConfigAvailable(
   ctx: GatewayContext,
   profileId: string,

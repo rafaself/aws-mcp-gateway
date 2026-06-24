@@ -225,6 +225,13 @@ function validateAuthBlock(auth: unknown, fieldPath: string): CredentialRequest 
   };
 }
 
+function parseOptionalBlockAuth(
+  record: Record<string, unknown>,
+  blockPath: string,
+): CredentialRequest | undefined {
+  return validateAuthBlock(record.auth, `${blockPath}.auth`);
+}
+
 function validateStringArray(
   value: unknown,
   fieldPath: string,
@@ -282,12 +289,14 @@ function validateEcsBlock(value: unknown): ProfileResources["ecs"] {
     APP_PROFILE_MAX_CONTAINERS,
     APP_PROFILE_RESOURCE_NAME_MAX_LENGTH,
   );
+  const auth = parseOptionalBlockAuth(record, "resources.ecs");
 
   return {
     clusterName,
     serviceName,
     ...(logGroupName ? { logGroupName } : {}),
     ...(containers.length > 0 ? { containers } : {}),
+    ...(auth ? { auth } : {}),
   };
 }
 
@@ -296,12 +305,14 @@ function validateRdsBlock(value: unknown): ProfileResources["rds"] {
     throw new ValidationError("validation_error", "resources.rds must be an object.");
   }
   const record = value as Record<string, unknown>;
+  const auth = parseOptionalBlockAuth(record, "resources.rds");
   return {
     dbInstanceIdentifier: validateStringField(
       record.dbInstanceIdentifier,
       "resources.rds.dbInstanceIdentifier",
       RDS_DB_INSTANCE_ID_MAX_LENGTH,
     ),
+    ...(auth ? { auth } : {}),
   };
 }
 
@@ -310,7 +321,7 @@ function validateSesBlock(value: unknown): ProfileResources["ses"] {
     throw new ValidationError("validation_error", "resources.ses must be an object.");
   }
   const record = value as Record<string, unknown>;
-  const auth = validateAuthBlock(record.auth, "resources.ses.auth");
+  const auth = parseOptionalBlockAuth(record, "resources.ses");
   return {
     configurationSetName: validateStringField(
       record.configurationSetName,
@@ -326,12 +337,14 @@ function validateS3Block(value: unknown): ProfileResources["s3"] {
     throw new ValidationError("validation_error", "resources.s3 must be an object.");
   }
   const record = value as Record<string, unknown>;
+  const auth = parseOptionalBlockAuth(record, "resources.s3");
   return {
     bucketName: validateStringField(
       record.bucketName,
       "resources.s3.bucketName",
       APP_PROFILE_RESOURCE_NAME_MAX_LENGTH,
     ),
+    ...(auth ? { auth } : {}),
   };
 }
 
@@ -357,9 +370,11 @@ function validateSsmBlock(value: unknown): ProfileResources["ssm"] {
     SSM_MAX_REQUIRED_PARAMETER_NAMES,
     SSM_PARAMETER_NAME_MAX_LENGTH,
   );
+  const auth = parseOptionalBlockAuth(record, "resources.ssm");
   return {
     parameterPrefix,
     ...(requiredParameterNames.length > 0 ? { requiredParameterNames } : {}),
+    ...(auth ? { auth } : {}),
   };
 }
 
@@ -368,12 +383,14 @@ function validateEcrBlock(value: unknown): ProfileResources["ecr"] {
     throw new ValidationError("validation_error", "resources.ecr must be an object.");
   }
   const record = value as Record<string, unknown>;
+  const auth = parseOptionalBlockAuth(record, "resources.ecr");
   return {
     repositoryName: validateStringField(
       record.repositoryName,
       "resources.ecr.repositoryName",
       APP_PROFILE_RESOURCE_NAME_MAX_LENGTH,
     ),
+    ...(auth ? { auth } : {}),
   };
 }
 
@@ -412,9 +429,11 @@ function validateSnsBlock(value: unknown): ProfileResources["sns"] {
       "resources.sns must include topicName or topicArn, not both.",
     );
   }
+  const auth = parseOptionalBlockAuth(record, "resources.sns");
   return {
     ...(topicName ? { topicName } : {}),
     ...(topicArn ? { topicArn } : {}),
+    ...(auth ? { auth } : {}),
   };
 }
 
@@ -450,9 +469,11 @@ function validateEventBridgeBlock(value: unknown): ProfileResources["eventbridge
       "resources.eventbridge must include ruleNamePrefix or scheduleNamePrefix.",
     );
   }
+  const auth = parseOptionalBlockAuth(record, "resources.eventbridge");
   return {
     ...(ruleNamePrefix ? { ruleNamePrefix } : {}),
     ...(scheduleNamePrefix ? { scheduleNamePrefix } : {}),
+    ...(auth ? { auth } : {}),
   };
 }
 
@@ -481,9 +502,11 @@ function validateBudgetBlock(value: unknown): ProfileResources["budget"] {
       `resources.budget.accountId must be a ${BUDGET_ACCOUNT_ID_LENGTH}-digit AWS account ID.`,
     );
   }
+  const auth = parseOptionalBlockAuth(record, "resources.budget");
   return {
     budgetName,
     ...(accountId ? { accountId } : {}),
+    ...(auth ? { auth } : {}),
   };
 }
 

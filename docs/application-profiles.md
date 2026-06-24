@@ -117,6 +117,13 @@ A profile contains metadata and resource names only:
         "roleArn": "arn:aws:iam::123456789012:role/AwsMcpGatewaySesReadOnly"
       },
       "configurationSetName": "example-production"
+    },
+    "sns": {
+      "auth": {
+        "strategy": "assume-role",
+        "roleArn": "arn:aws:iam::123456789012:role/AwsMcpGatewayAlertsReadOnly"
+      },
+      "topicName": "example-alerts"
     }
   }
 }
@@ -124,7 +131,15 @@ A profile contains metadata and resource names only:
 
 Supported resource blocks: `ecs`, `rds`, `ses`, `s3`, `ssm`, `ecr`, `sns`, `eventbridge`, `budget`. A profile must include at least one known block.
 
-Profile `region` must be within `AWS_ALLOWED_REGIONS`. Per-resource `auth` overrides use the same shape as [`CredentialRequest`](aws-credentials.md#assume-role-resolver) (`default` or `assume-role` with IAM **role** ARN only).
+Profile `region` must be within `AWS_ALLOWED_REGIONS`. Every resource block may optionally declare `auth` using the same shape as [`CredentialRequest`](aws-credentials.md#assume-role-resolver) (`default` or `assume-role` with IAM **role** ARN only).
+
+### Credential resolution order
+
+```text
+resource block auth -> profile auth -> default gateway credentials
+```
+
+Use **profile-level** `auth` when every resource in the profile shares the same account or role. Use **resource-level** `auth` when individual blocks (for example SES in a mail account, SNS alerts in a shared services account) need a different `assume-role` target than the rest of the profile.
 
 ## Empty-state behavior
 

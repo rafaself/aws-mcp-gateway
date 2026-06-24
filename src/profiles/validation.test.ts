@@ -172,6 +172,73 @@ describe("validateProfileDocument", () => {
       ),
     ).toThrow(ValidationError);
   });
+
+  it("accepts resource-level auth on sns block", () => {
+    const profile = validateProfileDocument(
+      {
+        ...validProfile,
+        resources: {
+          sns: {
+            auth: {
+              strategy: "assume-role",
+              roleArn: "arn:aws:iam::123456789012:role/AwsMcpGatewayAlertsReadOnly",
+            },
+            topicName: "example-alerts",
+          },
+        },
+      },
+      "example-prod",
+      ALLOWED_REGIONS,
+    );
+    expect(profile.resources.sns?.auth?.strategy).toBe("assume-role");
+    expect(profile.resources.sns?.topicName).toBe("example-alerts");
+  });
+
+  it("accepts resource-level auth on ecs block with externalId", () => {
+    const profile = validateProfileDocument(
+      {
+        ...validProfile,
+        resources: {
+          ecs: {
+            clusterName: "example-production",
+            serviceName: "example-production-api",
+            auth: {
+              strategy: "assume-role",
+              roleArn: "arn:aws:iam::123456789012:role/EcsReadOnly",
+              externalId: "trusted-external-id",
+            },
+          },
+        },
+      },
+      "example-prod",
+      ALLOWED_REGIONS,
+    );
+    expect(profile.resources.ecs?.auth?.strategy).toBe("assume-role");
+    if (profile.resources.ecs?.auth?.strategy === "assume-role") {
+      expect(profile.resources.ecs.auth.externalId).toBe("trusted-external-id");
+    }
+  });
+
+  it("rejects user ARN on non-SES resource block", () => {
+    expect(() =>
+      validateProfileDocument(
+        {
+          ...validProfile,
+          resources: {
+            sns: {
+              topicName: "example-alerts",
+              auth: {
+                strategy: "assume-role",
+                roleArn: "arn:aws:iam::123456789012:user/SomeUser",
+              },
+            },
+          },
+        },
+        "example-prod",
+        ALLOWED_REGIONS,
+      ),
+    ).toThrow(ValidationError);
+  });
 });
 
 describe("assertNoSecretLikeContent", () => {

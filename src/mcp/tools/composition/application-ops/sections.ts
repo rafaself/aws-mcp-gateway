@@ -13,10 +13,34 @@ import { getBudgetStatus } from "../../../../aws/budgets/index.js";
 import { LOGS_MAX_EVENTS, LOGS_MAX_HOURS } from "../../../../security/limits.js";
 import {
   authStrategyLabel,
-  resolveBlockCredentials,
+  resolveSectionCredentials,
+  type AuthStrategyLabel,
 } from "../../../../profiles/access.js";
+import type {
+  EventBridgeResourceBlock,
+  SnsResourceBlock,
+} from "../../../../profiles/types.js";
 import type { ApplicationOpsContext, SectionResult } from "./types.js";
 import { profileSummary, redactErrorMessage, sectionError, sectionOk, sectionSkipped } from "./types.js";
+
+function resolveAlertingAuthStrategy(
+  profileAuth: ApplicationOpsContext["profile"]["auth"],
+  includeAlarms: boolean,
+  sns?: SnsResourceBlock,
+  eventbridge?: EventBridgeResourceBlock,
+): AuthStrategyLabel {
+  const strategies: AuthStrategyLabel[] = [];
+  if (includeAlarms) {
+    strategies.push(authStrategyLabel(undefined, profileAuth));
+  }
+  if (sns) {
+    strategies.push(authStrategyLabel(sns.auth, profileAuth));
+  }
+  if (eventbridge) {
+    strategies.push(authStrategyLabel(eventbridge.auth, profileAuth));
+  }
+  return strategies.includes("assume-role") ? "assume-role" : "default";
+}
 
 export type ComputeStatusData = {
   serviceHealth: Awaited<ReturnType<typeof getServiceHealth>>;
@@ -37,8 +61,11 @@ export async function buildComputeStatus(
   }
 
   try {
-    const credentials = await resolveBlockCredentials(ops.ctx, ops.profile);
-    const authStrategy = authStrategyLabel(undefined, ops.profile.auth);
+    const { credentials, authStrategy } = await resolveSectionCredentials(
+      ops.ctx,
+      ops.profile,
+      ecs,
+    );
 
     const serviceHealth = await getServiceHealth(
       ecs.clusterName,
@@ -86,8 +113,11 @@ export async function buildDatabaseStatus(
   }
 
   try {
-    const credentials = await resolveBlockCredentials(ops.ctx, ops.profile);
-    const authStrategy = authStrategyLabel(undefined, ops.profile.auth);
+    const { credentials, authStrategy } = await resolveSectionCredentials(
+      ops.ctx,
+      ops.profile,
+      rds,
+    );
     const health = await getInstanceHealth(
       rds.dbInstanceIdentifier,
       ops.region,
@@ -121,7 +151,8 @@ export async function buildApplicationLogs(
   ops: ApplicationOpsContext,
   options: ApplicationLogsOptions = {},
 ): Promise<SectionResult<ApplicationLogsData>> {
-  const logGroupName = ops.profile.resources.ecs?.logGroupName;
+  const ecs = ops.profile.resources.ecs;
+  const logGroupName = ecs?.logGroupName;
   if (!logGroupName) {
     return sectionSkipped();
   }
@@ -130,8 +161,11 @@ export async function buildApplicationLogs(
   const limit = Math.min(Math.max(options.limit ?? 20, 1), LOGS_MAX_EVENTS);
 
   try {
-    const credentials = await resolveBlockCredentials(ops.ctx, ops.profile);
-    const authStrategy = authStrategyLabel(undefined, ops.profile.auth);
+    const { credentials, authStrategy } = await resolveSectionCredentials(
+      ops.ctx,
+      ops.profile,
+      ecs,
+    );
     const now = Date.now();
     const startTime = now - hours * 60 * 60 * 1000;
 
@@ -177,8 +211,11 @@ export async function buildSecretInventory(
   }
 
   try {
-    const credentials = await resolveBlockCredentials(ops.ctx, ops.profile);
-    const authStrategy = authStrategyLabel(undefined, ops.profile.auth);
+    const { credentials, authStrategy } = await resolveSectionCredentials(
+      ops.ctx,
+      ops.profile,
+      ssm,
+    );
     const inventory = await checkParameterInventory(
       {
         parameterPrefix: ssm.parameterPrefix,
@@ -223,9 +260,13 @@ export async function buildArtifactStatus(
   }
 
   try {
-    const credentials = await resolveBlockCredentials(ops.ctx, ops.profile);
-    const authStrategy = authStrategyLabel(undefined, ops.profile.auth);
     const ecs = ops.profile.resources.ecs;
+    const artifactAuth = ecr.auth ?? ecs?.auth;
+    const { credentials, authStrategy } = await resolveSectionCredentials(
+      ops.ctx,
+      ops.profile,
+      artifactAuth ? { auth: artifactAuth } : undefined,
+    );
 
     if (ecs) {
       const compare = await compareServiceImageWithEcr(
@@ -276,11 +317,11 @@ export async function buildAlertingStatus(
   }
 
   try {
-    const credentials = await resolveBlockCredentials(ops.ctx, ops.profile);
-    const authStrategy = authStrategyLabel(undefined, ops.profile.auth);
     const data: AlertingStatusData = {};
+    const fetchAlarms = includeAlarms || hasSns || hasEventBridge;
 
-    if (includeAlarms || hasSns || hasEventBridge) {
+    if (fetchAlarms) {
+      const { credentials } = await resolveSectionCredentials(ops.ctx, ops.profile);
       data.alarms = await summarizeAlarms(
         ops.region,
         { limit: 20 },
@@ -291,6 +332,7 @@ export async function buildAlertingStatus(
     }
 
     if (hasSns && sns) {
+      const { credentials } = await resolveSectionCredentials(ops.ctx, ops.profile, sns);
       data.sns = await getTopicStatus(
         {
           topicName: sns.topicName,
@@ -304,6 +346,11 @@ export async function buildAlertingStatus(
     }
 
     if (hasEventBridge && eventbridge) {
+      const { credentials } = await resolveSectionCredentials(
+        ops.ctx,
+        ops.profile,
+        eventbridge,
+      );
       data.eventBridge = await getRulesStatus(
         {
           region: ops.region,
@@ -316,6 +363,13 @@ export async function buildAlertingStatus(
         ops.ctx.execution,
       );
     }
+
+    const authStrategy = resolveAlertingAuthStrategy(
+      ops.profile.auth,
+      fetchAlarms,
+      hasSns ? sns : undefined,
+      hasEventBridge ? eventbridge : undefined,
+    );
 
     return sectionOk(data, authStrategy);
   } catch (err) {
@@ -337,8 +391,11 @@ export async function buildCostStatus(
   }
 
   try {
-    const credentials = await resolveBlockCredentials(ops.ctx, ops.profile);
-    const authStrategy = authStrategyLabel(undefined, ops.profile.auth);
+    const { credentials, authStrategy } = await resolveSectionCredentials(
+      ops.ctx,
+      ops.profile,
+      budget,
+    );
     const status = await getBudgetStatus(
       budget.budgetName,
       budget.accountId,
@@ -363,8 +420,11 @@ export async function buildS3Posture(
   }
 
   try {
-    const credentials = await resolveBlockCredentials(ops.ctx, ops.profile);
-    const authStrategy = authStrategyLabel(undefined, ops.profile.auth);
+    const { credentials, authStrategy } = await resolveSectionCredentials(
+      ops.ctx,
+      ops.profile,
+      s3,
+    );
     const posture = await getBucketPosture(
       s3.bucketName,
       ops.region,
@@ -389,8 +449,11 @@ export async function buildSesStatus(
   }
 
   try {
-    const credentials = await resolveBlockCredentials(ops.ctx, ops.profile, ses.auth);
-    const authStrategy = authStrategyLabel(ses.auth, ops.profile.auth);
+    const { credentials, authStrategy } = await resolveSectionCredentials(
+      ops.ctx,
+      ops.profile,
+      ses,
+    );
     const status = await getConfigurationStatus(
       ses.configurationSetName,
       ops.region,

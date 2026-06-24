@@ -74,8 +74,8 @@ For resources in other AWS accounts, configure cross-account access through **KV
 
 Common cases:
 
-- **SES** in a separate account — profile `resources.ses.auth` with `assume-role`, then use `application-ops` tools (for example `get_application_environment_overview`)
-- **SNS / budgets** — profile-level `auth.strategy: "assume-role"` when the resource owner account differs
+- **SES** in a separate account — `resources.ses.auth` with `assume-role`, then use `application-ops` tools (for example `get_application_environment_overview`)
+- **SNS / budgets / EventBridge** in another account — per-resource `auth.strategy: "assume-role"` on the relevant block, or profile-level `auth` when the whole environment shares one cross-account role
 
 See [`iam-cross-account.md`](iam-cross-account.md) for trust policies, base-user `sts:AssumeRole` permissions, and examples.
 
