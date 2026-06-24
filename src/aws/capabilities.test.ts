@@ -65,9 +65,7 @@ describe("aws capabilities registry", () => {
 
   it("derives unique IAM actions and services", () => {
     expect(awsActionsForCapabilities(AWS_CAPABILITY_IDS)).toEqual([
-      "budgets:DescribeBudgets",
-      "budgets:DescribeNotificationsForBudget",
-      "budgets:DescribeSubscribersForNotification",
+      "budgets:ViewBudget",
       "ce:GetCostAndUsage",
       "cloudwatch:DescribeAlarms",
       "cloudwatch:GetMetricData",
@@ -89,11 +87,11 @@ describe("aws capabilities registry", () => {
       "logs:FilterLogEvents",
       "rds:DescribeDBInstances",
       "rds:DescribeDBSubnetGroups",
-      "s3:GetBucketEncryption",
       "s3:GetBucketLocation",
       "s3:GetBucketPolicyStatus",
       "s3:GetBucketPublicAccessBlock",
       "s3:GetBucketVersioning",
+      "s3:GetEncryptionConfiguration",
       "s3:GetLifecycleConfiguration",
       "s3:ListAllMyBuckets",
       "scheduler:GetSchedule",

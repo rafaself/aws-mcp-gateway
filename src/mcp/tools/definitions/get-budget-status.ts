@@ -44,11 +44,7 @@ export function createGetBudgetStatusToolManifest(
     auth: { requiredScopes: [...DEFAULT_AUTH_SCOPES] },
     aws: {
       services: ["budgets"],
-      actions: [
-        "budgets:DescribeBudgets",
-        "budgets:DescribeNotificationsForBudget",
-        "budgets:DescribeSubscribersForNotification",
-      ],
+      actions: ["budgets:ViewBudget"],
       capabilities: [
         "budgets:DescribeBudgets",
         "budgets:DescribeNotificationsForBudget",

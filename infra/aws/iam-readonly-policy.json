@@ -40,7 +40,7 @@
         "s3:ListAllMyBuckets",
         "s3:GetBucketLocation",
         "s3:GetBucketPublicAccessBlock",
-        "s3:GetBucketEncryption",
+        "s3:GetEncryptionConfiguration",
         "s3:GetBucketVersioning",
         "s3:GetLifecycleConfiguration",
         "s3:GetBucketPolicyStatus"
@@ -146,9 +146,7 @@
       "Sid": "BudgetsRead",
       "Effect": "Allow",
       "Action": [
-        "budgets:DescribeBudgets",
-        "budgets:DescribeNotificationsForBudget",
-        "budgets:DescribeSubscribersForNotification"
+        "budgets:ViewBudget"
       ],
       "Resource": "*"
     }

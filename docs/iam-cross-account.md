@@ -136,7 +136,7 @@ Target roles should be **narrower** than the gateway home-account policy when po
 | --- | --- | --- |
 | SES configuration read | `ses:GetConfigurationSet`, `ses:GetConfigurationSetEventDestinations` | Match `get_ses_configuration_status` manifest |
 | SNS topic read | `sns:GetTopicAttributes`, `sns:ListSubscriptionsByTopic` | Subscription endpoints are masked in output |
-| Budget read | `budgets:DescribeBudgets`, `budgets:DescribeNotificationsForBudget` | Requires correct `accountId` in tool input |
+| Budget read | `budgets:ViewBudget` | Requires correct `accountId` in tool input |
 
 Do not attach `AdministratorAccess` or broad `ReadOnlyAccess` to cross-account roles unless you have explicitly reviewed the blast radius.
 

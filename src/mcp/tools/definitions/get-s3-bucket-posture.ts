@@ -52,7 +52,7 @@ export function createGetS3BucketPostureToolManifest(
       actions: [
         "s3:GetBucketLocation",
         "s3:GetBucketPublicAccessBlock",
-        "s3:GetBucketEncryption",
+        "s3:GetEncryptionConfiguration",
         "s3:GetBucketVersioning",
         "s3:GetLifecycleConfiguration",
         "s3:GetBucketPolicyStatus",

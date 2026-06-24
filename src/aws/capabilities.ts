@@ -136,7 +136,7 @@ export const AWS_CAPABILITY_REGISTRY: Readonly<Record<AwsCapabilityId, AwsCapabi
     "s3:GetBucketEncryption": {
       id: "s3:GetBucketEncryption",
       iamService: "s3",
-      iamAction: "s3:GetBucketEncryption",
+      iamAction: "s3:GetEncryptionConfiguration",
       readonly: true,
       costSensitivity: "low",
     },
@@ -342,21 +342,21 @@ export const AWS_CAPABILITY_REGISTRY: Readonly<Record<AwsCapabilityId, AwsCapabi
     "budgets:DescribeBudgets": {
       id: "budgets:DescribeBudgets",
       iamService: "budgets",
-      iamAction: "budgets:DescribeBudgets",
+      iamAction: "budgets:ViewBudget",
       readonly: true,
       costSensitivity: "low",
     },
     "budgets:DescribeNotificationsForBudget": {
       id: "budgets:DescribeNotificationsForBudget",
       iamService: "budgets",
-      iamAction: "budgets:DescribeNotificationsForBudget",
+      iamAction: "budgets:ViewBudget",
       readonly: true,
       costSensitivity: "low",
     },
     "budgets:DescribeSubscribersForNotification": {
       id: "budgets:DescribeSubscribersForNotification",
       iamService: "budgets",
-      iamAction: "budgets:DescribeSubscribersForNotification",
+      iamAction: "budgets:ViewBudget",
       readonly: true,
       costSensitivity: "low",
     },

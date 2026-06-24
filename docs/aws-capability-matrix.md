@@ -57,16 +57,16 @@ cross-account access is required, attach the optional add-on at
 | get_application_compute_status | application-ops | ecs | ecs:DescribeTasks | single-region | read-only | 300 | cached-read | fanout-sensitive | volume-sensitive |  |
 | get_application_compute_status | application-ops | ecs | ecs:ListTasks | single-region | read-only | 300 | cached-read | fanout-sensitive | volume-sensitive |  |
 | get_application_compute_status | application-ops | sts | sts:AssumeRole | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
-| get_application_cost_status | application-ops | budgets | budgets:DescribeBudgets | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
-| get_application_cost_status | application-ops | budgets | budgets:DescribeNotificationsForBudget | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
-| get_application_cost_status | application-ops | budgets | budgets:DescribeSubscribersForNotification | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
+| get_application_cost_status | application-ops | budgets | budgets:ViewBudget | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
+| get_application_cost_status | application-ops | budgets | budgets:ViewBudget | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
+| get_application_cost_status | application-ops | budgets | budgets:ViewBudget | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_cost_status | application-ops | sts | sts:AssumeRole | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_database_status | application-ops | rds | rds:DescribeDBInstances | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_database_status | application-ops | rds | rds:DescribeDBSubnetGroups | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_database_status | application-ops | sts | sts:AssumeRole | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
-| get_application_environment_overview | application-ops | budgets | budgets:DescribeBudgets | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
-| get_application_environment_overview | application-ops | budgets | budgets:DescribeNotificationsForBudget | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
-| get_application_environment_overview | application-ops | budgets | budgets:DescribeSubscribersForNotification | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
+| get_application_environment_overview | application-ops | budgets | budgets:ViewBudget | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
+| get_application_environment_overview | application-ops | budgets | budgets:ViewBudget | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
+| get_application_environment_overview | application-ops | budgets | budgets:ViewBudget | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_environment_overview | application-ops | cloudwatch | cloudwatch:DescribeAlarms | single-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |
 | get_application_environment_overview | application-ops | ecr | ecr:DescribeImages | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_environment_overview | application-ops | ecr | ecr:DescribeImageScanFindings | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
@@ -82,11 +82,11 @@ cross-account access is required, attach the optional add-on at
 | get_application_environment_overview | application-ops | logs | logs:FilterLogEvents | single-region | read-only | 300 | cached-read | fanout-sensitive | volume-sensitive |  |
 | get_application_environment_overview | application-ops | rds | rds:DescribeDBInstances | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_environment_overview | application-ops | rds | rds:DescribeDBSubnetGroups | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
-| get_application_environment_overview | application-ops | s3 | s3:GetBucketEncryption | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_environment_overview | application-ops | s3 | s3:GetBucketLocation | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_environment_overview | application-ops | s3 | s3:GetBucketPolicyStatus | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_environment_overview | application-ops | s3 | s3:GetBucketPublicAccessBlock | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_environment_overview | application-ops | s3 | s3:GetBucketVersioning | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
+| get_application_environment_overview | application-ops | s3 | s3:GetEncryptionConfiguration | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_environment_overview | application-ops | s3 | s3:GetLifecycleConfiguration | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_environment_overview | application-ops | scheduler | scheduler:GetSchedule | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_application_environment_overview | application-ops | scheduler | scheduler:ListSchedules | single-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |
@@ -103,9 +103,9 @@ cross-account access is required, attach the optional add-on at
 | get_application_secret_inventory | application-ops | sts | sts:AssumeRole | single-region | read-only | 300 | cached-read | fanout-sensitive | low |  |
 | get_aws_cost_by_service | cost | ce | ce:GetCostAndUsage | single-region | read-only | 1800 | cached-read | paid | paid | 0.01 |
 | get_aws_cost_summary | cost | ce | ce:GetCostAndUsage | single-region | read-only | 1800 | cached-read | paid | paid | 0.01 |
-| get_budget_status | cost | budgets | budgets:DescribeBudgets | single-region | read-only | 300 | cached-read | low | low |  |
-| get_budget_status | cost | budgets | budgets:DescribeNotificationsForBudget | single-region | read-only | 300 | cached-read | low | low |  |
-| get_budget_status | cost | budgets | budgets:DescribeSubscribersForNotification | single-region | read-only | 300 | cached-read | low | low |  |
+| get_budget_status | cost | budgets | budgets:ViewBudget | single-region | read-only | 300 | cached-read | low | low |  |
+| get_budget_status | cost | budgets | budgets:ViewBudget | single-region | read-only | 300 | cached-read | low | low |  |
+| get_budget_status | cost | budgets | budgets:ViewBudget | single-region | read-only | 300 | cached-read | low | low |  |
 | get_cloudwatch_alarm_summary | observability | cloudwatch | cloudwatch:DescribeAlarms | single-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |
 | get_cloudwatch_alarms | observability | cloudwatch | cloudwatch:DescribeAlarms | bounded-multi-region | read-only | 300 | cached-read | fanout-sensitive | fanout-sensitive |  |
 | get_cloudwatch_logs | observability | logs | logs:DescribeLogStreams | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
@@ -128,11 +128,11 @@ cross-account access is required, attach the optional add-on at
 | get_recent_stopped_ecs_tasks | observability | ecs | ecs:DescribeTasks | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
 | get_recent_stopped_ecs_tasks | observability | ecs | ecs:ListTasks | single-region | read-only | 300 | cached-read | volume-sensitive | volume-sensitive |  |
 | get_s3_bucket_posture | security | cloudwatch | cloudwatch:GetMetricData | single-region | read-only | 300 | cached-read | low | volume-sensitive |  |
-| get_s3_bucket_posture | security | s3 | s3:GetBucketEncryption | single-region | read-only | 300 | cached-read | low | low |  |
 | get_s3_bucket_posture | security | s3 | s3:GetBucketLocation | single-region | read-only | 300 | cached-read | low | low |  |
 | get_s3_bucket_posture | security | s3 | s3:GetBucketPolicyStatus | single-region | read-only | 300 | cached-read | low | low |  |
 | get_s3_bucket_posture | security | s3 | s3:GetBucketPublicAccessBlock | single-region | read-only | 300 | cached-read | low | low |  |
 | get_s3_bucket_posture | security | s3 | s3:GetBucketVersioning | single-region | read-only | 300 | cached-read | low | low |  |
+| get_s3_bucket_posture | security | s3 | s3:GetEncryptionConfiguration | single-region | read-only | 300 | cached-read | low | low |  |
 | get_s3_bucket_posture | security | s3 | s3:GetLifecycleConfiguration | single-region | read-only | 300 | cached-read | low | low |  |
 | get_ses_configuration_status | security | ses | ses:GetConfigurationSet | single-region | read-only | 300 | cached-read | low | low |  |
 | get_ses_configuration_status | security | ses | ses:GetConfigurationSetEventDestinations | single-region | read-only | 300 | cached-read | low | low |  |
