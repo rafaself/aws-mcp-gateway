@@ -2,49 +2,50 @@ import type { CredentialRequest } from "../aws/credentials/types.js";
 
 export type ProfileAuthConfig = CredentialRequest;
 
-export type EcsResourceBlock = {
+type ResourceBlockWithAuth<T> = T & { auth?: ProfileAuthConfig };
+
+export type EcsResourceBlock = ResourceBlockWithAuth<{
   clusterName: string;
   serviceName: string;
   logGroupName?: string;
   containers?: string[];
-};
+}>;
 
-export type RdsResourceBlock = {
+export type RdsResourceBlock = ResourceBlockWithAuth<{
   dbInstanceIdentifier: string;
-};
+}>;
 
-export type SesResourceBlock = {
+export type SesResourceBlock = ResourceBlockWithAuth<{
   configurationSetName: string;
-  auth?: ProfileAuthConfig;
-};
+}>;
 
-export type S3ResourceBlock = {
+export type S3ResourceBlock = ResourceBlockWithAuth<{
   bucketName: string;
-};
+}>;
 
-export type SsmResourceBlock = {
+export type SsmResourceBlock = ResourceBlockWithAuth<{
   parameterPrefix: string;
   requiredParameterNames?: string[];
-};
+}>;
 
-export type EcrResourceBlock = {
+export type EcrResourceBlock = ResourceBlockWithAuth<{
   repositoryName: string;
-};
+}>;
 
-export type SnsResourceBlock = {
+export type SnsResourceBlock = ResourceBlockWithAuth<{
   topicName?: string;
   topicArn?: string;
-};
+}>;
 
-export type EventBridgeResourceBlock = {
+export type EventBridgeResourceBlock = ResourceBlockWithAuth<{
   ruleNamePrefix?: string;
   scheduleNamePrefix?: string;
-};
+}>;
 
-export type BudgetResourceBlock = {
+export type BudgetResourceBlock = ResourceBlockWithAuth<{
   budgetName: string;
   accountId?: string;
-};
+}>;
 
 export type ProfileResources = {
   ecs?: EcsResourceBlock;

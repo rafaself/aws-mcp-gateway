@@ -7,6 +7,7 @@ import {
   isProfileConfigAvailable,
   resolveApplicationProfileForTool,
   resolveBlockCredentials,
+  resolveSectionCredentials,
 } from "./access.js";
 
 const validIndex = {
@@ -155,6 +156,52 @@ describe("authStrategyLabel", () => {
         { strategy: "default" },
       ),
     ).toBe("assume-role");
+  });
+});
+
+describe("resolveSectionCredentials", () => {
+  it("returns credentials and auth strategy for a resource block", async () => {
+    const resolve = vi.fn(async () => ({
+      accessKeyId: "ASIA-test",
+      secretAccessKey: "temp",
+      sessionToken: "token",
+    }));
+    const ctx = createTestGatewayContext({
+      credentialResolver: { resolve },
+    });
+
+    const result = await resolveSectionCredentials(
+      ctx,
+      {
+        version: 1,
+        id: "example-prod",
+        displayName: "Example Production",
+        environment: "production",
+        region: "us-east-1",
+        auth: { strategy: "default" },
+        resources: {
+          sns: {
+            topicName: "alerts",
+            auth: {
+              strategy: "assume-role",
+              roleArn: "arn:aws:iam::123456789012:role/SnsReadOnly",
+            },
+          },
+        },
+      },
+      {
+        auth: {
+          strategy: "assume-role",
+          roleArn: "arn:aws:iam::123456789012:role/SnsReadOnly",
+        },
+      },
+    );
+
+    expect(result.authStrategy).toBe("assume-role");
+    expect(resolve).toHaveBeenCalledWith({
+      strategy: "assume-role",
+      roleArn: "arn:aws:iam::123456789012:role/SnsReadOnly",
+    });
   });
 });
 

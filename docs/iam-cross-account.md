@@ -52,6 +52,31 @@ SES configuration sets often live in a dedicated mail-sending account. Configure
 
 See [`examples/app-profiles/example-prod.profile.json`](../examples/app-profiles/example-prod.profile.json) and [`application-profiles.md`](application-profiles.md).
 
+## Cross-account SNS example
+
+SNS alert topics may live in a shared services account while compute resources stay in the workload account. Use per-resource `auth` on the `sns` block:
+
+```json
+{
+  "auth": { "strategy": "default" },
+  "resources": {
+    "ecs": {
+      "clusterName": "example-production",
+      "serviceName": "example-production-api"
+    },
+    "sns": {
+      "auth": {
+        "strategy": "assume-role",
+        "roleArn": "arn:aws:iam::123456789012:role/AwsMcpGatewayAlertsReadOnly"
+      },
+      "topicName": "example-alerts"
+    }
+  }
+}
+```
+
+Credential resolution uses `resources.sns.auth` for SNS reads, `resources.ecs.auth` (or profile `auth`) for ECS reads, and falls back to default gateway credentials when no override is set.
+
 ## Target role trust policy
 
 Each target role must trust the gateway IAM principal. Example trust policy on the **target account** role:
@@ -95,6 +120,7 @@ Example add-on policy (also available as [`infra/aws/iam-assume-role-policy.exam
   "Action": "sts:AssumeRole",
   "Resource": [
     "arn:aws:iam::123456789012:role/AwsMcpGatewaySesReadOnly",
+    "arn:aws:iam::123456789012:role/AwsMcpGatewayAlertsReadOnly",
     "arn:aws:iam::987654321098:role/AwsMcpGatewaySharedReadOnly"
   ]
 }

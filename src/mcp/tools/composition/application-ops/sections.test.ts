@@ -1,19 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestGatewayContext } from "../../../../test/gateway-context-fixture.js";
-import { buildEnvironmentOverview } from "./sections.js";
+import {
+  buildAlertingStatus,
+  buildComputeStatus,
+  buildEnvironmentOverview,
+} from "./sections.js";
 import { buildApplicationOpsContext } from "./types.js";
 import type { ValidatedAppProfile } from "../../../../profiles/types.js";
 
-const { mockGetServiceHealth, mockGetConfigurationStatus } = vi.hoisted(() => ({
-  mockGetServiceHealth: vi.fn(),
-  mockGetConfigurationStatus: vi.fn(),
-}));
+const { mockGetServiceHealth, mockGetConfigurationStatus, mockGetTopicStatus, mockResolveSectionCredentials } =
+  vi.hoisted(() => ({
+    mockGetServiceHealth: vi.fn(),
+    mockGetConfigurationStatus: vi.fn(),
+    mockGetTopicStatus: vi.fn(),
+    mockResolveSectionCredentials: vi.fn(),
+  }));
 
 vi.mock("../../../../profiles/access.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../../profiles/access.js")>();
+  mockResolveSectionCredentials.mockImplementation(async (ctx, profile, block) => ({
+    credentials: ctx.credentials,
+    authStrategy: actual.authStrategyLabel(block?.auth, profile.auth),
+  }));
   return {
     ...actual,
-    resolveBlockCredentials: vi.fn(async (ctx) => ctx.credentials),
+    resolveSectionCredentials: mockResolveSectionCredentials,
   };
 });
 
@@ -51,19 +62,19 @@ vi.mock("../../../../aws/s3/posture.js", () => ({
   getBucketPosture: vi.fn(),
 }));
 vi.mock("../../../../aws/sns/index.js", () => ({
-  getTopicStatus: vi.fn(),
+  getTopicStatus: mockGetTopicStatus,
 }));
 vi.mock("../../../../aws/eventbridge/index.js", () => ({
   getRulesStatus: vi.fn(),
 }));
 vi.mock("../../../../aws/cloudwatch/index.js", () => ({
-  summarizeAlarms: vi.fn(),
+  summarizeAlarms: vi.fn(async () => ({ alarmCount: 0, alarms: [] })),
 }));
 vi.mock("../../../../aws/budgets/index.js", () => ({
   getBudgetStatus: vi.fn(),
 }));
 
-const profile: ValidatedAppProfile = {
+const baseProfile: ValidatedAppProfile = {
   version: 1,
   id: "example-prod",
   displayName: "Example Production",
@@ -84,9 +95,16 @@ const profile: ValidatedAppProfile = {
   },
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   mockGetServiceHealth.mockReset();
   mockGetConfigurationStatus.mockReset();
+  mockGetTopicStatus.mockReset();
+  mockResolveSectionCredentials.mockClear();
+  const { authStrategyLabel } = await import("../../../../profiles/access.js");
+  mockResolveSectionCredentials.mockImplementation(async (ctx, profile, block) => ({
+    credentials: ctx.credentials,
+    authStrategy: authStrategyLabel(block?.auth, profile.auth),
+  }));
   mockGetServiceHealth.mockResolvedValue({
     clusterName: "example-production",
     serviceName: "example-production-api",
@@ -102,12 +120,19 @@ beforeEach(() => {
     configurationSetExists: true,
     eventDestinations: [],
   });
+  mockGetTopicStatus.mockResolvedValue({
+    region: "us-east-1",
+    topicExists: true,
+    topicName: "example-alerts",
+    subscriptionCount: 1,
+    subscriptions: [],
+  });
 });
 
 describe("buildEnvironmentOverview", () => {
   it("composes configured profile sections and skips unconfigured blocks", async () => {
     const ctx = createTestGatewayContext();
-    const ops = buildApplicationOpsContext(ctx, profile);
+    const ops = buildApplicationOpsContext(ctx, baseProfile);
     const result = await buildEnvironmentOverview(ops);
 
     expect(result.profile.id).toBe("example-prod");
@@ -136,7 +161,7 @@ describe("buildEnvironmentOverview", () => {
     });
 
     const ctx = createTestGatewayContext();
-    const ops = buildApplicationOpsContext(ctx, profile);
+    const ops = buildApplicationOpsContext(ctx, baseProfile);
     const result = await buildEnvironmentOverview(ops);
 
     expect(result.ses.data).toMatchObject({
@@ -146,5 +171,76 @@ describe("buildEnvironmentOverview", () => {
         }),
       ],
     });
+  });
+});
+
+describe("resource-level auth overrides", () => {
+  it("uses profile-level auth when ecs block has no override", async () => {
+    const ctx = createTestGatewayContext();
+    const profile: ValidatedAppProfile = {
+      ...baseProfile,
+      auth: {
+        strategy: "assume-role",
+        roleArn: "arn:aws:iam::123456789012:role/ProfileRole",
+      },
+      resources: {
+        ecs: {
+          clusterName: "example-production",
+          serviceName: "example-production-api",
+        },
+      },
+    };
+    const ops = buildApplicationOpsContext(ctx, profile);
+
+    const result = await buildComputeStatus(ops);
+
+    expect(result.status).toBe("ok");
+    expect(result.authStrategy).toBe("assume-role");
+    expect(mockResolveSectionCredentials).toHaveBeenCalledWith(ctx, profile, profile.resources.ecs);
+  });
+
+  it("passes sns block auth into credential resolution", async () => {
+    const ctx = createTestGatewayContext();
+    const profile: ValidatedAppProfile = {
+      ...baseProfile,
+      auth: { strategy: "default" },
+      resources: {
+        sns: {
+          topicName: "example-alerts",
+          auth: {
+            strategy: "assume-role",
+            roleArn: "arn:aws:iam::123456789012:role/SnsReadOnly",
+          },
+        },
+      },
+    };
+    const ops = buildApplicationOpsContext(ctx, profile);
+
+    const result = await buildAlertingStatus(ops);
+
+    expect(result.status).toBe("ok");
+    expect(result.authStrategy).toBe("assume-role");
+    expect(mockResolveSectionCredentials).toHaveBeenCalledWith(ctx, profile, profile.resources.sns);
+    expect(mockGetTopicStatus).toHaveBeenCalled();
+  });
+
+  it("falls back to default credentials when block and profile auth are absent", async () => {
+    const ctx = createTestGatewayContext();
+    const profile: ValidatedAppProfile = {
+      ...baseProfile,
+      resources: {
+        ecs: {
+          clusterName: "example-production",
+          serviceName: "example-production-api",
+        },
+      },
+    };
+    const ops = buildApplicationOpsContext(ctx, profile);
+
+    const result = await buildComputeStatus(ops);
+
+    expect(result.status).toBe("ok");
+    expect(result.authStrategy).toBe("default");
+    expect(mockResolveSectionCredentials).toHaveBeenCalledWith(ctx, profile, profile.resources.ecs);
   });
 });

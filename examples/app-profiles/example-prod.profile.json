@@ -21,6 +21,13 @@
         "roleArn": "arn:aws:iam::123456789012:role/AwsMcpGatewaySesReadOnly"
       },
       "configurationSetName": "example-production"
+    },
+    "sns": {
+      "auth": {
+        "strategy": "assume-role",
+        "roleArn": "arn:aws:iam::123456789012:role/AwsMcpGatewayAlertsReadOnly"
+      },
+      "topicName": "example-alerts"
     }
   }
 }

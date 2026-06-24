@@ -35,5 +35,6 @@ export {
   isProfileConfigAvailable,
   resolveApplicationProfileForTool,
   resolveBlockCredentials,
+  resolveSectionCredentials,
   type AuthStrategyLabel,
 } from "./access.js";
