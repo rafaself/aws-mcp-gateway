@@ -25,7 +25,6 @@ export type AwsCapabilityId =
   | "rds:DescribeDBSubnetGroups"
   | "cloudwatch:GetMetricData"
   | "ssm:DescribeParameters"
-  | "ssm:GetParameters"
   | "sts:AssumeRole"
   | "ses:GetConfigurationSet"
   | "ses:GetConfigurationSetEventDestinations"
@@ -260,13 +259,6 @@ export const AWS_CAPABILITY_REGISTRY: Readonly<Record<AwsCapabilityId, AwsCapabi
       iamAction: "ssm:DescribeParameters",
       readonly: true,
       costSensitivity: "fanout-sensitive",
-    },
-    "ssm:GetParameters": {
-      id: "ssm:GetParameters",
-      iamService: "ssm",
-      iamAction: "ssm:GetParameters",
-      readonly: true,
-      costSensitivity: "low",
     },
     "sts:AssumeRole": {
       id: "sts:AssumeRole",
