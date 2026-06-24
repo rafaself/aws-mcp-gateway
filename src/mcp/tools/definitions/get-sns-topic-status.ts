@@ -34,7 +34,7 @@ export function createGetSnsTopicStatusToolManifest(
       "Returns SNS topic status including subscription count, protocols, confirmation state, " +
       "and masked subscription endpoints. Topic policy is summarized without exposing principals. " +
       "Uses default gateway credentials only.",
-    pack: "observability",
+    pack: "security",
     lifecycle: "stable",
     inputSchema: getSnsTopicStatusInputSchema,
     outputSchema: getSnsTopicStatusOutputSchema,

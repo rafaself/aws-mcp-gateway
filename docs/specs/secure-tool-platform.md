@@ -27,28 +27,9 @@ payloads.
 
 ### Registered public tools
 
-The registry defines **14** public tools:
+The registry defines **38** public tools across eight packs. See [README.md](../../README.md#tool-exposure-optional) for the authoritative pack-to-tool mapping.
 
-```text
-search
-fetch
-get_gateway_status
-get_aws_cost_summary
-get_aws_cost_by_service
-list_ec2_instances
-get_cloudwatch_alarms
-get_recent_log_errors
-list_lambda_functions
-list_s3_buckets
-list_log_groups
-aws_account_overview
-aws_cost_overview
-aws_observability_overview
-```
-
-**Default exposure:** 11 tools via packs `core`, `cost`, `inventory`, and
-`observability`. The three `aws_*_overview` tools require the opt-in
-`aggregates` pack.
+**Default exposure:** 21 tools via packs `core`, `cost`, `inventory`, `observability`, and `database`. The `security` (+5), `aggregates` (+3), and `application-ops` (+9) packs are opt-in.
 
 Authoritative public behavior:
 
@@ -164,7 +145,7 @@ The policy model evaluates:
 
 Default policy behavior:
 
-- default packs expose 11 tools; `aggregates` is opt-in
+- default packs expose 21 tools; `security`, `aggregates`, and `application-ops` are opt-in
 - only `read-only` risk is allowed
 - current AWS services/actions are allowlisted
 - current region allowlist enforcement remains in effect
@@ -255,7 +236,7 @@ The architecture is intentionally incompatible with:
 
 ## Acceptance criteria
 
-- Manifest-backed registry with 14 public tools and pack-based exposure.
+- Manifest-backed registry with 38 public tools and pack-based exposure.
 - Central policy gate runs before handler execution and fails closed.
 - Cost-control metadata covers all registered tools.
 - Capability matrix covers all AWS-backed tools.

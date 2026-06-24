@@ -41,7 +41,7 @@ If `pnpm install --frozen-lockfile` cannot be run locally, run `pnpm install` an
 After automated checks pass, confirm ChatGPT Connector discovery safety:
 
 - [ ] HTTP `initialize` still works over `/mcp` and returns `mcp-session-id`
-- [ ] HTTP `tools/list` still returns all **enabled** tools (11 with default packs; 14 when `aggregates` is enabled)
+- [ ] HTTP `tools/list` still returns all **enabled** tools (21 with default packs; 24 when `aggregates` is enabled)
 - [ ] Descriptors still include `title`, `inputSchema`, `outputSchema` (where applicable), `annotations`, `securitySchemes`, and `_meta.securitySchemes`
 - [ ] Unauthenticated `POST /mcp` still returns an OAuth `401` challenge with `WWW-Authenticate`
 - [ ] `search`, `fetch`, and `get_gateway_status` still work without AWS calls

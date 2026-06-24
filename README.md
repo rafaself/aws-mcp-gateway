@@ -27,7 +27,7 @@ ChatGPT Connector
   -> Normalized AWS cost, inventory, alarm, and log data
 ```
 
-The registry defines **38** public tools. Default deployments expose **21** through tool packs (`core`, `cost`, `inventory`, `observability`, `database`). Three aggregate overview tools are opt-in via the `aggregates` pack. Security tools (SSM inventory, S3 posture, SES configuration) are opt-in via the `security` pack. Nine application profile tools are opt-in via the `application-ops` pack. See [tool exposure](#tool-exposure-optional) and [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md).
+The registry defines **38** public tools. Default deployments expose **21** through tool packs (`core`, `cost`, `inventory`, `observability`, `database`). Three aggregate overview tools are opt-in via the `aggregates` pack. Five security tools (SSM inventory, S3 posture, SES configuration, SNS topic status, EventBridge/Scheduler status) are opt-in via the `security` pack. Nine application profile tools are opt-in via the `application-ops` pack. See [tool exposure](#tool-exposure-optional) and [`docs/aws-capability-matrix.md`](docs/aws-capability-matrix.md).
 
 ## Current status
 
@@ -56,28 +56,9 @@ Production deployments should still run the verification and acceptance checks d
 
 ## Available MCP tools
 
-Default-exposed tools (11 with built-in pack settings):
+The registry defines **38** public read-only tools. Default deployments expose **21** via tool packs. Opt-in packs add security posture tools (`security`), aggregate overviews (`aggregates`), and KV-backed application profile workflows (`application-ops`).
 
-| Tool | Purpose | Calls AWS |
-| --- | --- | --- |
-| `search` | Catalog search helper for ChatGPT discovery | No |
-| `fetch` | Catalog document helper for tool details | No* |
-| `get_gateway_status` | Verify the gateway is reachable and authenticated | No |
-| `get_aws_cost_summary` | Return total AWS cost for a bounded date range | Yes |
-| `get_aws_cost_by_service` | Return AWS cost grouped by service | Yes |
-| `list_ec2_instances` | List EC2 instances in allowed regions | Yes |
-| `get_cloudwatch_alarms` | Return CloudWatch alarm states | Yes |
-| `get_recent_log_errors` | Return recent CloudWatch Logs errors/warnings | Yes |
-| `list_lambda_functions` | List Lambda functions in allowed regions | Yes |
-| `list_s3_buckets` | List S3 buckets in the account | Yes |
-| `list_log_groups` | List CloudWatch log groups in a region | Yes |
-| `get_ecs_service_health` | ECS service deployment health and recent events | Yes |
-| `list_ecs_tasks` | List ECS tasks in a cluster with optional filters | Yes |
-| `get_recent_stopped_ecs_tasks` | Recent stopped ECS task diagnostics | Yes |
-
-\* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
-
-Full tool contracts — including three opt-in aggregate overview tools — are documented in [`docs/mcp-tools.md`](docs/mcp-tools.md). Platform architecture: [`docs/specs/secure-tool-platform.md`](docs/specs/secure-tool-platform.md).
+See [tool exposure](#tool-exposure-optional) for pack mappings and configuration examples. Full per-tool contracts: [`docs/mcp-tools.md`](docs/mcp-tools.md). Platform architecture: [`docs/specs/secure-tool-platform.md`](docs/specs/secure-tool-platform.md).
 
 ## When to use it
 
@@ -231,16 +212,16 @@ Tool packs:
 
 ```text
 core:           search, fetch, get_gateway_status
-cost:           get_aws_cost_summary, get_aws_cost_by_service
-inventory:      list_ec2_instances, list_lambda_functions, list_s3_buckets
+cost:           get_aws_cost_summary, get_aws_cost_by_service, get_budget_status
+inventory:      list_ec2_instances, list_lambda_functions, list_s3_buckets, get_ecr_image_status, compare_ecs_task_image_with_ecr
 observability:  get_cloudwatch_alarms, get_cloudwatch_logs, get_cloudwatch_alarm_summary, get_recent_log_errors, list_log_groups, get_ecs_service_health, list_ecs_tasks, get_recent_stopped_ecs_tasks
 database:       get_rds_instance_health, get_rds_metrics
-aggregates:     aws_account_overview, aws_cost_overview, aws_observability_overview (disabled by default)
-security:       check_ssm_parameter_inventory, get_s3_bucket_posture, get_ses_configuration_status (disabled by default)
-application-ops: list_application_profiles, get_application_environment_overview, and focused profile aggregators (disabled by default)
+aggregates:     aws_account_overview, aws_cost_overview, aws_observability_overview (opt-in)
+security:       check_ssm_parameter_inventory, get_s3_bucket_posture, get_ses_configuration_status, get_sns_topic_status, get_eventbridge_rules_status (opt-in)
+application-ops: list_application_profiles, get_application_environment_overview, get_application_compute_status, get_application_database_status, get_application_logs, get_application_secret_inventory, get_application_artifact_status, get_application_alerting_status, get_application_cost_status (opt-in)
 ```
 
-The `aggregates` pack is opt-in. Enable it when you want bounded overview tools that compose existing inventory, cost, observability, and database capabilities. The `security` pack is opt-in for SSM parameter inventory, S3 posture, and SES configuration metadata. The `application-ops` pack is opt-in for KV-backed application profile discovery and profile-driven operational summaries. Default deployments expose 21 tools; enabling `aggregates` adds three more; enabling `security` adds three more; enabling `application-ops` adds nine more.
+The `aggregates` pack is opt-in. Enable it when you want bounded overview tools that compose existing inventory, cost, observability, and database capabilities. The `security` pack is opt-in for SSM parameter inventory, S3 posture, SES configuration metadata, SNS topic status, and EventBridge/Scheduler status. The `application-ops` pack is opt-in for KV-backed application profile discovery and profile-driven operational summaries. Default deployments expose 21 MCP tools; enabling `aggregates` adds three more; enabling `security` adds five more; enabling `application-ops` adds nine more.
 
 Exposure rules:
 
@@ -266,7 +247,25 @@ AWS_MCP_ENABLED_TOOL_PACKS=core,cost
 Example — enable aggregate overview tools:
 
 ```text
-AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,aggregates
+AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,database,aggregates
+```
+
+Example — default packs (explicit; same as omitting the variable):
+
+```text
+AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,database
+```
+
+Example — full read-only operational mode (all generic packs):
+
+```text
+AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,database,security,aggregates,application-ops
+```
+
+Example — application profile mode:
+
+```text
+AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,database,security,application-ops
 ```
 
 ## AWS IAM setup

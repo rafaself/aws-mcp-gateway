@@ -19,13 +19,15 @@ Record the deployed tool exposure settings before counting tools in steps 7, 8, 
 
 | Variable | Default | Effect |
 |----------|---------|--------|
-| `AWS_MCP_ENABLED_TOOL_PACKS` | `core,cost,inventory,observability` | Which tool packs are exposed |
+| `AWS_MCP_ENABLED_TOOL_PACKS` | `core,cost,inventory,observability,database` | Which tool packs are exposed |
 | `AWS_MCP_ENABLED_TOOLS` | *(empty)* | Optional allowlist within enabled packs |
 | `AWS_MCP_DISABLED_TOOLS` | *(empty)* | Explicit denylist |
 
-**Default path:** 11 enabled tools (all default packs, no denylist).
+**Default path:** 21 enabled tools (all default packs, no denylist).
 
-**Aggregates-enabled path:** add `aggregates` to `AWS_MCP_ENABLED_TOOL_PACKS` for 14 enabled tools (includes `aws_account_overview`, `aws_cost_overview`, `aws_observability_overview`).
+**Aggregates-enabled path:** add `aggregates` to `AWS_MCP_ENABLED_TOOL_PACKS` for 24 enabled tools (includes `aws_account_overview`, `aws_cost_overview`, `aws_observability_overview`).
+
+**Security-enabled path:** add `security` to default packs for 26 enabled tools (includes SSM inventory, S3 posture, SES, SNS, and EventBridge/Scheduler status tools).
 
 Disabled or pack-gated tools must not appear in `tools/list` or as ChatGPT Actions.
 
@@ -38,7 +40,7 @@ ChatGPT Connector Server URL: https://<worker-host>/mcp
 MCP_RESOURCE_URL and OAUTH_AUDIENCE: https://<worker-host> (origin only — do not append /mcp)
 Protected resource metadata: https://<worker-host>/.well-known/oauth-protected-resource
 Required scope: aws:read
-Expected enabled MCP tools: 11 (default) or 14 (with aggregates pack)
+Expected enabled MCP tools: 21 (default) or 24 (with aggregates pack)
 ```
 
 ---
@@ -69,7 +71,7 @@ pnpm run test:integrity
 | Capability/IAM alignment | `src/mcp/tools/capability-contract.test.ts` |
 | Generated capability matrix doc | `src/mcp/tools/capability-matrix.test.ts` |
 | Tool pack and disable exposure | `src/mcp/tools/exposure.test.ts` |
-| HTTP `tools/list` returns enabled tools only (11 by default) | `src/mcp/tools/list-integration.test.ts` |
+| HTTP `tools/list` returns enabled tools only (21 by default) | `src/mcp/tools/list-integration.test.ts` |
 | `/mcp` 401 challenge and protected-resource metadata | `src/index.oauth.test.ts` |
 
 Local acceptance (no deploy required):
@@ -155,7 +157,7 @@ curl -sS -X POST https://<worker-host>/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
-**Expected (default exposure — 11 tools):** `result.tools` includes exactly:
+**Expected (default exposure — 21 tools):** `result.tools` includes exactly:
 
 ```text
 search
@@ -163,15 +165,25 @@ fetch
 get_gateway_status
 get_aws_cost_summary
 get_aws_cost_by_service
+get_budget_status
 list_ec2_instances
-get_cloudwatch_alarms
-get_recent_log_errors
 list_lambda_functions
 list_s3_buckets
+get_ecr_image_status
+compare_ecs_task_image_with_ecr
+get_cloudwatch_alarms
+get_cloudwatch_logs
+get_cloudwatch_alarm_summary
+get_recent_log_errors
 list_log_groups
+get_ecs_service_health
+list_ecs_tasks
+get_recent_stopped_ecs_tasks
+get_rds_instance_health
+get_rds_metrics
 ```
 
-**Expected (aggregates pack enabled — 14 tools):** the 11 tools above plus `aws_account_overview`, `aws_cost_overview`, `aws_observability_overview`.
+**Expected (aggregates pack enabled — 24 tools):** the 21 tools above plus `aws_account_overview`, `aws_cost_overview`, `aws_observability_overview`.
 
 **Must not appear** when disabled: pack-gated tools (for example `aggregates` tools when that pack is off), tools in `AWS_MCP_DISABLED_TOOLS`, or tools outside `AWS_MCP_ENABLED_TOOLS` when that allowlist is set.
 
@@ -255,7 +267,7 @@ Complete the OAuth flow in ChatGPT (Auth0 or compatible OIDC user — not ChatGP
 
 After OAuth linking, open the connector and click **Refresh** if updating after a deploy.
 
-**Expected:** The Actions page lists all **enabled** MCP tools from step 7 — not “No app actions available yet”. Default deployments show 11 Actions; aggregates-enabled deployments show 14.
+**Expected:** The Actions page lists all **enabled** MCP tools from step 7 — not “No app actions available yet”. Default deployments show 21 Actions; aggregates-enabled deployments show 24.
 
 - [ ] **16.** ChatGPT Actions match the enabled tool set from `tools/list`
 

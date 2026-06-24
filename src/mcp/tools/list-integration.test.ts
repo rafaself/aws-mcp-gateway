@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
-import { defaultResolvedToolExposure } from "../../config/tool-exposure.js";
+import { defaultResolvedToolExposure, DEFAULT_EXPOSED_TOOL_COUNT } from "../../config/tool-exposure.js";
 import type { ToolPack } from "./manifest.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
@@ -55,7 +55,7 @@ describe("tools/list MCP protocol integration", () => {
     expect(listResult).toBeDefined();
 
     const tools = listResult!.result.tools;
-    expect(tools).toHaveLength(23);
+    expect(tools).toHaveLength(DEFAULT_EXPOSED_TOOL_COUNT);
 
     for (const tool of tools) {
       expect(tool.securitySchemes).toEqual(OAUTH_SECURITY);
@@ -99,7 +99,7 @@ describe("tools/list MCP protocol integration", () => {
     const listResult = protocolMessages.find(isToolsListResult);
     const tools = listResult!.result.tools;
 
-    expect(tools).toHaveLength(22);
+    expect(tools).toHaveLength(DEFAULT_EXPOSED_TOOL_COUNT - 1);
     expect(tools.map((tool) => tool.name)).not.toContain("get_cloudwatch_alarms");
   });
 

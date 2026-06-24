@@ -37,8 +37,32 @@ describe("tool exposure configuration", () => {
     expect(exposed.has("aws_account_overview")).toBe(false);
     expect(exposed.has("aws_cost_overview")).toBe(false);
     expect(exposed.has("aws_observability_overview")).toBe(false);
+    expect(exposed.has("check_ssm_parameter_inventory")).toBe(false);
+    expect(exposed.has("get_s3_bucket_posture")).toBe(false);
+    expect(exposed.has("get_ses_configuration_status")).toBe(false);
+    expect(exposed.has("get_sns_topic_status")).toBe(false);
+    expect(exposed.has("get_eventbridge_rules_status")).toBe(false);
     expect(exposed.has("list_application_profiles")).toBe(false);
     expect(exposed.has("get_application_environment_overview")).toBe(false);
+  });
+
+  it("enabling security pack exposes security tools", () => {
+    const ctx = createTestGatewayContext({
+      toolExposure: {
+        ...defaultResolvedToolExposure(),
+        enabledToolPacks: new Set<ToolPack>([
+          ...DEFAULT_ENABLED_TOOL_PACKS,
+          "security",
+        ]),
+      },
+    });
+    const exposed = resolveExposedToolNames(createToolManifests(ctx), ctx.toolExposure);
+
+    expect(exposed.has("check_ssm_parameter_inventory")).toBe(true);
+    expect(exposed.has("get_s3_bucket_posture")).toBe(true);
+    expect(exposed.has("get_ses_configuration_status")).toBe(true);
+    expect(exposed.has("get_sns_topic_status")).toBe(true);
+    expect(exposed.has("get_eventbridge_rules_status")).toBe(true);
   });
 
   it("enabling application-ops pack exposes profile tools", () => {

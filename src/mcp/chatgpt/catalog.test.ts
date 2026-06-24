@@ -1,3 +1,4 @@
+import { DEFAULT_EXPOSED_CATALOG_COUNT } from "../../config/tool-exposure.js";
 import { describe, expect, it } from "vitest";
 import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
 import {
@@ -27,7 +28,7 @@ describe("ChatGPT catalog", () => {
 
   it("returns the full catalog when the query is empty", () => {
     const { results } = searchCatalog("", RESOURCE_URL, catalogEntries);
-    expect(results).toHaveLength(21);
+    expect(results).toHaveLength(DEFAULT_EXPOSED_CATALOG_COUNT);
   });
 
   it("fetches catalog documents by id", () => {

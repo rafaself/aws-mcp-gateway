@@ -166,7 +166,7 @@ Open `wrangler.jsonc` and ensure the `[vars]` section contains:
 
 ### Optional tool exposure controls
 
-Configure in `[vars]` or the Cloudflare dashboard. Defaults expose **11** of **14** registered tools via packs `core`, `cost`, `inventory`, and `observability`. The `aggregates` pack (+3 overview tools) is opt-in.
+Configure in `[vars]` or the Cloudflare dashboard. Defaults expose **21** of **38** registered tools via packs `core`, `cost`, `inventory`, `observability`, and `database`. The `security` (+5 tools), `aggregates` (+3 overview tools), and `application-ops` (+9 profile tools) packs are opt-in.
 
 Disabled or pack-gated tools are omitted from `tools/list` and return a safe validation error if invoked by name. See [README.md](../README.md#tool-exposure-optional) for pack mappings and examples.
 
@@ -174,7 +174,7 @@ Disabled or pack-gated tools are omitted from `tools/list` and return a safe val
 {
   "vars": {
     // Recommended default (omit to use built-in defaults):
-    // "AWS_MCP_ENABLED_TOOL_PACKS": "core,cost,inventory,observability",
+    // "AWS_MCP_ENABLED_TOOL_PACKS": "core,cost,inventory,observability,database",
     // "AWS_MCP_MAX_RISK_LEVEL": "read-only"
   }
 }
@@ -182,12 +182,12 @@ Disabled or pack-gated tools are omitted from `tools/list` and return a safe val
 
 | Variable | Default | Notes |
 |----------|---------|-------|
-| `AWS_MCP_ENABLED_TOOL_PACKS` | `core,cost,inventory,observability` | Comma-separated pack names |
+| `AWS_MCP_ENABLED_TOOL_PACKS` | `core,cost,inventory,observability,database` | Comma-separated pack names |
 | `AWS_MCP_ENABLED_TOOLS` | *(empty)* | Optional explicit allowlist |
 | `AWS_MCP_DISABLED_TOOLS` | *(empty)* | Deny specific tools |
 | `AWS_MCP_MAX_RISK_LEVEL` | `read-only` | Only `read-only` is supported today |
 
-Packs map to tools as documented in [README.md](../README.md#tool-exposure-optional). Enabling fewer packs is preferred for least privilege — for example, `AWS_MCP_ENABLED_TOOL_PACKS=cost` exposes only the two Cost Explorer tools. Add `core` when ChatGPT `search` / `fetch` helpers are required.
+Packs map to tools as documented in [README.md](../README.md#tool-exposure-optional). Enabling fewer packs is preferred for least privilege — for example, `AWS_MCP_ENABLED_TOOL_PACKS=cost` exposes only the three cost tools. Add `core` when ChatGPT `search` / `fetch` helpers are required.
 
 Unknown pack or tool names fail Worker startup validation.
 
@@ -406,7 +406,7 @@ curl -X POST https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-A successful response includes a `result` object with a `tools` array containing all **enabled** MCP tools for this deployment (11 by default).
+A successful response includes a `result` object with a `tools` array containing all **enabled** MCP tools for this deployment (21 by default).
 
 **OAuth mode** — complete authentication through the ChatGPT connector UI. Do not copy OAuth access tokens into shell history. See [auth-chatgpt-oauth.md](auth-chatgpt-oauth.md).
 

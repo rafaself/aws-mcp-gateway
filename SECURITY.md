@@ -120,7 +120,7 @@ Tools are registered explicitly via manifest-backed definitions in `src/mcp/tool
 - [ ] The registry defines **38** public tools (see [docs/mcp-tools.md](docs/mcp-tools.md)).
 - [ ] Default deployments expose **21** tools via packs `core`, `cost`, `inventory`, `observability`, and `database` (see [docs/aws-tools.md](docs/aws-tools.md)).
 - [ ] Three **opt-in** aggregate tools (`aws_account_overview`, `aws_cost_overview`, `aws_observability_overview`) require the `aggregates` pack in `AWS_MCP_ENABLED_TOOL_PACKS`.
-- [ ] Three **opt-in** security tools (`check_ssm_parameter_inventory`, `get_s3_bucket_posture`, `get_ses_configuration_status`) require the `security` pack.
+- [ ] Three **opt-in** security tools (`check_ssm_parameter_inventory`, `get_s3_bucket_posture`, `get_ses_configuration_status`, `get_sns_topic_status`, `get_eventbridge_rules_status`) require the `security` pack.
 - [ ] Nine **opt-in** application-ops tools require the `application-ops` pack and optional `AWS_MCP_APP_CONFIG` KV — profiles are not required for generic tools.
 - [ ] Authenticated `tools/list` returns only enabled tools with valid `title`, `description`, `inputSchema`, `outputSchema` (where applicable), read-only annotations, and OAuth `securitySchemes`.
 - [ ] `search` and `fetch` are catalog helpers — they do not replace `tools/list` for ChatGPT action discovery.
@@ -211,7 +211,7 @@ AWS capability metadata links tools to IAM actions and read-only posture.
 
 Tool exposure is configured via environment variables (see [README.md](README.md#tool-exposure-optional)).
 
-- [ ] `AWS_MCP_ENABLED_TOOL_PACKS` controls which packs are exposed (default: `core,cost,inventory,observability`).
+- [ ] `AWS_MCP_ENABLED_TOOL_PACKS` controls which packs are exposed (default: `core,cost,inventory,observability,database`).
 - [ ] `AWS_MCP_DISABLED_TOOLS` and optional `AWS_MCP_ENABLED_TOOLS` further restrict exposure.
 - [ ] Disabled or pack-gated tools are omitted from `tools/list` and denied on direct invocation.
 - [ ] `AWS_MCP_MAX_RISK_LEVEL` is `read-only` (only supported value today).
@@ -345,7 +345,7 @@ Complete this immediately before `pnpm deploy` or promoting a Worker version:
 - [ ] `GET /health` returns `{ "ok": true, "service": "aws-mcp-gateway" }` without authentication.
 - [ ] With valid runtime configuration, `POST /mcp` without authentication returns HTTP 401 (with `WWW-Authenticate` in `oauth` mode).
 - [ ] Authenticated MCP access works (local bearer token or ChatGPT OAuth flow — see [docs/mcp-testing.md](docs/mcp-testing.md)).
-- [ ] For ChatGPT production connectors, complete the production acceptance checklist in [docs/chatgpt-connector-production-acceptance.md](docs/chatgpt-connector-production-acceptance.md) — including authenticated `tools/list` validation for **enabled** tools only, OAuth login, Actions visible, `get_gateway_status`, optional `search`/`fetch`, and a bounded AWS tool. Default deployments expect 21 tools; enabling `aggregates` adds three; enabling `security` adds three; enabling `application-ops` adds nine. Detailed step-by-step responses: [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md).
+- [ ] For ChatGPT production connectors, complete the production acceptance checklist in [docs/chatgpt-connector-production-acceptance.md](docs/chatgpt-connector-production-acceptance.md) — including authenticated `tools/list` validation for **enabled** tools only, OAuth login, Actions visible, `get_gateway_status`, optional `search`/`fetch`, and a bounded AWS tool. Default deployments expect 21 tools; enabling `aggregates` adds three; enabling `security` adds five; enabling `application-ops` adds nine. Detailed step-by-step responses: [docs/chatgpt-connector-smoke-test.md](docs/chatgpt-connector-smoke-test.md).
 - [ ] A smoke test confirms at least one AWS-backed tool returns normalized output in an allowed region.
 
 ---

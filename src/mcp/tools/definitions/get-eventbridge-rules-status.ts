@@ -41,7 +41,7 @@ export function createGetEventBridgeRulesStatusToolManifest(
     description:
       "Returns EventBridge rule and Scheduler schedule status with safe target summaries. " +
       "Raw target input payloads are never returned. Uses default gateway credentials only.",
-    pack: "observability",
+    pack: "security",
     lifecycle: "stable",
     inputSchema: getEventBridgeRulesStatusInputSchema,
     outputSchema: getEventBridgeRulesStatusOutputSchema,
