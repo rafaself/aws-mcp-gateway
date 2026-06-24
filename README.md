@@ -161,15 +161,16 @@ For the implementation-aligned authentication model, see
 
 ## Configuration
 
-Both [`wrangler.jsonc`](wrangler.jsonc) and [`wrangler.example.jsonc`](wrangler.example.jsonc) are tracked and must stay structurally in sync. Edit `wrangler.example.jsonc` first when adding keys or sections, then mirror the same structure into `wrangler.jsonc`. `pnpm run repo:safety` enforces structural parity.
+Both [`wrangler.jsonc`](wrangler.jsonc) and [`wrangler.example.jsonc`](wrangler.example.jsonc) are tracked and must stay structurally in sync with **placeholders only**. Real deployment values (worker host, Auth0 tenant, KV namespace ids) belong in gitignored `wrangler.deploy.jsonc` — copy from [`wrangler.deploy.example.jsonc`](wrangler.deploy.example.jsonc). `pnpm run repo:safety` enforces structural parity and blocks live values in tracked Wrangler files.
 
-On a fresh clone, if the files differ, copy the example:
+On a fresh clone:
 
 ```bash
 cp wrangler.example.jsonc wrangler.jsonc
+cp wrangler.deploy.example.jsonc wrangler.deploy.jsonc
 ```
 
-Update at least:
+Fill `wrangler.deploy.jsonc` with at least:
 
 - `AWS_REGION`
 - `AWS_ALLOWED_REGIONS`
@@ -288,7 +289,7 @@ Create the namespace:
 wrangler kv:namespace create "AWS_MCP_CACHE"
 ```
 
-Then copy the returned namespace id into `wrangler.jsonc`.
+Then copy the returned namespace id into `wrangler.deploy.jsonc`.
 
 Default cache TTLs:
 
@@ -319,22 +320,20 @@ Prepare deploy-time credentials:
 cp .env.deploy.example .env.deploy.local
 ```
 
-Fill the required values in `.env.deploy.local`, then deploy:
+Fill the required values in `.env.deploy.local` and deployment values in `wrangler.deploy.jsonc`, then deploy:
 
 ```bash
 pnpm run deploy:configured
 ```
 
-Or deploy manually after configuring Worker secrets with Wrangler:
+Or deploy code after syncing Worker secrets:
 
 ```bash
-wrangler secret put AWS_ACCESS_KEY_ID
-wrangler secret put AWS_SECRET_ACCESS_KEY
-wrangler secret put MCP_AUTH_TOKEN # local-bearer mode only
+pnpm run sync-secrets
 pnpm deploy
 ```
 
-For OAuth production mode, configure OAuth values in `wrangler.jsonc` `[vars]` and use Worker secrets only for credentials and private client secrets.
+`pnpm deploy` uses `wrangler.deploy.jsonc` (not tracked `wrangler.jsonc`). For OAuth production mode, configure OAuth values in `wrangler.deploy.jsonc` `[vars]` and use Worker secrets only for credentials and private client secrets.
 
 See [`docs/deployment.md`](docs/deployment.md) for the full deployment guide.
 
@@ -393,7 +392,7 @@ Forbidden in the current scope:
 - no `call_any_aws_api` or generic AWS API proxy;
 - no AWS write or management permissions;
 - no raw AWS API responses returned to MCP clients;
-- no committed `.env`, `.dev.vars`, `.env.deploy.local`, `.wrangler/`, or real credentials.
+- no committed `.env`, `.dev.vars`, `.env.deploy.local`, `wrangler.deploy.jsonc`, `.wrangler/`, or real credentials.
 
 For the full security checklist, see [`SECURITY.md`](SECURITY.md).
 
@@ -479,6 +478,7 @@ Never commit:
 - `.env`;
 - `.dev.vars`;
 - `.env.deploy.local`;
+- `wrangler.deploy.jsonc`;
 - `.wrangler/`.
 
 ## Contributing

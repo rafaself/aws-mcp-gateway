@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+
 export type CommonCliOptions = {
   configPath: string;
   env?: string;
@@ -26,8 +28,12 @@ function readFlagValue(argv: string[], index: number, flag: string): string | un
   return value;
 }
 
+function defaultWranglerConfigPath(): string {
+  return existsSync("wrangler.deploy.jsonc") ? "wrangler.deploy.jsonc" : "wrangler.jsonc";
+}
+
 function parseCommonOptions(argv: string[]): CommonCliOptions {
-  let configPath = "wrangler.jsonc";
+  let configPath = defaultWranglerConfigPath();
   let env: string | undefined;
   let remote = false;
 

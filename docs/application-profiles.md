@@ -237,7 +237,7 @@ pnpm run app-profile:delete -- --profile-id example-prod --yes --remote
 
 Common flags:
 
-- `-c, --config <path>` — Wrangler config (default: `wrangler.jsonc`)
+- `-c, --config <path>` — Wrangler config (default: `wrangler.deploy.jsonc` when present, else `wrangler.jsonc`)
 - `-e, --env <name>` — Wrangler environment
 - `--remote` — target remote KV instead of local storage
 

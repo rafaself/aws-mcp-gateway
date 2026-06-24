@@ -3,6 +3,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="${1:-$ROOT/.env.deploy.local}"
+# shellcheck source=lib/wrangler-deploy-config.sh
+source "$ROOT/scripts/lib/wrangler-deploy-config.sh"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Missing $ENV_FILE — copy from .env.deploy.example" >&2
@@ -22,6 +24,8 @@ if [[ -n "${AWS_MCP_GATEWAY_CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
   export CLOUDFLARE_ACCOUNT_ID="$AWS_MCP_GATEWAY_CLOUDFLARE_ACCOUNT_ID"
 fi
 
+resolve_wrangler_deploy_config "$ROOT"
+
 require_var() {
   local name="$1"
   if [[ -z "${!name:-}" ]]; then
@@ -40,7 +44,7 @@ cd "$ROOT"
 put_secret() {
   local binding="$1"
   local value="$2"
-  printf '%s' "$value" | pnpm exec wrangler secret put "$binding"
+  printf '%s' "$value" | pnpm exec wrangler secret put "$binding" "${WRANGLER_CONFIG_ARGS[@]}"
 }
 
 put_secret AWS_ACCESS_KEY_ID "$AWS_MCP_GATEWAY_AWS_ACCESS_KEY_ID"

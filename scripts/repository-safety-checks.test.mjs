@@ -24,6 +24,7 @@ describe("isForbiddenTrackedPath", () => {
   it("rejects local-only and build artifact paths", () => {
     assert.equal(isForbiddenTrackedPath(".dev.vars"), true);
     assert.equal(isForbiddenTrackedPath(".env.deploy.local"), true);
+    assert.equal(isForbiddenTrackedPath("wrangler.deploy.jsonc"), true);
     assert.equal(isForbiddenTrackedPath(".env"), true);
     assert.equal(isForbiddenTrackedPath(".wrangler/state.json"), true);
     assert.equal(isForbiddenTrackedPath("node_modules/pkg/index.js"), true);

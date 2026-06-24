@@ -3,6 +3,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="${1:-$ROOT/.env.deploy.local}"
+# shellcheck source=lib/wrangler-deploy-config.sh
+source "$ROOT/scripts/lib/wrangler-deploy-config.sh"
 
 "$ROOT/scripts/sync-secrets.sh" "$ENV_FILE"
 
@@ -19,5 +21,7 @@ if [[ -n "${AWS_MCP_GATEWAY_CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
   export CLOUDFLARE_ACCOUNT_ID="$AWS_MCP_GATEWAY_CLOUDFLARE_ACCOUNT_ID"
 fi
 
+resolve_wrangler_deploy_config "$ROOT"
+
 cd "$ROOT"
-pnpm exec wrangler deploy
+pnpm exec wrangler deploy "${WRANGLER_CONFIG_ARGS[@]}"

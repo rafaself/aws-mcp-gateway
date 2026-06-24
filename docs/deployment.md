@@ -59,18 +59,31 @@ See [README.md](../README.md#testing) for the same validation tiers.
 
 The Worker requires a mix of Cloudflare-managed secrets and non-secret configuration variables.
 
-### Wrangler config template
+### Wrangler config files
 
 | File | Purpose |
 |------|---------|
-| [`wrangler.example.jsonc`](../wrangler.example.jsonc) | Reusable template with placeholders and inline comments — copy when starting a new deployment |
-| [`wrangler.jsonc`](../wrangler.jsonc) | Generic tracked config with placeholders — replace worker host, Auth0 tenant, and KV namespace id before OAuth production deploy |
+| [`wrangler.example.jsonc`](../wrangler.example.jsonc) | Tracked template with placeholders and inline comments |
+| [`wrangler.jsonc`](../wrangler.jsonc) | Tracked generic config — **placeholders only** (enforced by `repo:safety`) |
+| [`wrangler.deploy.example.jsonc`](../wrangler.deploy.example.jsonc) | Copy target for local deploy config |
+| `wrangler.deploy.jsonc` | **Gitignored** — real worker host, Auth0 tenant, KV namespace ids |
 
-Before deploying your own connector, copy `wrangler.example.jsonc` to `wrangler.jsonc` (or edit the tracked file) and replace:
+On a fresh clone:
+
+```bash
+cp wrangler.example.jsonc wrangler.jsonc   # if needed for structural parity
+cp wrangler.deploy.example.jsonc wrangler.deploy.jsonc
+```
+
+Fill `wrangler.deploy.jsonc` with deployment-specific values:
 
 - `<your-worker-host>` — your Cloudflare Worker URL host
 - `<your-auth0-tenant>` — Auth0 domain (or compatible OIDC issuer host)
 - `<your-kv-namespace-id>` — KV namespace id from `wrangler kv:namespace create`
+
+Deploy scripts (`pnpm deploy`, `pnpm run deploy:configured`, `pnpm run sync-config`, `pnpm run sync-secrets`) read `wrangler.deploy.jsonc` by default. Override with `WRANGLER_CONFIG=/path/to/config.jsonc` when needed.
+
+**Never put real deployment values in tracked `wrangler.jsonc`.** `wrangler deploy` uploads the full local config and overwrites remote vars — using placeholders in the tracked file prevents accidental production breakage and keeps `repo:safety` green.
 
 **Secrets vs non-secrets:**
 
@@ -143,13 +156,13 @@ and configure `OAUTH_INTROSPECTION_CLIENT_ID` / `OAUTH_INTROSPECTION_CLIENT_SECR
 For a mode-by-mode comparison of `jwks`, `introspection`, and `hybrid`, see
 [auth/token-validation.md](auth/token-validation.md).
 
-Keep committed `wrangler.jsonc` and [`wrangler.example.jsonc`](../wrangler.example.jsonc) production-neutral (placeholders only). Set real worker host, Auth0 tenant, and KV namespace id in the Cloudflare dashboard, CI deploy overrides, or `.env.deploy.local` for setup scripts — never commit live tenant, host, or KV namespace values. When changing Wrangler structure, edit the example file first and mirror the same shape into `wrangler.jsonc`.
+Keep committed `wrangler.jsonc` and [`wrangler.example.jsonc`](../wrangler.example.jsonc) production-neutral (placeholders only). Set real worker host, Auth0 tenant, and KV namespace id in **gitignored** [`wrangler.deploy.jsonc`](../wrangler.deploy.example.jsonc) (copy from `wrangler.deploy.example.jsonc`), Cloudflare dashboard, or CI-generated deploy config — never commit live tenant, host, or KV namespace values. When changing Wrangler structure, edit the example files first and mirror the same shape into `wrangler.jsonc`.
 
-### Required configuration (configure in `wrangler.jsonc` `[vars]`)
+### Required configuration (`wrangler.deploy.jsonc` `[vars]`)
 
-These values are operational configuration, not credentials. They are safe to commit and review.
+These values are operational configuration, not credentials. Set them in gitignored `wrangler.deploy.jsonc` for deploy; tracked `wrangler.jsonc` keeps placeholders for documentation and `repo:safety`.
 
-Open `wrangler.jsonc` and ensure the `[vars]` section contains:
+Open `wrangler.deploy.jsonc` and ensure the `[vars]` section contains:
 
 ```jsonc
 {
@@ -224,7 +237,7 @@ Create the namespace:
 wrangler kv:namespace create "AWS_MCP_CACHE"
 ```
 
-Copy the returned `id` into `wrangler.jsonc`:
+Copy the returned `id` into `wrangler.deploy.jsonc`:
 
 ```jsonc
 {
@@ -251,7 +264,7 @@ Create the namespace:
 wrangler kv:namespace create "AWS_MCP_APP_CONFIG"
 ```
 
-Copy the returned `id` into `wrangler.jsonc`:
+Copy the returned `id` into `wrangler.deploy.jsonc`:
 
 ```jsonc
 {
@@ -297,13 +310,13 @@ Sync Worker secrets from `.env.deploy.local` (no rollout; `wrangler secret put` 
 pnpm run sync-secrets
 ```
 
-Sync secrets and `wrangler.jsonc` vars without a code deploy (`wrangler versions upload` + `wrangler versions deploy`):
+Sync secrets and `wrangler.deploy.jsonc` vars without a code deploy (`wrangler versions upload` + `wrangler versions deploy`):
 
 ```bash
 pnpm run sync-config
 ```
 
-Edit `wrangler.jsonc` before running `sync-config` when OAuth URLs, region allowlists, or other public vars change.
+Edit `wrangler.deploy.jsonc` before running `sync-config` when OAuth URLs, region allowlists, or other public vars change.
 
 Sync secrets and deploy in one step:
 
@@ -319,7 +332,7 @@ Do **not** put `CLOUDFLARE_API_TOKEN` in `.dev.vars` — that file is injected i
 pnpm deploy
 ```
 
-This runs `wrangler deploy`, which uploads the Worker to Cloudflare and outputs the deployment URL. The MCP endpoint will be available at:
+This runs `pnpm deploy` (`wrangler deploy -c wrangler.deploy.jsonc`), which uploads the Worker to Cloudflare and outputs the deployment URL. The MCP endpoint will be available at:
 
 ```text
 https://aws-mcp-gateway.<your-subdomain>.workers.dev/mcp

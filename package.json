@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "deploy": "bash scripts/wrangler-deploy.sh",
     "sync-secrets": "bash scripts/sync-secrets.sh",
     "sync-config": "bash scripts/sync-worker-config.sh",
     "deploy:configured": "bash scripts/deploy-with-env.sh",
@@ -20,7 +20,7 @@
     "repo:safety": "node scripts/check-repository-safety.mjs",
     "output:guardrail": "node scripts/check-runtime-output.mjs",
     "legacy:check": "node scripts/check-legacy-symbols.mjs",
-    "test": "vitest run && node --test scripts/repository-safety-checks.test.mjs scripts/runtime-output-checks.test.mjs scripts/legacy-symbol-checks.test.mjs",
+    "test": "vitest run && node --test scripts/repository-safety-checks.test.mjs scripts/lib/wrangler-deploy-config.test.mjs scripts/runtime-output-checks.test.mjs scripts/legacy-symbol-checks.test.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",

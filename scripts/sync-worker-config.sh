@@ -5,6 +5,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="${1:-$ROOT/.env.deploy.local}"
 TAG="${WRANGLER_CONFIG_SYNC_TAG:-config-sync}"
 MESSAGE="${WRANGLER_CONFIG_SYNC_MESSAGE:-sync worker secrets and vars}"
+# shellcheck source=lib/wrangler-deploy-config.sh
+source "$ROOT/scripts/lib/wrangler-deploy-config.sh"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Missing $ENV_FILE — copy from .env.deploy.example" >&2
@@ -67,13 +69,16 @@ fi
 
 cd "$ROOT"
 
-echo "Uploading Worker version with vars from wrangler.jsonc and secrets from $ENV_FILE..."
+resolve_wrangler_deploy_config "$ROOT"
+
+echo "Uploading Worker version with vars from ${WRANGLER_DEPLOY_CONFIG} and secrets from $ENV_FILE..."
 pnpm exec wrangler versions upload \
   --tag "$TAG" \
   --message "$MESSAGE" \
-  --secrets-file "$SECRETS_FILE"
+  --secrets-file "$SECRETS_FILE" \
+  "${WRANGLER_CONFIG_ARGS[@]}"
 
 echo "Rolling out version tag ${TAG} at 100% (no wrangler deploy)..."
-pnpm exec wrangler versions deploy "${TAG}@100%" -y --message "$MESSAGE"
+pnpm exec wrangler versions deploy "${TAG}@100%" -y --message "$MESSAGE" "${WRANGLER_CONFIG_ARGS[@]}"
 
 echo "Worker config synced for aws-mcp-gateway (tag: ${TAG})."

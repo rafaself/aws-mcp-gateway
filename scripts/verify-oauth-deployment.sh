@@ -9,7 +9,10 @@ source "${SCRIPT_DIR}/lib/oauth-url-checks.sh"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 WORKER_URL="${1:-${AWS_MCP_GATEWAY_WORKER_URL:-}}"
 AUTH0_DOMAIN="${2:-${AWS_MCP_GATEWAY_AUTH0_DOMAIN:-}}"
-WRANGLER_FILE="${ROOT}/wrangler.jsonc"
+# shellcheck source=lib/wrangler-deploy-config.sh
+source "${SCRIPT_DIR}/lib/wrangler-deploy-config.sh"
+resolve_wrangler_config_for_read "$ROOT"
+WRANGLER_FILE="$WRANGLER_CONFIG_FOR_READ"
 
 if [[ -z "$WORKER_URL" || -z "$AUTH0_DOMAIN" ]]; then
   echo "Missing deployment targets." >&2
@@ -34,18 +37,18 @@ if [[ -f "$WRANGLER_FILE" ]] && command -v jq >/dev/null 2>&1; then
   OAUTH_AUDIENCE="$(jq -r '.vars.OAUTH_AUDIENCE // empty' "$WRANGLER_FILE")"
 
   if [[ -n "$MCP_RESOURCE_URL" && "$MCP_RESOURCE_URL" != "https://<your-worker-host>" ]]; then
-    MCP_RESOURCE_URL="$(validate_oauth_origin_url "MCP_RESOURCE_URL (wrangler.jsonc)" "$MCP_RESOURCE_URL")"
+    MCP_RESOURCE_URL="$(validate_oauth_origin_url "MCP_RESOURCE_URL (${WRANGLER_FILE})" "$MCP_RESOURCE_URL")"
     if [[ "$MCP_RESOURCE_URL" != "$WORKER_URL" ]]; then
-      oauth_url_fail "wrangler.jsonc MCP_RESOURCE_URL (${MCP_RESOURCE_URL}) does not match WORKER_URL (${WORKER_URL})"
+      oauth_url_fail "${WRANGLER_FILE} MCP_RESOURCE_URL (${MCP_RESOURCE_URL}) does not match WORKER_URL (${WORKER_URL})"
     fi
   fi
 
   if [[ -n "$OAUTH_AUDIENCE" && "$OAUTH_AUDIENCE" != "https://<your-worker-host>" ]]; then
-    OAUTH_AUDIENCE="$(validate_oauth_origin_url "OAUTH_AUDIENCE (wrangler.jsonc)" "$OAUTH_AUDIENCE")"
+    OAUTH_AUDIENCE="$(validate_oauth_origin_url "OAUTH_AUDIENCE (${WRANGLER_FILE})" "$OAUTH_AUDIENCE")"
     if [[ -n "$MCP_RESOURCE_URL" && "$MCP_RESOURCE_URL" != "https://<your-worker-host>" ]]; then
       assert_audience_matches_resource "$MCP_RESOURCE_URL" "$OAUTH_AUDIENCE"
     elif [[ "$OAUTH_AUDIENCE" != "$WORKER_URL" ]]; then
-      oauth_url_fail "wrangler.jsonc OAUTH_AUDIENCE (${OAUTH_AUDIENCE}) does not match WORKER_URL (${WORKER_URL})"
+      oauth_url_fail "${WRANGLER_FILE} OAUTH_AUDIENCE (${OAUTH_AUDIENCE}) does not match WORKER_URL (${WORKER_URL})"
     fi
   fi
 fi

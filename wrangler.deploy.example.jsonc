@@ -1,0 +1,72 @@
+{
+	// Copy to wrangler.deploy.jsonc (gitignored) and replace placeholders before deploy.
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "aws-mcp-gateway",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"dev": {
+		"ip": "127.0.0.1"
+	},
+	"vars": {
+		"AWS_REGION": "us-east-1",
+		"AWS_ALLOWED_REGIONS": "us-east-1,sa-east-1",
+		"AUTH_MODE": "oauth",
+		"RATE_LIMIT_MAX_REQUESTS": "120",
+		"RATE_LIMIT_WINDOW_SECONDS": "60",
+		// OAuth resource identity — origin only; do NOT append /mcp.
+		// ChatGPT Connector Server URL = MCP_RESOURCE_URL + "/mcp"
+		"MCP_RESOURCE_URL": "https://<your-worker-host>",
+		"OAUTH_ISSUER": "https://<your-auth0-tenant>/",
+		// Must equal MCP_RESOURCE_URL (origin only — do not append /mcp)
+		"OAUTH_AUDIENCE": "https://<your-worker-host>",
+		"OAUTH_TOKEN_VALIDATION_MODE": "jwks",
+		"OAUTH_JWKS_URI": "https://<your-auth0-tenant>/.well-known/jwks.json",
+		"OAUTH_REQUIRED_SCOPES": "aws:read",
+		// Introspection mode (alternative to JWKS):
+		// "OAUTH_TOKEN_VALIDATION_MODE": "introspection",
+		// "OAUTH_INTROSPECTION_URL": "https://<your-auth0-tenant>/oauth/introspect"
+		// Optional tool exposure (default: core,cost,inventory,observability,database — security, aggregates, application-ops are opt-in):
+		// "AWS_MCP_ENABLED_TOOL_PACKS": "core,cost,inventory,observability,database",
+		// "AWS_MCP_MAX_RISK_LEVEL": "read-only"
+		// Optional application profile index key (default: app-profiles/index.json):
+		// "AWS_MCP_APP_PROFILE_INDEX_KEY": "app-profiles/index.json"
+		// Manage profiles with: pnpm run app-profile:validate|put|list|delete (see docs/application-profiles.md)
+	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "AUTH_RATE_LIMITER",
+				"class_name": "AuthRateLimitDurableObject"
+			}
+		]
+	},
+	"kv_namespaces": [
+		{
+			"binding": "AWS_MCP_CACHE",
+			"id": "<your-kv-namespace-id>",
+			"remote": true
+		},
+		// Optional — application profiles only. Generic AWS tools work without this binding.
+		// Add when using application-ops profiles or app-profile:* CLI commands:
+		// {
+		//   "binding": "AWS_MCP_APP_CONFIG",
+		//   "id": "<your-app-config-kv-namespace-id>",
+		//   "remote": true
+		// }
+	],
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": [
+				"AuthRateLimitDurableObject"
+			]
+		}
+	]
+}

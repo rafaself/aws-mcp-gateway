@@ -7,10 +7,13 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=lib/oauth-token-errors.sh
 source "${SCRIPT_DIR}/lib/oauth-token-errors.sh"
-WRANGLER_FILE="${ROOT}/wrangler.jsonc"
+# shellcheck source=lib/wrangler-deploy-config.sh
+source "${SCRIPT_DIR}/lib/wrangler-deploy-config.sh"
 WORKER_URL="${1:-${AWS_MCP_GATEWAY_WORKER_URL:-}}"
 
 if [[ -z "$WORKER_URL" ]]; then
+  resolve_wrangler_config_for_read "$ROOT"
+  WRANGLER_FILE="$WRANGLER_CONFIG_FOR_READ"
   if [[ -f "$WRANGLER_FILE" ]] && command -v jq >/dev/null 2>&1; then
     WORKER_URL="$(jq -r '.vars.MCP_RESOURCE_URL // empty' "$WRANGLER_FILE")"
   fi

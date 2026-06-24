@@ -13,6 +13,7 @@ export const EXACT_FORBIDDEN_PATHS = new Set([
   ".env",
   ".dev.vars",
   ".env.deploy.local",
+  "wrangler.deploy.jsonc",
   "package-lock.json",
 ]);
 
@@ -66,6 +67,7 @@ export const LOCAL_ENV_FILENAMES = new Set([
   ".dev.vars",
   ".env.deploy.local",
   ".env",
+  "wrangler.deploy.jsonc",
 ]);
 
 export const PUBLIC_CONFIG_FILES = {
@@ -73,6 +75,7 @@ export const PUBLIC_CONFIG_FILES = {
   ".env.deploy.example": { mode: "example-env" },
   ".dev.vars.example": { mode: "example-env" },
   "wrangler.example.jsonc": { mode: "wrangler" },
+  "wrangler.deploy.example.jsonc": { mode: "wrangler" },
   "wrangler.jsonc": { mode: "wrangler" },
 };
 

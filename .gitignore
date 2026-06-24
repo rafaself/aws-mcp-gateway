@@ -6,6 +6,7 @@ dist/
 !.env.example
 !.env.deploy.example
 .dev.vars
+wrangler.deploy.jsonc
 coverage/
 package-lock.json
 .opencode/

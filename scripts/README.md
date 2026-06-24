@@ -105,9 +105,13 @@ Scans production source files under `src/` and fails if removed legacy auth mode
 
 Scans test files for forbidden `.only()` markers and skipped tests without an `intentional-skip:` justification.
 
+#### `wrangler-deploy.sh`
+
+Runs `wrangler deploy` with gitignored `wrangler.deploy.jsonc` (override via `WRANGLER_CONFIG`). Fails fast when the deploy config file is missing.
+
 #### `deploy-with-env.sh`
 
-Loads a deployment env file, syncs Worker secrets first, maps Cloudflare credentials into the expected environment variables, and runs `wrangler deploy`.
+Loads a deployment env file, syncs Worker secrets first, maps Cloudflare credentials into the expected environment variables, and runs `wrangler deploy -c wrangler.deploy.jsonc`.
 
 #### `setup-auth0-oauth.sh`
 
@@ -123,7 +127,7 @@ This script calls external services and changes Worker secrets.
 
 #### `sync-worker-config.sh`
 
-Uploads a new Worker version with `wrangler versions upload` (vars from `wrangler.jsonc`, secrets from the env file via `--secrets-file`) and rolls it out with `wrangler versions deploy` at 100%. Use this to refresh configuration without `wrangler deploy` (no code release workflow).
+Uploads a new Worker version with `wrangler versions upload` (vars from `wrangler.deploy.jsonc`, secrets from the env file via `--secrets-file`) and rolls it out with `wrangler versions deploy` at 100%. Use this to refresh configuration without `wrangler deploy` (no code release workflow).
 
 Optional environment overrides:
 
