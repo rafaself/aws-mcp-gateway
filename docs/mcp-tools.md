@@ -136,9 +136,9 @@ All public tools require OAuth (`aws:read`) or local bearer authentication and a
 
 **Aggregate overview tools (10–12)** compose existing manifest-backed capabilities into bounded summaries. They are in the `aggregates` tool pack, which is **disabled by default**. Enable with `AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,aggregates` when you want higher-level summaries instead of calling each inventory or observability tool separately. Aggregates are not full account crawlers — they return counts and short normalized samples only.
 
-**Security tools (20, 23–24)** are in the `security` tool pack, which is **disabled by default**. Enable with `AWS_MCP_ENABLED_TOOL_PACKS=...,security` when you need SSM parameter inventory, S3 posture, or SES configuration checks. These tools return metadata only and mask sensitive endpoints.
+**Security tools (20, 23–26)** are in the `security` tool pack, which is **disabled by default**. Enable with `AWS_MCP_ENABLED_TOOL_PACKS=...,security` when you need SSM parameter inventory, S3 posture, SES configuration checks, SNS topic status, or EventBridge/Scheduler status. These tools return metadata only and mask sensitive endpoints.
 
-**Observability tools (25–26)** for SNS and EventBridge/Scheduler are in the default `observability` pack. **Budget tool (27)** is in the default `cost` pack.
+**Budget tool (27)** is in the default `cost` pack.
 
 **Application-ops tools (28–36)** are in the `application-ops` pack, which is **disabled by default**. Enable with `AWS_MCP_ENABLED_TOOL_PACKS=...,application-ops` when `AWS_MCP_APP_CONFIG` stores application profiles. Call `list_application_profiles` first, then pass `profileId` explicitly to aggregate tools. Profiles are saved operational context only — not secrets and not authorization.
 
@@ -1965,7 +1965,7 @@ credentials only. For cross-account SES, use application profiles with `assume-r
 **Purpose:** Returns SNS topic status including subscription count, protocols,
 confirmation state, masked subscription endpoints, and a summarized topic policy.
 
-**Pack:** `observability` (enabled by default)
+**Pack:** `security` (opt-in)
 
 ### Input
 
@@ -1992,7 +1992,7 @@ confirmation state, masked subscription endpoints, and a summarized topic policy
 **Purpose:** Returns EventBridge rule and EventBridge Scheduler schedule status with
 safe target summaries. Raw target input payloads are never returned.
 
-**Pack:** `observability` (enabled by default)
+**Pack:** `security` (opt-in)
 
 ### Input
 

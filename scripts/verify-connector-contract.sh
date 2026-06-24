@@ -28,7 +28,7 @@ echo "  - src/mcp/tools/capability-contract.test.ts (capability/IAM alignment)"
 echo "  - src/mcp/tools/capability-matrix.test.ts (generated capability matrix doc)"
 echo "  - src/aws/iam-readonly-policy.test.ts (readonly IAM policy vs capability registry)"
 echo "  - src/mcp/tools/exposure.test.ts (tool pack and disable exposure)"
-echo "  - src/mcp/tools/list-integration.test.ts (HTTP tools/list, 11 public tools)"
+echo "  - src/mcp/tools/list-integration.test.ts (HTTP tools/list, default exposed tools)"
 echo "  - src/index.oauth.test.ts (/mcp 401 challenge, protected-resource metadata)"
 echo ""
 

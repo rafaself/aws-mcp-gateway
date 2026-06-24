@@ -117,18 +117,28 @@ Example JSON-RPC payload (no token required in the body):
 **Expected:**
 
 - HTTP `200`
-- `result.tools` includes all **enabled** tools for this deployment (11 with default packs; 14 when `aggregates` is enabled). Default exposure lists:
+- `result.tools` includes all **enabled** tools for this deployment (21 with default packs; 24 when `aggregates` is enabled). Default exposure lists:
   - `search`
   - `fetch`
   - `get_gateway_status`
   - `get_aws_cost_summary`
   - `get_aws_cost_by_service`
+  - `get_budget_status`
   - `list_ec2_instances`
-  - `get_cloudwatch_alarms`
-  - `get_recent_log_errors`
   - `list_lambda_functions`
   - `list_s3_buckets`
+  - `get_ecr_image_status`
+  - `compare_ecs_task_image_with_ecr`
+  - `get_cloudwatch_alarms`
+  - `get_cloudwatch_logs`
+  - `get_cloudwatch_alarm_summary`
+  - `get_recent_log_errors`
   - `list_log_groups`
+  - `get_ecs_service_health`
+  - `list_ecs_tasks`
+  - `get_recent_stopped_ecs_tasks`
+  - `get_rds_instance_health`
+  - `get_rds_metrics`
 - Each tool descriptor includes `name`, `title`, `description`, `inputSchema`, OAuth `securitySchemes`, and read-only annotations.
 
 If `tools/list` is empty or descriptors are missing required fields, OAuth may still succeed while ChatGPT shows **“No app actions available yet”**. Fix descriptors and redeploy before troubleshooting in the ChatGPT UI.

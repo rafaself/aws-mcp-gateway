@@ -1,3 +1,4 @@
+import { DEFAULT_EXPOSED_TOOL_COUNT } from "../config/tool-exposure.js";
 import { describe, expect, it } from "vitest";
 import { createTestGatewayContext } from "../test/gateway-context-fixture.js";
 import { createServer } from "./server.js";
@@ -107,7 +108,7 @@ describe("streamable HTTP MCP handler", () => {
     const body = (await readSseJson(listResponse)) as {
       result: { tools: Array<{ name: string }> };
     };
-    expect(body.result.tools).toHaveLength(23);
+    expect(body.result.tools).toHaveLength(DEFAULT_EXPOSED_TOOL_COUNT);
   });
 
   it("accepts tools/list without mcp-session-id in stateless mode", async () => {
@@ -129,6 +130,6 @@ describe("streamable HTTP MCP handler", () => {
     const body = (await readSseJson(response)) as {
       result: { tools: Array<{ name: string }> };
     };
-    expect(body.result.tools).toHaveLength(23);
+    expect(body.result.tools).toHaveLength(DEFAULT_EXPOSED_TOOL_COUNT);
   });
 });

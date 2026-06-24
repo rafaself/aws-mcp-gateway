@@ -15,7 +15,7 @@ Server URL in ChatGPT: https://<worker-host>/mcp
 OAuth resource/audience: https://<worker-host>
 Protected resource metadata: https://<worker-host>/.well-known/oauth-protected-resource
 Required scope: aws:read
-Expected enabled MCP tools: 11 (default packs) or 14 (with `aggregates`) — see [tool exposure](#tool-exposure)
+Expected enabled MCP tools: 21 (default packs) or 24 (with `aggregates`) — see [tool exposure](#tool-exposure)
 ```
 
 Do not set `MCP_RESOURCE_URL` or `OAUTH_AUDIENCE` to `https://<worker-host>/mcp`. The OAuth resource identity is the Worker origin; the MCP transport endpoint is `/mcp`.
@@ -58,7 +58,7 @@ OAuth can succeed while actions remain invisible if `tools/list` is empty, retur
 
 **Actions appear only if authenticated `tools/list` returns valid descriptors for enabled tools.**
 
-Disabled tools, pack-gated tools, and denylisted tools are **omitted from `tools/list`** and do not appear as ChatGPT Actions. The registry defines 14 public tools; default deployments expose 11.
+Disabled tools, pack-gated tools, and denylisted tools are **omitted from `tools/list`** and do not appear as ChatGPT Actions. The registry defines 38 public tools; default deployments expose 21.
 
 Each descriptor must include stable `name`, `title`, `description`, `inputSchema`, `outputSchema` (where applicable), read-only `annotations`, and OAuth `securitySchemes`. Without these, ChatGPT shows **“No app actions available yet”** even when OAuth linking succeeds.
 
@@ -94,7 +94,7 @@ Runtime MCP/auth dependency upgrades must be treated as protocol changes until H
    - **Server URL:** `https://<worker-host>/mcp`
    - **Authentication:** OAuth
 3. Complete the OAuth login (Auth0 user, not your ChatGPT account).
-4. Validate authenticated `tools/list` returns all **enabled** tools for your exposure configuration (11 by default — see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md)).
+4. Validate authenticated `tools/list` returns all **enabled** tools for your exposure configuration (21 by default — see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md)).
 5. Open the connector and click **Refresh** after gateway updates so ChatGPT reloads `tools/list`.
 6. Confirm **Actions** lists all enabled tools (not “No app actions available yet”).
 7. Call `get_gateway_status` before AWS-backed tools.
@@ -106,40 +106,36 @@ Tool visibility is controlled by environment variables (see [README.md](../READM
 | Pack | Tools | Default |
 |------|-------|---------|
 | `core` | `search`, `fetch`, `get_gateway_status` | Enabled |
-| `cost` | `get_aws_cost_summary`, `get_aws_cost_by_service` | Enabled |
-| `inventory` | `list_ec2_instances`, `list_lambda_functions`, `list_s3_buckets` | Enabled |
-| `observability` | `get_cloudwatch_alarms`, `get_recent_log_errors`, `list_log_groups` | Enabled |
+| `cost` | `get_aws_cost_summary`, `get_aws_cost_by_service`, `get_budget_status` | Enabled |
+| `inventory` | `list_ec2_instances`, `list_lambda_functions`, `list_s3_buckets`, `get_ecr_image_status`, `compare_ecs_task_image_with_ecr` | Enabled |
+| `observability` | `get_cloudwatch_alarms`, `get_cloudwatch_logs`, `get_cloudwatch_alarm_summary`, `get_recent_log_errors`, `list_log_groups`, `get_ecs_service_health`, `list_ecs_tasks`, `get_recent_stopped_ecs_tasks` | Enabled |
+| `database` | `get_rds_instance_health`, `get_rds_metrics` | Enabled |
+| `security` | `check_ssm_parameter_inventory`, `get_s3_bucket_posture`, `get_ses_configuration_status`, `get_sns_topic_status`, `get_eventbridge_rules_status` | **Opt-in** |
 | `aggregates` | `aws_account_overview`, `aws_cost_overview`, `aws_observability_overview` | **Opt-in** |
+| `application-ops` | Profile discovery and profile-driven operational summaries (9 tools) | **Opt-in** |
 
-Enable aggregates when you want three additional bounded overview Actions:
+Enable opt-in packs as needed — for example, aggregates:
 
 ```text
-AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,aggregates
+AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,database,aggregates
 ```
+
+Full pack-to-tool mapping and configuration examples: [README.md](../README.md#tool-exposure-optional).
 
 ## Tool surface
 
-Default deployments expose **11** MCP tools through `tools/list`:
+Default deployments expose **21** MCP tools through `tools/list`. See [mcp-tools.md](mcp-tools.md) for full input/output contracts.
 
-| Tool | Role | Calls AWS | Read-only | Auth | Output shape |
-|------|------|-----------|-----------|------|--------------|
-| `search` | Catalog search — find AWS tools by keyword | No | Yes | OAuth `aws:read` | [`search` results](mcp-tools.md#search-chatgpt-discovery) |
-| `fetch` | Catalog document — tool details and invocation hints | No* | Yes | OAuth `aws:read` | [`fetch` document](mcp-tools.md#fetch-chatgpt-discovery) |
-| `get_gateway_status` | Health check — verify MCP execution without AWS | No | Yes | OAuth `aws:read` | [`get_gateway_status`](mcp-tools.md#1-get_gateway_status) |
-| `get_aws_cost_summary` | Total AWS spend for a date range | Yes | Yes | OAuth `aws:read` | [`get_aws_cost_summary`](mcp-tools.md#2-get_aws_cost_summary) |
-| `get_aws_cost_by_service` | Spend broken down by service | Yes | Yes | OAuth `aws:read` | [`get_aws_cost_by_service`](mcp-tools.md#3-get_aws_cost_by_service) |
-| `list_ec2_instances` | EC2 inventory across allowed regions | Yes | Yes | OAuth `aws:read` | [`list_ec2_instances`](mcp-tools.md#4-list_ec2_instances) |
-| `get_cloudwatch_alarms` | CloudWatch alarm states | Yes | Yes | OAuth `aws:read` | [`get_cloudwatch_alarms`](mcp-tools.md#5-get_cloudwatch_alarms) |
-| `get_recent_log_errors` | Recent error/warning log events | Yes | Yes | OAuth `aws:read` | [`get_recent_log_errors`](mcp-tools.md#6-get_recent_log_errors) |
-| `list_lambda_functions` | Lambda functions across allowed regions | Yes | Yes | OAuth `aws:read` | [`list_lambda_functions`](mcp-tools.md#7-list_lambda_functions) |
-| `list_s3_buckets` | S3 bucket inventory | Yes | Yes | OAuth `aws:read` | [`list_s3_buckets`](mcp-tools.md#8-list_s3_buckets) |
-| `list_log_groups` | CloudWatch log groups in a region | Yes | Yes | OAuth `aws:read` | [`list_log_groups`](mcp-tools.md#9-list_log_groups) |
+Default-exposed tools:
 
-\* `fetch` does not call AWS except when embedding live `get_gateway_status` JSON for that catalog entry.
-
-`search` and `fetch` are **catalog helpers**. They do not substitute for `tools/list`. After discovery, ChatGPT invokes the named AWS tools with OAuth (`aws:read` scope).
-
-Full input/output contracts: [mcp-tools.md](mcp-tools.md).
+```text
+search, fetch, get_gateway_status,
+get_aws_cost_summary, get_aws_cost_by_service, get_budget_status,
+list_ec2_instances, list_lambda_functions, list_s3_buckets, get_ecr_image_status, compare_ecs_task_image_with_ecr,
+get_cloudwatch_alarms, get_cloudwatch_logs, get_cloudwatch_alarm_summary, get_recent_log_errors, list_log_groups,
+get_ecs_service_health, list_ecs_tasks, get_recent_stopped_ecs_tasks,
+get_rds_instance_health, get_rds_metrics
+```
 
 ## How discovery works in practice
 
@@ -158,7 +154,7 @@ For the full manual validation flow (HTTP pre-checks through OAuth login, `tools
 
 After OAuth succeeds:
 
-1. Confirm **Actions** lists all enabled tools from `tools/list` (11 by default).
+1. Confirm **Actions** lists all enabled tools from `tools/list` (21 by default).
 2. Ask ChatGPT to check gateway status — it should call `get_gateway_status` first.
 3. Ask for a bounded read-only query (for example EC2 instances in an allowed region).
 

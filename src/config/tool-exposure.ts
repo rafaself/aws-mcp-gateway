@@ -19,6 +19,19 @@ export const DEFAULT_ENABLED_TOOL_PACKS: readonly ConfigToolPack[] = [
   "database",
 ];
 
+export const DEFAULT_ENABLED_TOOL_PACKS_CSV =
+  "core,cost,inventory,observability,database" as const;
+
+export const OPT_IN_TOOL_PACKS = ["security", "aggregates", "application-ops"] as const;
+
+export type OptInToolPack = (typeof OPT_IN_TOOL_PACKS)[number];
+
+/** Default MCP tools/list count when only default packs are enabled. */
+export const DEFAULT_EXPOSED_TOOL_COUNT = 21 as const;
+
+/** Default ChatGPT catalog entries when only default packs are enabled (excludes dynamic search/fetch). */
+export const DEFAULT_EXPOSED_CATALOG_COUNT = 19 as const;
+
 export const PUBLIC_TOOL_NAMES = [
   "search",
   "fetch",

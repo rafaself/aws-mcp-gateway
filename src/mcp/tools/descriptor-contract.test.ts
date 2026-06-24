@@ -28,8 +28,6 @@ const AWS_BACKED_TOOLS = [
   "get_rds_metrics",
   "get_ecr_image_status",
   "compare_ecs_task_image_with_ecr",
-  "get_sns_topic_status",
-  "get_eventbridge_rules_status",
   "get_budget_status",
 ] as const;
 
@@ -198,6 +196,36 @@ describe("security MCP tool descriptor contract", () => {
       PUBLIC_TOOL_TITLES.get_s3_bucket_posture,
     );
   });
+
+  it("get_ses_configuration_status is listed when security pack is enabled", () => {
+    expect(toolsByName.get_ses_configuration_status).toBeDefined();
+    expect(toolsByName.get_ses_configuration_status.outputSchema).toMatchObject({
+      type: "object",
+    });
+    expect(toolsByName.get_ses_configuration_status.title).toBe(
+      PUBLIC_TOOL_TITLES.get_ses_configuration_status,
+    );
+  });
+
+  it("get_sns_topic_status is listed when security pack is enabled", () => {
+    expect(toolsByName.get_sns_topic_status).toBeDefined();
+    expect(toolsByName.get_sns_topic_status.outputSchema).toMatchObject({
+      type: "object",
+    });
+    expect(toolsByName.get_sns_topic_status.title).toBe(
+      PUBLIC_TOOL_TITLES.get_sns_topic_status,
+    );
+  });
+
+  it("get_eventbridge_rules_status is listed when security pack is enabled", () => {
+    expect(toolsByName.get_eventbridge_rules_status).toBeDefined();
+    expect(toolsByName.get_eventbridge_rules_status.outputSchema).toMatchObject({
+      type: "object",
+    });
+    expect(toolsByName.get_eventbridge_rules_status.title).toBe(
+      PUBLIC_TOOL_TITLES.get_eventbridge_rules_status,
+    );
+  });
 });
 
 describe("aggregate MCP tool descriptor contract", () => {
@@ -210,6 +238,7 @@ describe("aggregate MCP tool descriptor contract", () => {
         "cost",
         "inventory",
         "observability",
+        "database",
         "aggregates",
       ]),
     },

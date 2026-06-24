@@ -15,8 +15,8 @@ AWS_ALLOWED_REGIONS=us-east-1,sa-east-1
 AUTH_MODE=local-bearer
 MCP_AUTH_TOKEN=
 
-# Optional tool exposure (defaults expose all current public tools)
-# AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability
+# Optional tool exposure (default: core,cost,inventory,observability,database — security, aggregates, application-ops are opt-in)
+# AWS_MCP_ENABLED_TOOL_PACKS=core,cost,inventory,observability,database
 # AWS_MCP_ENABLED_TOOLS=
 # AWS_MCP_DISABLED_TOOLS=
 # AWS_MCP_MAX_RISK_LEVEL=read-only

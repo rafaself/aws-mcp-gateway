@@ -145,7 +145,7 @@ Complete the OAuth flow in the ChatGPT UI. Do not copy access tokens manually.
 
 Validate discovery before relying on the ChatGPT Actions UI:
 
-1. Run authenticated `tools/list` against `/mcp` and confirm all **enabled** tools are returned with valid descriptors (11 with default packs; 14 when `aggregates` is enabled — see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md)).
+1. Run authenticated `tools/list` against `/mcp` and confirm all **enabled** tools are returned with valid descriptors (21 with default packs; 24 when `aggregates` is enabled — see [chatgpt-connector-smoke-test.md](chatgpt-connector-smoke-test.md)).
 2. Open the connector and click **Refresh** so ChatGPT reloads `tools/list`.
 3. Confirm **Actions** lists all enabled tools (not “No app actions available yet”).
 4. Call `get_gateway_status` first, then optionally use `search`/`fetch` or invoke an AWS tool directly.

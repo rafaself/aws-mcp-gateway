@@ -52,10 +52,10 @@ Generic AWS tools are grouped into packs. Enable packs in `AWS_MCP_ENABLED_TOOL_
 | Pack | Generic tools (direct input) | Default |
 | --- | --- | --- |
 | `inventory` | `list_ec2_instances`, `list_lambda_functions`, `list_s3_buckets`, `get_ecr_image_status`, `compare_ecs_task_image_with_ecr` | enabled |
-| `observability` | `get_cloudwatch_alarms`, `get_cloudwatch_logs`, `get_cloudwatch_alarm_summary`, `get_recent_log_errors`, `list_log_groups`, `get_ecs_service_health`, `list_ecs_tasks`, `get_recent_stopped_ecs_tasks`, `get_sns_topic_status`, `get_eventbridge_rules_status` | enabled |
+| `observability` | `get_cloudwatch_alarms`, `get_cloudwatch_logs`, `get_cloudwatch_alarm_summary`, `get_recent_log_errors`, `list_log_groups`, `get_ecs_service_health`, `list_ecs_tasks`, `get_recent_stopped_ecs_tasks` | enabled |
 | `database` | `get_rds_instance_health`, `get_rds_metrics` | enabled |
 | `cost` | `get_aws_cost_summary`, `get_aws_cost_by_service`, `get_budget_status` | enabled |
-| `security` | `check_ssm_parameter_inventory`, `get_s3_bucket_posture`, `get_ses_configuration_status` | **disabled** |
+| `security` | `check_ssm_parameter_inventory`, `get_s3_bucket_posture`, `get_ses_configuration_status`, `get_sns_topic_status`, `get_eventbridge_rules_status` | **disabled** |
 | `aggregates` | `aws_account_overview`, `aws_cost_overview`, `aws_observability_overview` (compose other tools) | **disabled** |
 
 The `application-ops` pack is profile-driven and documented separately in [`application-profiles.md`](application-profiles.md).
