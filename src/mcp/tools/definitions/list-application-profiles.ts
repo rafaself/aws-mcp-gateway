@@ -60,15 +60,24 @@ export function createListApplicationProfilesToolManifest(
         })),
       );
 
-      const structuredContent = {
+      const structuredContent: {
+        storeStatus: typeof listResult.status;
+        profiles: typeof profiles;
+        error?: string;
+      } = {
         storeStatus: listResult.status,
         profiles,
       };
+      if (listResult.status === "invalid" && listResult.error) {
+        structuredContent.error = listResult.error;
+      }
 
       const text =
         listResult.status === "disabled"
           ? "Application profiles are not configured."
-          : `Found ${profiles.length} application profile(s) (store: ${listResult.status}).`;
+          : listResult.status === "invalid"
+            ? listResult.error ?? "Application profile index is invalid."
+            : `Found ${profiles.length} application profile(s) (store: ${listResult.status}).`;
 
       return {
         content: [{ type: "text" as const, text }],

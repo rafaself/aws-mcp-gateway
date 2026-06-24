@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { KVNamespace } from "@cloudflare/workers-types";
 import { ValidationError } from "../security/errors.js";
 import { createTestGatewayContext } from "../test/gateway-context-fixture.js";
-import { listApplicationProfiles, loadApplicationProfile } from "./loader.js";
+import {
+  INVALID_PROFILE_INDEX_ERROR,
+  listApplicationProfiles,
+  loadApplicationProfile,
+} from "./loader.js";
 
 const validIndex = {
   version: 1,
@@ -33,13 +37,23 @@ const validProfile = {
   },
 };
 
+const invalidIndexResult = {
+  status: "invalid" as const,
+  profiles: [],
+  error: INVALID_PROFILE_INDEX_ERROR,
+};
+
 function createMockKv(store: Record<string, unknown>): KVNamespace {
   return {
-    get: vi.fn(async (key: string) => {
+    get: vi.fn(async (key: string, type?: "text" | "json") => {
       if (!(key in store)) {
         return null;
       }
-      return store[key];
+      const value = store[key];
+      if (type === "text") {
+        return typeof value === "string" ? value : JSON.stringify(value);
+      }
+      return value;
     }),
     put: vi.fn(),
     delete: vi.fn(),
@@ -58,6 +72,13 @@ function createFailingKv(): KVNamespace {
     list: vi.fn(),
     getWithMetadata: vi.fn(),
   } as unknown as KVNamespace;
+}
+
+function expectSafeInvalidResult(result: Awaited<ReturnType<typeof listApplicationProfiles>>) {
+  expect(result).toEqual(invalidIndexResult);
+  expect(JSON.stringify(result)).not.toContain("AKIA");
+  expect(JSON.stringify(result)).not.toContain("password");
+  expect(JSON.stringify(result)).not.toContain("secret");
 }
 
 describe("listApplicationProfiles", () => {
@@ -85,14 +106,69 @@ describe("listApplicationProfiles", () => {
     expect(result).toEqual({ status: "available", profiles: [] });
   });
 
-  it("returns empty list for invalid index schema", async () => {
+  it("returns invalid state for invalid index schema", async () => {
     const ctx = createTestGatewayContext({
       appConfig: createMockKv({
         "app-profiles/index.json": { version: 2, profiles: [] },
       }),
     });
     const result = await listApplicationProfiles(ctx);
-    expect(result).toEqual({ status: "available", profiles: [] });
+    expectSafeInvalidResult(result);
+  });
+
+  it("returns invalid state for malformed JSON index", async () => {
+    const ctx = createTestGatewayContext({
+      appConfig: createMockKv({
+        "app-profiles/index.json": "{not-valid-json",
+      }),
+    });
+    const result = await listApplicationProfiles(ctx);
+    expectSafeInvalidResult(result);
+  });
+
+  it("returns invalid state for duplicate profile ids", async () => {
+    const ctx = createTestGatewayContext({
+      appConfig: createMockKv({
+        "app-profiles/index.json": {
+          version: 1,
+          profiles: [validIndex.profiles[0], validIndex.profiles[0]],
+        },
+      }),
+    });
+    const result = await listApplicationProfiles(ctx);
+    expectSafeInvalidResult(result);
+  });
+
+  it("returns invalid state for disallowed region in index", async () => {
+    const ctx = createTestGatewayContext({
+      appConfig: createMockKv({
+        "app-profiles/index.json": {
+          version: 1,
+          profiles: [{ ...validIndex.profiles[0], region: "eu-west-1" }],
+        },
+      }),
+    });
+    const result = await listApplicationProfiles(ctx);
+    expectSafeInvalidResult(result);
+  });
+
+  it("does not leak secret-like index content in invalid result", async () => {
+    const ctx = createTestGatewayContext({
+      appConfig: createMockKv({
+        "app-profiles/index.json": {
+          version: 1,
+          profiles: [
+            {
+              ...validIndex.profiles[0],
+              displayName: "password=supersecret",
+            },
+          ],
+        },
+      }),
+    });
+    const result = await listApplicationProfiles(ctx);
+    expectSafeInvalidResult(result);
+    expect(JSON.stringify(result)).not.toContain("supersecret");
   });
 
   it("returns unavailable state when KV read fails", async () => {
@@ -142,6 +218,18 @@ describe("loadApplicationProfile", () => {
     });
     await expect(loadApplicationProfile(ctx, "example-prod")).rejects.toThrow(
       /unavailable/i,
+    );
+  });
+
+  it("fails closed when index is invalid", async () => {
+    const ctx = createTestGatewayContext({
+      appConfig: createMockKv({
+        "app-profiles/index.json": { version: 2, profiles: [] },
+        "app-profiles/profiles/example-prod.json": validProfile,
+      }),
+    });
+    await expect(loadApplicationProfile(ctx, "example-prod")).rejects.toThrow(
+      /index is invalid/i,
     );
   });
 

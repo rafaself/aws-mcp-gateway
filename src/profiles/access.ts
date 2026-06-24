@@ -3,7 +3,11 @@ import { isValidRoleArn } from "../aws/credentials/helpers.js";
 import type { AwsCredentials } from "../aws/types.js";
 import { ValidationError } from "../security/errors.js";
 import { buildProfileKey } from "./keys.js";
-import { listApplicationProfiles, loadApplicationProfile } from "./loader.js";
+import {
+  INVALID_PROFILE_INDEX_ERROR,
+  listApplicationProfiles,
+  loadApplicationProfile,
+} from "./loader.js";
 import type { ProfileAuthConfig, ValidatedAppProfile } from "./types.js";
 import { resolveProfileAuth, validateProfileId } from "./validation.js";
 
@@ -73,6 +77,9 @@ export async function resolveApplicationProfileForTool(
       "validation_error",
       "Application profiles are temporarily unavailable.",
     );
+  }
+  if (listResult.status === "invalid") {
+    throw new ValidationError("validation_error", INVALID_PROFILE_INDEX_ERROR);
   }
 
   const safeProfileId = validateProfileId(profileId);

@@ -133,11 +133,27 @@ Profile `region` must be within `AWS_ALLOWED_REGIONS`. Per-resource `auth` overr
 | `AWS_MCP_APP_CONFIG` missing | `disabled`, empty list | Validation error: not configured |
 | KV read failure | `unavailable`, empty list | Validation error: unavailable |
 | Index missing | `available`, empty list | Validation error if profile requested |
-| Index invalid | `available`, empty list (logged) | — |
+| Index valid and empty | `available`, empty list | Validation error if profile requested |
+| Index invalid (malformed JSON or schema) | `invalid`, empty list, safe `error` message | Validation error: index invalid |
 | Profile missing | — | Validation error: not found |
 | Profile invalid | — | Validation error (fail closed) |
 
 Invalid profiles do not break generic MCP tools.
+
+## Diagnosing an invalid profile index
+
+When `list_application_profiles` returns `storeStatus: "invalid"`:
+
+1. The KV binding exists but `app-profiles/index.json` (or your custom `AWS_MCP_APP_PROFILE_INDEX_KEY`) contains malformed JSON or fails schema validation.
+2. Re-validate and republish the index using the profile CLI:
+
+```bash
+pnpm run app-profile:validate -- --file examples/app-profiles/example-prod.profile.json
+pnpm run app-profile:put -- --file examples/app-profiles/example-prod.profile.json --remote
+```
+
+3. Confirm `list_application_profiles` returns `storeStatus: "available"` with the expected profile entries.
+4. Never store secrets in profile KV — only resource names, prefixes, and role ARNs.
 
 ## Secret boundaries
 

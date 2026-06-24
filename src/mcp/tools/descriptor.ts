@@ -701,8 +701,9 @@ const applicationProfileListEntrySchema = z.object({
 });
 
 export const listApplicationProfilesOutputSchema = withOptionalExecutionMetadata({
-  storeStatus: z.enum(["disabled", "available", "unavailable"]),
+  storeStatus: z.enum(["disabled", "available", "unavailable", "invalid"]),
   profiles: z.array(applicationProfileListEntrySchema),
+  error: z.string().optional(),
 });
 
 const applicationSectionSchema = z.object({

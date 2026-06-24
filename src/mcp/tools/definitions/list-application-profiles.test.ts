@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { KVNamespace } from "@cloudflare/workers-types";
 import { createTestGatewayContext } from "../../../test/gateway-context-fixture.js";
+import { INVALID_PROFILE_INDEX_ERROR } from "../../../profiles/loader.js";
 import { createListApplicationProfilesToolManifest } from "./list-application-profiles.js";
 
 const validIndex = {
@@ -34,11 +35,15 @@ const validProfile = {
 
 function createMockKv(store: Record<string, unknown>): KVNamespace {
   return {
-    get: vi.fn(async (key: string) => {
+    get: vi.fn(async (key: string, type?: "text" | "json") => {
       if (!(key in store)) {
         return null;
       }
-      return store[key];
+      const value = store[key];
+      if (type === "text") {
+        return typeof value === "string" ? value : JSON.stringify(value);
+      }
+      return value;
     }),
     put: vi.fn(),
     delete: vi.fn(),
@@ -70,6 +75,23 @@ describe("list_application_profiles tool", () => {
       storeStatus: "available",
       profiles: [],
     });
+  });
+
+  it("returns invalid store state for malformed index", async () => {
+    const ctx = createTestGatewayContext({
+      appConfig: createMockKv({
+        "app-profiles/index.json": { version: 2, profiles: [] },
+      }),
+    });
+    const manifest = createListApplicationProfilesToolManifest(ctx);
+    const result = await manifest.handler({});
+
+    expect(result.structuredContent).toEqual({
+      storeStatus: "invalid",
+      profiles: [],
+      error: INVALID_PROFILE_INDEX_ERROR,
+    });
+    expect(JSON.stringify(result.structuredContent)).not.toContain("version");
   });
 
   it("returns profile metadata with profileConfigAvailable", async () => {

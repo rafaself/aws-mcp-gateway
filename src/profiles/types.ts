@@ -83,9 +83,10 @@ export type ValidatedAppProfile = {
   resources: ProfileResources;
 };
 
-export type ProfileStoreStatus = "disabled" | "available" | "unavailable";
+export type ProfileStoreStatus = "disabled" | "available" | "unavailable" | "invalid";
 
 export type ListApplicationProfilesResult = {
   status: ProfileStoreStatus;
   profiles: SafeProfileIndexEntry[];
+  error?: string;
 };
