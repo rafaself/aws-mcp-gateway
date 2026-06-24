@@ -51,7 +51,6 @@ describe("aws capabilities registry", () => {
       "sns:ListSubscriptionsByTopic",
       "sns:ListTopics",
       "ssm:DescribeParameters",
-      "ssm:GetParameters",
       "sts:AssumeRole",
     ]);
   });
@@ -105,7 +104,6 @@ describe("aws capabilities registry", () => {
       "sns:ListSubscriptionsByTopic",
       "sns:ListTopics",
       "ssm:DescribeParameters",
-      "ssm:GetParameters",
       "sts:AssumeRole",
     ]);
     expect(awsServicesForCapabilities(AWS_CAPABILITY_IDS)).toEqual([

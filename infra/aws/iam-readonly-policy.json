@@ -100,8 +100,7 @@
       "Sid": "SSMRead",
       "Effect": "Allow",
       "Action": [
-        "ssm:DescribeParameters",
-        "ssm:GetParameters"
+        "ssm:DescribeParameters"
       ],
       "Resource": "*"
     },
