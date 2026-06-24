@@ -49,11 +49,15 @@ const validProfile = {
 
 function createMockKv(store: Record<string, unknown>): KVNamespace {
   return {
-    get: vi.fn(async (key: string) => {
+    get: vi.fn(async (key: string, type?: "text" | "json") => {
       if (!(key in store)) {
         return null;
       }
-      return store[key];
+      const value = store[key];
+      if (type === "text") {
+        return typeof value === "string" ? value : JSON.stringify(value);
+      }
+      return value;
     }),
     put: vi.fn(),
     delete: vi.fn(),
@@ -175,6 +179,18 @@ describe("resolveApplicationProfileForTool", () => {
     const ctx = createTestGatewayContext();
     await expect(resolveApplicationProfileForTool(ctx, "example-prod")).rejects.toThrow(
       ValidationError,
+    );
+  });
+
+  it("rejects when profile index is invalid", async () => {
+    const ctx = createTestGatewayContext({
+      appConfig: createMockKv({
+        "app-profiles/index.json": { version: 2, profiles: [] },
+        "app-profiles/profiles/example-prod.json": validProfile,
+      }),
+    });
+    await expect(resolveApplicationProfileForTool(ctx, "example-prod")).rejects.toThrow(
+      /index is invalid/i,
     );
   });
 

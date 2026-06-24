@@ -2055,7 +2055,7 @@ These tools require the `application-ops` pack and optional KV-backed profiles (
 
 ### 28. `list_application_profiles`
 
-Returns safe profile metadata only: `id`, `displayName`, `environment`, `region`, `enabled`, `aliases`, `capabilities`, and `profileConfigAvailable`. Does not call AWS. Missing KV binding returns `storeStatus: "disabled"` with an empty list.
+Returns safe profile metadata only: `id`, `displayName`, `environment`, `region`, `enabled`, `aliases`, `capabilities`, and `profileConfigAvailable`. Does not call AWS. Missing KV binding returns `storeStatus: "disabled"` with an empty list. A malformed or schema-invalid index returns `storeStatus: "invalid"` with an empty list and optional `error` message (no raw KV content).
 
 ### 29. `get_application_environment_overview`
 

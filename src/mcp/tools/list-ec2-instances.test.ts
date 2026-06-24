@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { KVNamespace } from "@cloudflare/workers-types";
 import { createTestGatewayContext } from "../../test/gateway-context-fixture.js";
 import type { GatewayContext } from "../../config/context.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -124,6 +125,45 @@ describe("registerListEc2InstancesTool", () => {
         },
       ],
     });
+  });
+
+  it("succeeds when application profile index is invalid", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(
+        ec2XmlResponse(
+          describeInstancesXml([
+            instanceXml({ instanceId: "i-11111111" }),
+          ]),
+        ),
+      ),
+    );
+
+    const invalidIndexKv: KVNamespace = {
+      get: vi.fn(async (key: string, type?: "text" | "json") => {
+        if (key === "app-profiles/index.json" && type === "text") {
+          return "{not-valid-json";
+        }
+        return null;
+      }),
+      put: vi.fn(),
+      delete: vi.fn(),
+      list: vi.fn(),
+      getWithMetadata: vi.fn(),
+    } as unknown as KVNamespace;
+
+    const ctx = createTestGatewayContext({
+      allowedRegions: ["us-east-1"],
+      appConfig: invalidIndexKv,
+    });
+    const mock = makeMockServer();
+    registerMcpToolForTest(mock.server, ctx, "list_ec2_instances");
+    const tool = mock.getTool("list_ec2_instances")!;
+    const result = await tool.handler({}) as Record<string, unknown>;
+
+    expect(result).toHaveProperty("structuredContent");
+    expect(result).not.toHaveProperty("isError", true);
+    const structured = result.structuredContent as { count: number };
+    expect(structured.count).toBeGreaterThan(0);
   });
 
   it("returns instances from multiple regions", async () => {
